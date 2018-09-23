@@ -17,6 +17,7 @@ static int	cards[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
 
 static int	numCards[11] ;
 
+// asdf
 
 int	bet ;
 int	TotalNumCards ;
