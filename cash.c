@@ -33,6 +33,8 @@ typedef struct
 
 static FILE	*stream = NULL;
 static Year	years[100] ;
+static int InheritYear = 2024 ;
+static int PruYear = 2024 ;
 
 calculateAnnuityInflation(Year *year)
 {
@@ -126,9 +128,9 @@ calculateNewIncomes(Year *year, Year *lastyear)
 	year->Spend = (1.0 + (lastyear->inflation * 0.01)) * lastyear->Spend ;
 	year->inheritance = (1.0 + (lastyear->inflation * 0.01)) * lastyear->inheritance ;
 
-	if (lastyear->year !=2024)
+	if (lastyear->year != InheritYear)
 		lastyear->inheritance = 0 ;
-	if (lastyear->year <2024)
+	if (lastyear->year < InheritYear)
 		lastyear->rentIncome = 0 ;
 	if (lastyear->year <2031)
 		lastyear->stateIncome = 0 ;
@@ -138,7 +140,7 @@ calculateNewTotals (Year *year, Year *lastyear)
 {
 	lastyear->income = lastyear->FerrantiIncome + lastyear->SimonIncome + lastyear->cashIncome 
 						+ lastyear->ZRPIncome + lastyear->PruIncome;
-	if (year->year > 2025)
+	if (year->year > InheritYear)
 		lastyear->income += lastyear->rentIncome ;
 
 	if (year->year > 2031)
@@ -154,7 +156,7 @@ calculateNewTotals (Year *year, Year *lastyear)
 	double cashSpend = lastyear->Spend + lastyear->tax - lastyear->income ;
 
 	year->cash = lastyear->cash - cashSpend ;
-	if (year->year == 2025)
+	if (year->year == InheritYear + 1)
 		year->cash += lastyear->inheritance ;
 	year->cashIncome = (year->cashReturn * 0.01) * year->cash;
 	year->ZRP = ((1.0 + (lastyear->investmentReturn * 0.01)) * lastyear->ZRP) - lastyear->ZRPIncome;
@@ -165,7 +167,7 @@ calculateNewTotals (Year *year, Year *lastyear)
 int calculateIncome (Year *year)
 {
 	double income = year->FerrantiIncome + year->SimonIncome + year->cashIncome ;
-	if (year->year > 2025)
+	if (year->year >= InheritYear)
 		income += year->rentIncome ;
 	if (year->year > 2031)
 		income += year->stateIncome ;
@@ -185,7 +187,7 @@ int calculateIncome (Year *year)
 		taxFree = 0.0;
 
 	// take the tax free amount from ZRP and pru
-	if (year->year <= 2024)
+	if (year->year < PruYear)
 	{
 		year->ZRPIncome = taxFree ;
 	}
@@ -206,7 +208,7 @@ int calculateIncome (Year *year)
 	if (required > 0)
 	{
 		required *= 1.25;
-		if (year->year <= 2024)
+		if (year->year < PruYear)
 		{
 			year->ZRPIncome += (year->ZRP / (year->ZRP + year->cash)) * required ;
 		}
@@ -220,14 +222,30 @@ int calculateIncome (Year *year)
 	return 0 ;
 }
 
+int setupReturns(Year *year) 
+{
+	int inflation = random()%75 ;
+	year->inflation = inflation / 10.0 ;
+
+	int invest = random()%100 ;
+    year->investmentReturn = year->inflation + (invest / 10.0 - 5.0);
+
+	int cash = random()%50 ;
+	year->cashReturn = year->inflation - (cash / 10.0) ;
+
+	if (year->cashReturn < 0.5)
+		year->cashReturn = 0.5 ;
+
+}
+
 int processYear (Year *year, Year *lastyear)
 {
 	int finished = 0 ;
 	
-	finished = readYear(year) ;
-	if (finished)
-		return 1;
+	//readYear(year) ;
 
+	setupReturns(year);
+	calculateAnnuityInflation(year);
 	calculateNewTotals(year, lastyear);
 	calculateNewIncomes(year, lastyear);
 	calculateIncome(year);
@@ -242,9 +260,25 @@ char	**argv ;
 {
 	int nextYear = 0 ;
 	int finished = 0 ;
-	int html = 0 ;
+	int html = 1 ;
 	int loop = 0 ;
+	Year *firstyear = NULL ;
 
+	if (argc != 6)
+	{
+		printf ("Usage: cash <random seed> <rent> <inherit> <inheritYear> <spend>\n");
+		exit (0) ;
+	}
+    // init random seed
+
+	int seed = atoi (argv[1]) ;
+    srandom (seed) ;
+
+	// store the inheritance year
+
+	InheritYear = atoi (argv[4]) ;
+
+#if 0
 	/* open the file containing the rates */
 
 	if (argc !=2 && argc !=3)
@@ -261,25 +295,45 @@ char	**argv ;
 	}
 	else	
 		stream = fopen (argv[1], "r") ;
+#endif
 
 	// read in starting amounts
 
-	readStart(&years[0]) ;
-	calculateIncome(&years[0]);
+	//readStart(&years[0]) ;
+	firstyear = &years[0];
+	firstyear->year = 2019;
+	firstyear->ZRP = 259364;
+	firstyear->Pru = 238200;
+	firstyear->cash = 217917;
+	firstyear->FerrantiIncome = 3500 ;
+	firstyear->SimonIncome = 1686 ;
+	firstyear->stateIncome = 7700 ;
+	firstyear->rentIncome = atof(argv[2]) ;
+	firstyear->inheritance = atof(argv[3]) ;
+	firstyear->TaxAllowance = 12000 ;
+	firstyear->Spend = atof(argv[5]) ;
+
+	setupReturns (firstyear) ;
+
+	firstyear->total = firstyear->ZRP + firstyear->Pru + firstyear->cash ;
+	firstyear->cashIncome = (firstyear->cashReturn * 0.01) * firstyear->cash;
+
+	calculateAnnuityInflation(firstyear);
+	calculateIncome(firstyear);
 
 	// now process every year
 
-	while (finished != 1)
+	for (nextYear = 1; nextYear<=45; nextYear++)
 	{
-		nextYear++;
-		finished = processYear(&years[nextYear], &years[nextYear-1]);
+		years[nextYear].year = nextYear + 2019;
+		processYear(&years[nextYear], &years[nextYear-1]);
 	}
 
 	/* print out the results */
 
 	if (!html)
 	{
-		for (loop=0;loop<nextYear;loop++)
+		for (loop=0;loop<nextYear-1;loop++)
 		{
 			printf ("%d, ZRP %d, Pru %d, Cash %d Total %d Tax %d Spend %d\n", years[loop].year, (int) years[loop].ZRP,
 														(int) years[loop].Pru, (int) years[loop].cash, (int) years[loop].total,
@@ -297,8 +351,8 @@ char	**argv ;
 		printf ("<TD><center>Cash<center>\n") ;
 		printf ("<TD><center>CashReturn<center>\n") ;
 		printf ("<TD><center>inflation<center>\n") ;
-		printf ("<TD><center>PruIncome<center>\n") ;
 		printf ("<TD><center>ZRPIncome<center>\n") ;
+		printf ("<TD><center>PruIncome<center>\n") ;
 		printf ("<TD><center>cashIncome<center>\n") ;
 		printf ("<TD><center>rentIncome<center>\n") ;
 		printf ("<TD><center>stateIncome<center>\n") ;
@@ -306,11 +360,12 @@ char	**argv ;
 		printf ("<TD><center>SimonIncome<center>\n") ;
 		printf ("<TD><center>Spend<center>\n") ;
 		printf ("<TD><center>TaxAllowance<center>\n") ;
+		printf ("<TD><center>Tax<center>\n") ;
 		printf ("<TD><center>total<center>\n") ;
 		printf ("<TD><center>inheritance<center>\n") ;
 		printf ("<TD><center>income<center>\n") ;
 		printf ("<TR>\n") ;
-		for (loop=0;loop<nextYear;loop++)
+		for (loop=0;loop<nextYear-1;loop++)
 		{
 			printf ("<TR>\n") ;
 			printf ("<TD><center>%d<center>\n", years[loop].year) ;
@@ -320,8 +375,8 @@ char	**argv ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].cash) ;
 			printf ("<TD><center>%.2f<center>\n", years[loop].cashReturn) ;
 			printf ("<TD><center>%.2f<center>\n", years[loop].inflation) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].PruIncome) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].ZRPIncome) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].PruIncome) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].cashIncome) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].rentIncome) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].stateIncome) ;
@@ -329,6 +384,7 @@ char	**argv ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].SimonIncome) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].Spend) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].TaxAllowance) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].tax) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].total) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].inheritance) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].income) ;
@@ -339,6 +395,6 @@ char	**argv ;
 
 	/* close the input stream */
 
-	fclose (stream) ;
+	//fclose (stream) ;
 }
 
