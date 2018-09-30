@@ -23,6 +23,14 @@ typedef struct
 	double stateIncome ;
 	double FerrantiIncome ;
 	double SimonIncome ;
+	double F1 ;
+	double F2 ;
+	double F3 ;
+	double F4 ;
+	double F5 ;
+	double F6 ;
+	double S1 ;
+	double S2 ;
 	double Spend ;
 	double TaxAllowance ;
 	double total ;
@@ -35,6 +43,11 @@ static FILE	*stream = NULL;
 static Year	years[100] ;
 static int InheritYear = 2024 ;
 static int PruYear = 2024 ;
+static int Pru25 = 0 ;
+static int ZRPYear = 2019 ;
+static int ZRP25 = 1 ;
+static int FerrantiYear = 2019 ;
+static int SimonYear = 2019 ;
 
 calculateAnnuityInflation(Year *year)
 {
@@ -120,6 +133,19 @@ int readYear(Year *year)
 
 calculateNewIncomes(Year *year, Year *lastyear)
 {
+	if (lastyear->year == FerrantiYear)
+	{
+		int yearsEarly = 2029 - lastyear->year ;
+		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
+		lastyear->FerrantiIncome = reductionFactor * (lastyear->F1 + lastyear->F2 + lastyear->F3 + lastyear->F4 + lastyear->F5 + lastyear->F6) ;
+	}
+	if (lastyear->year == SimonYear)
+	{
+		int yearsEarly = 2029 - lastyear->year ;
+		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
+		lastyear->SimonIncome = reductionFactor * (lastyear->S1 + lastyear->S2) ;
+	}
+
 	year->FerrantiIncome = (1.0 + (lastyear->AnnuityIncrease * 0.01)) * lastyear->FerrantiIncome ;
 	year->SimonIncome = (1.0 + (lastyear->AnnuityIncrease * 0.01)) * lastyear->SimonIncome ;
 	year->stateIncome = (1.0 + (lastyear->inflation * 0.01)) * lastyear->stateIncome ;
@@ -127,6 +153,14 @@ calculateNewIncomes(Year *year, Year *lastyear)
 	year->TaxAllowance = (1.0 + (lastyear->inflation * 0.01)) * lastyear->TaxAllowance ;
 	year->Spend = (1.0 + (lastyear->inflation * 0.01)) * lastyear->Spend ;
 	year->inheritance = (1.0 + (lastyear->inflation * 0.01)) * lastyear->inheritance ;
+	year->S1 = 1.07 * lastyear->S1 ;
+	year->S2 = (1.0 + (lastyear->inflation * 0.01)) * lastyear->S2 ;
+	year->F1 = 1.075 * lastyear->F1 ;
+	year->F2 = 1.075 * lastyear->F2 ;
+	year->F3 = 1.075 * lastyear->F3 ;
+	year->F4 = (1.0 + (lastyear->inflation * 0.01)) * lastyear->F4 ;
+	year->F5 = (1.0 + (lastyear->inflation * 0.01)) * lastyear->F5 ;
+	year->F6 = 1.075 * lastyear->F6 ;
 
 	if (lastyear->year != InheritYear)
 		lastyear->inheritance = 0 ;
@@ -147,6 +181,10 @@ calculateNewTotals (Year *year, Year *lastyear)
 		lastyear->income += lastyear->stateIncome ;
 
 	double taxable = lastyear->income - lastyear->TaxAllowance ;
+	if (!Pru25)
+		taxable -= (lastyear->PruIncome * 0.25) ;
+	if (!ZRP25)
+		taxable -= (lastyear->ZRPIncome * 0.25) ;
 
 	lastyear->tax = 0 ;
 	if (taxable > 0)
@@ -162,6 +200,25 @@ calculateNewTotals (Year *year, Year *lastyear)
 	year->ZRP = ((1.0 + (lastyear->investmentReturn * 0.01)) * lastyear->ZRP) - lastyear->ZRPIncome;
 	year->Pru = ((1.0 + (lastyear->investmentReturn * 0.01)) * lastyear->Pru) - lastyear->PruIncome;
 	year->total = year->ZRP + year->Pru + year->cash ;
+
+	if (year->year == ZRPYear)
+	{
+		if (ZRP25)
+		{
+			double cashTake = year->ZRP * 0.25 ;
+			year->ZRP -= cashTake ;
+			year->cash += cashTake ;
+		}
+	}
+	if (year->year == PruYear)
+	{
+		if (Pru25)
+		{
+			double cashTake = year->Pru * 0.25 ;
+			year->Pru -= cashTake ;
+			year->cash += cashTake ;
+		}
+	}
 }
 
 int calculateIncome (Year *year)
@@ -187,11 +244,15 @@ int calculateIncome (Year *year)
 		taxFree = 0.0;
 
 	// take the tax free amount from ZRP and pru
-	if (year->year < PruYear)
+	if (year->year >= ZRPYear && year->year < PruYear)
 	{
 		year->ZRPIncome = taxFree ;
 	}
-	else
+	else if (year->year >= PruYear && year->year < ZRPYear)
+	{
+		year->PruIncome = taxFree ;
+	}
+	else if (year->year >= PruYear && year->year >= ZRPYear)
 	{
 		year->ZRPIncome = taxFree / 2.0 ;
 		year->PruIncome = taxFree / 2.0 ;
@@ -208,11 +269,15 @@ int calculateIncome (Year *year)
 	if (required > 0)
 	{
 		required *= 1.25;
-		if (year->year < PruYear)
+		if (year->year >= ZRPYear && year->year < PruYear)
 		{
 			year->ZRPIncome += (year->ZRP / (year->ZRP + year->cash)) * required ;
 		}
-		else
+		else if (year->year >= PruYear && year->year < ZRPYear)
+		{
+			year->PruIncome += (year->Pru / (year->Pru + year->cash)) * required ;
+		}
+		else if (year->year >= PruYear && year->year >= ZRPYear)
 		{
 			year->ZRPIncome += (year->ZRP / year->total) * required ;
 			year->PruIncome += (year->Pru / year->total) * required ;
@@ -235,6 +300,7 @@ int setupReturns(Year *year)
 
 	if (year->cashReturn < 0.5)
 		year->cashReturn = 0.5 ;
+
 
 }
 
@@ -264,9 +330,9 @@ char	**argv ;
 	int loop = 0 ;
 	Year *firstyear = NULL ;
 
-	if (argc != 6)
+	if (argc != 12)
 	{
-		printf ("Usage: cash <random seed> <rent> <inherit> <inheritYear> <spend>\n");
+		printf ("Usage: cash <random seed> <rent> <inherit> <inheritYear> <spend> <ZRPYear> <ZRP25> <PruYear> <Pru25> <FerrantiYear> <SimonYear>\n");
 		exit (0) ;
 	}
     // init random seed
@@ -302,21 +368,66 @@ char	**argv ;
 	//readStart(&years[0]) ;
 	firstyear = &years[0];
 	firstyear->year = 2019;
-	firstyear->ZRP = 259364;
-	firstyear->Pru = 238200;
-	firstyear->cash = 217917;
-	firstyear->FerrantiIncome = 3500 ;
-	firstyear->SimonIncome = 1686 ;
+	firstyear->ZRP = 350620;
+	firstyear->Pru = 238277;
+	firstyear->cash = 139517;
+	firstyear->FerrantiIncome = 0 ;
+	firstyear->SimonIncome = 0 ;
 	firstyear->stateIncome = 7700 ;
 	firstyear->rentIncome = atof(argv[2]) ;
 	firstyear->inheritance = atof(argv[3]) ;
 	firstyear->TaxAllowance = 12000 ;
 	firstyear->Spend = atof(argv[5]) ;
+	ZRPYear = atoi (argv[6]) ;
+	ZRP25 = atoi (argv[7]) ;
+	PruYear = atoi (argv[8]) ;
+	Pru25 = atoi (argv[9]) ;
+	FerrantiYear = atoi (argv[10]) ;
+	SimonYear = atoi (argv[11]) ;
+	firstyear->F1 = 1171;
+	firstyear->F2 = 870;
+	firstyear->F3 = 313;
+	firstyear->F4 = 1639;
+	firstyear->F5 = 257;
+	firstyear->F6 = 35;
+	firstyear->S1 = 975;
+	firstyear->S2 = 1044;
 
 	setupReturns (firstyear) ;
 
+	if (firstyear->year == ZRPYear)
+	{
+		if (ZRP25)
+		{
+			double cashTake = firstyear->ZRP * 0.25 ;
+			firstyear->ZRP -= cashTake ;
+			firstyear->cash += cashTake ;
+		}
+	}
+	if (firstyear->year == PruYear)
+	{
+		if (Pru25)
+		{
+			double cashTake = firstyear->Pru * 0.25 ;
+			firstyear->Pru -= cashTake ;
+			firstyear->cash += cashTake ;
+		}
+	}
 	firstyear->total = firstyear->ZRP + firstyear->Pru + firstyear->cash ;
 	firstyear->cashIncome = (firstyear->cashReturn * 0.01) * firstyear->cash;
+
+	if (firstyear->year == FerrantiYear)
+	{
+		int yearsEarly = 2029 - firstyear->year ;
+		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
+		firstyear->FerrantiIncome = reductionFactor * (firstyear->F1 + firstyear->F2 + firstyear->F3 + firstyear->F4 + firstyear->F5 + firstyear->F6) ;
+	}
+	if (firstyear->year == SimonYear)
+	{
+		int yearsEarly = 2029 - firstyear->year ;
+		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
+		firstyear->SimonIncome = reductionFactor * (firstyear->S1 + firstyear->S2) ;
+	}
 
 	calculateAnnuityInflation(firstyear);
 	calculateIncome(firstyear);
