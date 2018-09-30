@@ -26,6 +26,9 @@ typedef struct
 	double Spend ;
 	double TaxAllowance ;
 	double total ;
+	double inheritance ;
+	double income ;
+	double tax ;
 } Year ;
 
 static FILE	*stream = NULL;
@@ -70,6 +73,8 @@ int readStart(Year *year)
 		year->stateIncome = atof(ptr) ;
 		ptr = (char *) strtok_r (NULL, ":", &rest) ;
 		year->rentIncome = atof(ptr) ;
+		ptr = (char *) strtok_r (NULL, ":", &rest) ;
+		year->inheritance = atof(ptr) ;
 		ptr = (char *) strtok_r (NULL, ":", &rest) ;
 		year->TaxAllowance = atof(ptr) ;
 		ptr = (char *) strtok_r (NULL, ":", &rest) ;
@@ -119,27 +124,38 @@ calculateNewIncomes(Year *year, Year *lastyear)
 	year->rentIncome = (1.0 + (lastyear->inflation * 0.01)) * lastyear->rentIncome ;
 	year->TaxAllowance = (1.0 + (lastyear->inflation * 0.01)) * lastyear->TaxAllowance ;
 	year->Spend = (1.0 + (lastyear->inflation * 0.01)) * lastyear->Spend ;
+	year->inheritance = (1.0 + (lastyear->inflation * 0.01)) * lastyear->inheritance ;
+
+	if (lastyear->year !=2024)
+		lastyear->inheritance = 0 ;
+	if (lastyear->year <2024)
+		lastyear->rentIncome = 0 ;
+	if (lastyear->year <2031)
+		lastyear->stateIncome = 0 ;
 }
 
 calculateNewTotals (Year *year, Year *lastyear)
 {
-	double income = lastyear->FerrantiIncome + lastyear->SimonIncome + lastyear->cashIncome 
+	lastyear->income = lastyear->FerrantiIncome + lastyear->SimonIncome + lastyear->cashIncome 
 						+ lastyear->ZRPIncome + lastyear->PruIncome;
 	if (year->year > 2025)
-		income += lastyear->rentIncome ;
+		lastyear->income += lastyear->rentIncome ;
+
 	if (year->year > 2031)
-		income += lastyear->stateIncome ;
+		lastyear->income += lastyear->stateIncome ;
 
-	double taxable = income - lastyear->TaxAllowance ;
+	double taxable = lastyear->income - lastyear->TaxAllowance ;
 
-	double tax = 0 ;
+	lastyear->tax = 0 ;
 	if (taxable > 0)
-		tax = taxable * 0.2 ;
+		lastyear->tax = taxable * 0.2 ;
 
 	// note - this may well be negative
-	double cashSpend = lastyear->Spend + tax - income ;
+	double cashSpend = lastyear->Spend + lastyear->tax - lastyear->income ;
 
 	year->cash = lastyear->cash - cashSpend ;
+	if (year->year == 2025)
+		year->cash += lastyear->inheritance ;
 	year->cashIncome = (year->cashReturn * 0.01) * year->cash;
 	year->ZRP = ((1.0 + (lastyear->investmentReturn * 0.01)) * lastyear->ZRP) - lastyear->ZRPIncome;
 	year->Pru = ((1.0 + (lastyear->investmentReturn * 0.01)) * lastyear->Pru) - lastyear->PruIncome;
@@ -261,61 +277,65 @@ char	**argv ;
 
 	/* print out the results */
 
-	for (loop=0;loop<nextYear;loop++)
+	if (!html)
 	{
-		printf ("%d, ZRP %f, Pru %f, Cash %f Total %f\n", years[loop].year, years[loop].ZRP,
-														years[loop].Pru, years[loop].cash, years[loop].total) ;
-	}
-
-#if 0
-	if (html)
-	{
-		printf ("<center><TABLE COLS=%d\n border=3>", level+2) ;
-		printf ("<TR><TD><center>Player<center></TD><TD><center>Ranking</center></TD>\n") ;
-		for (loop2=level-1;loop2>=0;loop2--)
+		for (loop=0;loop<nextYear;loop++)
 		{
-			if (loop2 > 2)
-				printf ("<TD><center>Round %d</center></TD>\n", level - loop2) ;
-			else if (loop2 == 2)
-				printf ("<TD><center>Quarter Final</center></TD>\n") ;
-			else if (loop2 == 1)
-				printf ("<TD><center>Semi Final</center></TD>\n") ;
-			else if (loop2 == 0)
-				printf ("<TD><center>Final</center></TD>\n") ;
+			printf ("%d, ZRP %d, Pru %d, Cash %d Total %d Tax %d Spend %d\n", years[loop].year, (int) years[loop].ZRP,
+														(int) years[loop].Pru, (int) years[loop].cash, (int) years[loop].total,
+															(int) years[loop].tax, (int) years[loop].Spend) ;
 		}
-		printf ("</TR>\n") ;
-		for (loop=0;loop<no_of_players;loop++)
+	}
+	else
+	{
+		printf ("<center><TABLE COLS=10\n border=3>") ;
+		printf ("<TR>\n") ;
+		printf ("<TD><center>year<center>\n") ;
+		printf ("<TD><center>ZRP<center>\n") ;
+		printf ("<TD><center>Pru<center>\n") ;
+		printf ("<TD><center>investReturn<center>\n") ;
+		printf ("<TD><center>Cash<center>\n") ;
+		printf ("<TD><center>CashReturn<center>\n") ;
+		printf ("<TD><center>inflation<center>\n") ;
+		printf ("<TD><center>PruIncome<center>\n") ;
+		printf ("<TD><center>ZRPIncome<center>\n") ;
+		printf ("<TD><center>cashIncome<center>\n") ;
+		printf ("<TD><center>rentIncome<center>\n") ;
+		printf ("<TD><center>stateIncome<center>\n") ;
+		printf ("<TD><center>FerrantiIncome<center>\n") ;
+		printf ("<TD><center>SimonIncome<center>\n") ;
+		printf ("<TD><center>Spend<center>\n") ;
+		printf ("<TD><center>TaxAllowance<center>\n") ;
+		printf ("<TD><center>total<center>\n") ;
+		printf ("<TD><center>inheritance<center>\n") ;
+		printf ("<TD><center>income<center>\n") ;
+		printf ("<TR>\n") ;
+		for (loop=0;loop<nextYear;loop++)
 		{
-			printf ("<TR><TD><center>%s</center></TD><TD><center>%d</center></TD>\n", player[loop].name, player[loop].ranking) ;
-			for (loop2=level-1;loop2>=0;loop2--)
-			{
-				double odds ;
-				odds = player[loop].prob_level[loop2] * 100.0 ;
-				printf ("<TD><center>%2.2f</center></TD>\n", odds) ;
-			}
+			printf ("<TR>\n") ;
+			printf ("<TD><center>%d<center>\n", years[loop].year) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].ZRP) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].Pru) ;
+			printf ("<TD><center>%.2f<center>\n", years[loop].investmentReturn) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].cash) ;
+			printf ("<TD><center>%.2f<center>\n", years[loop].cashReturn) ;
+			printf ("<TD><center>%.2f<center>\n", years[loop].inflation) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].PruIncome) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].ZRPIncome) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].cashIncome) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].rentIncome) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].stateIncome) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].FerrantiIncome) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].SimonIncome) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].Spend) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].TaxAllowance) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].total) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].inheritance) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].income) ;
 			printf ("</TR>\n") ;
 		}
 		printf ("</TABLE>\n") ;
 	}
-	else
-	{
-		for (loop=0;loop<no_of_players;loop++)
-		{
-			sprintf (result, "%s", player[loop].name) ;
-	
-			for (loop2=level-1;loop2>=0;loop2--)
-			{
-				sprintf (pr, "%2.2f\t", player[loop].prob_level[loop2] * 100.0) ;	
-				strcat (result, pr) ;
-			}
-
-			total += player[loop].prob_level[0] ;	
-			strcat (result, "\n") ;
-			printf (result) ;
-		}
-		printf ("total %f\n", total) ;
-	}
-#endif
 
 	/* close the input stream */
 
