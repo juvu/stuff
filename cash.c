@@ -48,12 +48,12 @@ static int ZRPYear = 2019 ;
 static int ZRP25 = 1 ;
 static int FerrantiYear = 2019 ;
 static int SimonYear = 2019 ;
-static double InflationMin = 0.0 ;
-static double InflationMax = 0.0 ;
-static double InvestMin = 0.0 ;
-static double InvestMax = 0.0 ;
-static double CashMin = 0.0 ;
-static double CashMax = 0.0 ;
+static double InflationMean = 0.0 ;
+static double InflationSD = 0.0 ;
+static double InvestMean = 0.0 ;
+static double InvestSD = 0.0 ;
+static double CashMean = 0.0 ;
+static double CashSD = 0.0 ;
 static double SpendDecrease = 0.0 ;
 
 calculateAnnuityInflation(Year *year)
@@ -302,19 +302,57 @@ int calculateIncome (Year *year)
 	return 0 ;
 }
 
+double StandardDeviationsFromMean(double SD)
+{
+	int sdkey = random()%1000 ;
+	int interval = random()%50 ;
+	double adjust = interval / 100.0 ;
+	double amount = 0.0 ;
+
+	if (sdkey <= 6)
+		amount = -2.5 ;
+	else if (sdkey <= 23)
+		amount = -2.0 ;
+	else if (sdkey <= 67)
+		amount = -1.5 ;
+	else if (sdkey <= 159)
+		amount = -1.0 ;
+	else if (sdkey <= 309)
+		amount = -0.5 ;
+	else if (sdkey <= 500)
+		amount = 0.0 ;
+	else if (sdkey <= 691)
+		amount = 0.5 ;
+	else if (sdkey <= 841)
+		amount = 1.0 ;
+	else if (sdkey <= 933)
+		amount = 1.5 ;
+	else if (sdkey <= 977)
+		amount = 2.0 ;
+	else if (sdkey <= 994)
+		amount = 2.5 ;
+	else
+		amount = 3.0 ;
+
+	return ((amount - adjust) * SD) ;
+}
+
 int setupReturns(Year *year) 
 {
-	int InflationDiff = (InflationMax - InflationMin) * 10 ;
-	int inflation = (InflationDiff > 0) ? random()%InflationDiff : 0;
-	year->inflation = (inflation / 10.0) + InflationMin ;
+	//int InflationDiff = (InflationMax - InflationMin) * 10 ;
+	//int inflation = (InflationDiff > 0) ? random()%InflationDiff : 0;
+	//year->inflation = (inflation / 10.0) + InflationMin ;
+	year->inflation = InflationMean + StandardDeviationsFromMean(InflationSD) ;
 
-	int InvestDiff = (InvestMax - InvestMin) * 10 ;
-	int invest = (InvestDiff > 0) ? random()%InvestDiff : 0;
-	year->investmentReturn = (invest / 10.0) + InvestMin ;
+	//int InvestDiff = (InvestMax - InvestMin) * 10 ;
+	//int invest = (InvestDiff > 0) ? random()%InvestDiff : 0;
+	//year->investmentReturn = (invest / 10.0) + InvestMin ;
+	year->investmentReturn = InvestMean + StandardDeviationsFromMean(InvestSD) ;
 
-	int CashDiff = (CashMax - CashMin) * 10 ;
-	int cash = (CashDiff > 0) ? random()%CashDiff : 0;
-	year->cashReturn = (cash / 10.0) + CashMin ;
+	//int CashDiff = (CashMax - CashMin) * 10 ;
+	//int cash = (CashDiff > 0) ? random()%CashDiff : 0;
+	//year->cashReturn = (cash / 10.0) + CashMin ;
+	year->cashReturn = CashMean + StandardDeviationsFromMean(CashSD) ;
 }
 
 int processYear (Year *year, Year *lastyear)
@@ -346,7 +384,7 @@ char	**argv ;
 	if (argc != 19)
 	{
 		printf ("Usage: cash <random seed> <rent> <inherit> <inheritYear> <spend> <ZRPYear> <ZRP25> <PruYear> <Pru25> <FerrantiYear> <SimonYear>\n");
-		printf ("                                   <InflationMin> <InflationMax> <InvestMin> <InvestMax> <CashMin> <CashMax> <SpendDecrease>\n");
+		printf ("                                   <InflationMean> <InflationSD> <InvestMean> <InvestSD> <CashMean> <CashSD> <SpendDecrease>\n");
 		exit (0) ;
 	}
     // init random seed
@@ -398,12 +436,12 @@ char	**argv ;
 	Pru25 = atoi (argv[9]) ;
 	FerrantiYear = atoi (argv[10]) ;
 	SimonYear = atoi (argv[11]) ;
-	InflationMin = atof (argv[12]) ;
-	InflationMax = atof (argv[13]) ;
-	InvestMin = atof (argv[14]) ;
-	InvestMax = atof (argv[15]) ;
-	CashMin = atof (argv[16]) ;
-	CashMax = atof (argv[17]) ;
+	InflationMean = atof (argv[12]) ;
+	InflationSD = atof (argv[13]) ;
+	InvestMean = atof (argv[14]) ;
+	InvestSD = atof (argv[15]) ;
+	CashMean = atof (argv[16]) ;
+	CashSD = atof (argv[17]) ;
 	SpendDecrease = atof (argv[18]) ;
 	firstyear->F1 = 1171;
 	firstyear->F2 = 870;

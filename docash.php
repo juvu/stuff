@@ -13,14 +13,14 @@
 	$Pru25 = ($Pru25 == "on") ? 1 : 0;
 	$FerrantiYear = $_POST["FerrantiYear"] ;
 	$SimonYear = $_POST["SimonYear"] ;
-	$InflationMin = $_POST["InflationMin"] ;
-	$InflationMax = $_POST["InflationMax"] ;
-	$InvestMin = $_POST["InvestMin"] ;
-	$InvestMax = $_POST["InvestMax"] ;
-	$CashMin = $_POST["CashMin"] ;
-	$CashMax = $_POST["CashMax"] ;
+	$InflationMean = $_POST["InflationMean"] ;
+	$InflationSD = $_POST["InflationSD"] ;
+	$InvestMean = $_POST["InvestMean"] ;
+	$InvestSD = $_POST["InvestSD"] ;
+	$CashMean = $_POST["CashMean"] ;
+	$CashSD = $_POST["CashSD"] ;
 	$SpendDecrease = $_POST["SpendDecrease"] ;
-	$str = "./cash $randomSeed $rent $inherit $inheritYear $YearSpend $ZRPYear $ZRP25 $PruYear $Pru25 $FerrantiYear $SimonYear $InflationMin $InflationMax $InvestMin $InvestMax $CashMin $CashMax $SpendDecrease" ;
+	$str = "./cash $randomSeed $rent $inherit $inheritYear $YearSpend $ZRPYear $ZRP25 $PruYear $Pru25 $FerrantiYear $SimonYear $InflationMean $InflationSD $InvestMean $InvestSD $CashMean $CashSD $SpendDecrease" ;
 	//echo $str;
 	$handle = popen($str, 'r');
 	while ($read = fread($handle, 1024))
