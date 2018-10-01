@@ -39,7 +39,6 @@ typedef struct
 	double tax ;
 } Year ;
 
-static FILE	*stream = NULL;
 static Year	years[100] ;
 static int InheritYear = 2024 ;
 static int PruYear = 2024 ;
@@ -63,79 +62,6 @@ calculateAnnuityInflation(Year *year)
 		year->AnnuityIncrease = 2.5 ;
 	if (year->AnnuityIncrease > 5.0)
 		year->AnnuityIncrease = 5.0 ;
-}
-
-int readStart(Year *year)
-{
-	char	buffer[MAX_BUFF+1] = "" ;
-	if (fgets (buffer, MAX_BUFF, stream) != EOF)
-	{
-		char *rest = NULL ;
-		char	*ptr = NULL;
-
-		ptr = (char *) strtok_r (buffer, ":", &rest) ;
-		year->year = atoi(ptr) ;
-		ptr = (char *) strtok_r (NULL, ":", &rest) ;
-		year->inflation = atof(ptr) ;
-		ptr = (char *) strtok_r (NULL, ":", &rest) ;
-		year->investmentReturn = atof(ptr) ;
-		ptr = (char *) strtok_r (NULL, ":", &rest) ;
-		year->cashReturn = atof(ptr) ;
-		ptr = (char *) strtok_r (NULL, ":", &rest) ;
-		year->ZRP = atof(ptr) ;
-		ptr = (char *) strtok_r (NULL, ":", &rest) ;
-		year->Pru = atof(ptr) ;
-		ptr = (char *) strtok_r (NULL, ":", &rest) ;
-		year->cash = atof(ptr) ;
-		ptr = (char *) strtok_r (NULL, ":", &rest) ;
-		year->FerrantiIncome = atof(ptr) ;
-		ptr = (char *) strtok_r (NULL, ":", &rest) ;
-		year->SimonIncome = atof(ptr) ;
-		ptr = (char *) strtok_r (NULL, ":", &rest) ;
-		year->stateIncome = atof(ptr) ;
-		ptr = (char *) strtok_r (NULL, ":", &rest) ;
-		year->rentIncome = atof(ptr) ;
-		ptr = (char *) strtok_r (NULL, ":", &rest) ;
-		year->inheritance = atof(ptr) ;
-		ptr = (char *) strtok_r (NULL, ":", &rest) ;
-		year->TaxAllowance = atof(ptr) ;
-		ptr = (char *) strtok_r (NULL, ":", &rest) ;
-		year->Spend = atof(ptr) ;
-
-		year->total = year->ZRP + year->Pru + year->cash ;
-		year->cashIncome = (year->cashReturn * 0.01) * year->cash;
-
-		calculateAnnuityInflation(year);
-	
-		return 0 ;
-	}
-	return 1 ;
-}
-
-int readYear(Year *year)
-{
-	char	buffer[MAX_BUFF+1] = "" ;
-	if (fgets (buffer, MAX_BUFF, stream) != EOF)
-	{
-		char *rest = NULL ;
-		char	*ptr = NULL;
-
-		ptr = (char *) strtok_r (buffer, ":", &rest) ;
-		if (!ptr)
-			return 1 ;
-		year->year = atoi(ptr) ;
-		ptr = (char *) strtok_r (NULL, ":", &rest) ;
-		year->inflation = atof(ptr) ;
-		ptr = (char *) strtok_r (NULL, ":", &rest) ;
-		year->investmentReturn = atof(ptr) ;
-		ptr = (char *) strtok_r (NULL, ":", &rest) ;
-		year->cashReturn = atof(ptr) ;
-
-		calculateAnnuityInflation(year);
-
-		return 0 ;
-	}
-	return 1 ;
 }
 
 calculateNewIncomes(Year *year, Year *lastyear)
@@ -168,13 +94,13 @@ calculateNewIncomes(Year *year, Year *lastyear)
 
 calculateNewTotals (Year *year, Year *lastyear)
 {
-	if (lastyear->year == FerrantiYear)
+	if ((lastyear->FerrantiIncome < 1.0) && (lastyear->year == FerrantiYear))
 	{
 		int yearsEarly = 2029 - lastyear->year ;
 		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
 		lastyear->FerrantiIncome = reductionFactor * (lastyear->F1 + lastyear->F2 + lastyear->F3 + lastyear->F4 + lastyear->F5 + lastyear->F6) ;
 	}
-	if (lastyear->year == SimonYear)
+	if ((lastyear->SimonIncome < 1.0) && (lastyear->year == SimonYear))
 	{
 		int yearsEarly = 2029 - lastyear->year ;
 		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
@@ -359,8 +285,6 @@ int processYear (Year *year, Year *lastyear)
 {
 	int finished = 0 ;
 	
-	//readYear(year) ;
-
 	setupReturns(year);
 	calculateAnnuityInflation(year);
 	calculateNewTotals(year, lastyear);
@@ -369,7 +293,70 @@ int processYear (Year *year, Year *lastyear)
 
 	return 0 ;
 }
+
+setupFerranti (Year *year)
+{	
+	FILE *stream = fopen ("FerrantiData", "r") ;
+	int i=0;
+
+	char	buffer[MAX_BUFF+1] = "" ;
+	for (i=0;i<10;i++)
+	{
+		if (fgets (buffer, MAX_BUFF, stream))
+		{
+			char *rest = NULL ;
+			char *ptr = NULL;
 	
+			ptr = (char *) strtok_r (buffer, ":", &rest) ;
+			int theyear = atoi(ptr) ;
+	
+			if (theyear == year->year)
+			{
+				ptr = (char *) strtok_r (NULL, ":", &rest) ;
+				year->F1 = atof (ptr);
+				ptr = (char *) strtok_r (NULL, ":", &rest) ;
+				year->F2 = atof (ptr);
+				ptr = (char *) strtok_r (NULL, ":", &rest) ;
+				year->F3 = atof (ptr);
+				ptr = (char *) strtok_r (NULL, ":", &rest) ;
+				year->F4 = atof (ptr);
+				ptr = (char *) strtok_r (NULL, ":", &rest) ;
+				year->F5 = atof (ptr);
+				ptr = (char *) strtok_r (NULL, ":", &rest) ;
+				year->F6 = atof (ptr);
+			}
+		}
+	}
+	fclose (stream) ;
+}
+
+setupSimon (Year *year)
+{	
+	FILE *stream = fopen ("SimonData", "r") ;
+	int	i=0;
+
+	char	buffer[MAX_BUFF+1] = "" ;
+	for (i=0;i<10;i++)
+	{
+		if (fgets (buffer, MAX_BUFF, stream))
+		{
+			char *rest = NULL ;
+			char	*ptr = NULL;
+	
+			ptr = (char *) strtok_r (buffer, ":", &rest) ;
+			int theyear = atoi(ptr) ;
+	
+			if (theyear == year->year)
+			{
+				ptr = (char *) strtok_r (NULL, ":", &rest) ;
+				year->S1 = atof (ptr);
+				ptr = (char *) strtok_r (NULL, ":", &rest) ;
+				year->S2 = atof (ptr);
+			}
+		}
+	}
+	fclose (stream) ;
+}
 
 main(argc, argv)
 int 	argc ;
@@ -381,11 +368,11 @@ char	**argv ;
 	int loop = 0 ;
 	Year *firstyear = NULL ;
 
-	if (argc != 23)
+	if (argc != 27)
 	{
 		printf ("Usage: cash <random seed> <rent> <inherit> <inheritYear> <spend> <ZRPYear> <ZRP25> <PruYear> <Pru25> <FerrantiYear> <SimonYear>\n");
 		printf ("                                   <InflationMean> <InflationSD> <InvestMean> <InvestSD> <CashMean> <CashSD> <SpendDecrease>\n");
-		printf ("                                   <FirstYear> <ZRP> <Pru> <cash> \n");
+		printf ("                                   <FirstYear> <ZRP> <Pru> <cash> <FerrantiAmount> <SimonAmount> <stateAmount> <taxAllowance>\n");
 		exit (0) ;
 	}
     // init random seed
@@ -418,18 +405,13 @@ char	**argv ;
 
 	// read in starting amounts
 
-	//readStart(&years[0]) ;
 	firstyear = &years[0];
 	firstyear->year = atoi (argv[19]);
 	firstyear->ZRP = atof (argv[20]) * 1000;
 	firstyear->Pru = atof (argv[21]) * 1000;
 	firstyear->cash = atof (argv[22]) * 1000;
-	firstyear->FerrantiIncome = 0 ;
-	firstyear->SimonIncome = 0 ;
-	firstyear->stateIncome = 7700 ;
 	firstyear->rentIncome = atof(argv[2]) ;
 	firstyear->inheritance = atof(argv[3]) * 1000;
-	firstyear->TaxAllowance = 12000 ;
 	firstyear->Spend = atof(argv[5]) ;
 	ZRPYear = atoi (argv[6]) ;
 	ZRP25 = atoi (argv[7]) ;
@@ -444,14 +426,13 @@ char	**argv ;
 	CashMean = atof (argv[16]) ;
 	CashSD = atof (argv[17]) ;
 	SpendDecrease = atof (argv[18]) ;
-	firstyear->F1 = 1171;
-	firstyear->F2 = 870;
-	firstyear->F3 = 313;
-	firstyear->F4 = 1639;
-	firstyear->F5 = 257;
-	firstyear->F6 = 35;
-	firstyear->S1 = 975;
-	firstyear->S2 = 1044;
+	firstyear->FerrantiIncome = atof (argv[23]) ;
+	setupFerranti (firstyear) ;
+	firstyear->SimonIncome = atof (argv[24]) ;
+	setupSimon (firstyear) ;
+	firstyear->stateIncome = atof (argv[25]) ;
+	firstyear->TaxAllowance = atof (argv[26]) ;
+	
 
 	setupReturns (firstyear) ;
 
@@ -476,13 +457,13 @@ char	**argv ;
 	firstyear->total = firstyear->ZRP + firstyear->Pru + firstyear->cash ;
 	firstyear->cashIncome = (firstyear->cashReturn * 0.01) * firstyear->cash;
 
-	if (firstyear->year == FerrantiYear)
+	if ((firstyear->FerrantiIncome < 1.0) && (firstyear->year == FerrantiYear))
 	{
 		int yearsEarly = 2029 - firstyear->year ;
 		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
 		firstyear->FerrantiIncome = reductionFactor * (firstyear->F1 + firstyear->F2 + firstyear->F3 + firstyear->F4 + firstyear->F5 + firstyear->F6) ;
 	}
-	if (firstyear->year == SimonYear)
+	if ((firstyear->SimonIncome < 1.0) && (firstyear->year == SimonYear))
 	{
 		int yearsEarly = 2029 - firstyear->year ;
 		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
@@ -496,7 +477,7 @@ char	**argv ;
 
 	for (nextYear = 1; nextYear<=45; nextYear++)
 	{
-		years[nextYear].year = nextYear + 2019;
+		years[nextYear].year = nextYear + firstyear->year;
 		processYear(&years[nextYear], &years[nextYear-1]);
 	}
 
