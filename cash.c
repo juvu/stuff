@@ -48,6 +48,13 @@ static int ZRPYear = 2019 ;
 static int ZRP25 = 1 ;
 static int FerrantiYear = 2019 ;
 static int SimonYear = 2019 ;
+static double InflationMin = 0.0 ;
+static double InflationMax = 0.0 ;
+static double InvestMin = 0.0 ;
+static double InvestMax = 0.0 ;
+static double CashMin = 0.0 ;
+static double CashMax = 0.0 ;
+static double SpendDecrease = 0.0 ;
 
 calculateAnnuityInflation(Year *year)
 {
@@ -133,25 +140,14 @@ int readYear(Year *year)
 
 calculateNewIncomes(Year *year, Year *lastyear)
 {
-	if (lastyear->year == FerrantiYear)
-	{
-		int yearsEarly = 2029 - lastyear->year ;
-		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
-		lastyear->FerrantiIncome = reductionFactor * (lastyear->F1 + lastyear->F2 + lastyear->F3 + lastyear->F4 + lastyear->F5 + lastyear->F6) ;
-	}
-	if (lastyear->year == SimonYear)
-	{
-		int yearsEarly = 2029 - lastyear->year ;
-		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
-		lastyear->SimonIncome = reductionFactor * (lastyear->S1 + lastyear->S2) ;
-	}
 
 	year->FerrantiIncome = (1.0 + (lastyear->AnnuityIncrease * 0.01)) * lastyear->FerrantiIncome ;
 	year->SimonIncome = (1.0 + (lastyear->AnnuityIncrease * 0.01)) * lastyear->SimonIncome ;
 	year->stateIncome = (1.0 + (lastyear->inflation * 0.01)) * lastyear->stateIncome ;
 	year->rentIncome = (1.0 + (lastyear->inflation * 0.01)) * lastyear->rentIncome ;
 	year->TaxAllowance = (1.0 + (lastyear->inflation * 0.01)) * lastyear->TaxAllowance ;
-	year->Spend = (1.0 + (lastyear->inflation * 0.01)) * lastyear->Spend ;
+	year->Spend = lastyear->Spend * ((100.0 - SpendDecrease)/100.0) ;
+	year->Spend = (1.0 + (lastyear->inflation * 0.01)) * year->Spend ;
 	year->inheritance = (1.0 + (lastyear->inflation * 0.01)) * lastyear->inheritance ;
 	year->S1 = 1.07 * lastyear->S1 ;
 	year->S2 = (1.0 + (lastyear->inflation * 0.01)) * lastyear->S2 ;
@@ -172,6 +168,19 @@ calculateNewIncomes(Year *year, Year *lastyear)
 
 calculateNewTotals (Year *year, Year *lastyear)
 {
+	if (lastyear->year == FerrantiYear)
+	{
+		int yearsEarly = 2029 - lastyear->year ;
+		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
+		lastyear->FerrantiIncome = reductionFactor * (lastyear->F1 + lastyear->F2 + lastyear->F3 + lastyear->F4 + lastyear->F5 + lastyear->F6) ;
+	}
+	if (lastyear->year == SimonYear)
+	{
+		int yearsEarly = 2029 - lastyear->year ;
+		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
+		lastyear->SimonIncome = reductionFactor * (lastyear->S1 + lastyear->S2) ;
+	}
+
 	lastyear->income = lastyear->FerrantiIncome + lastyear->SimonIncome + lastyear->cashIncome 
 						+ lastyear->ZRPIncome + lastyear->PruIncome;
 	if (year->year > InheritYear)
@@ -181,6 +190,11 @@ calculateNewTotals (Year *year, Year *lastyear)
 		lastyear->income += lastyear->stateIncome ;
 
 	double taxable = lastyear->income - lastyear->TaxAllowance ;
+
+	// note - assume only half the cashIncome is taxable (ISAs, allowances etc)
+	taxable -= (lastyear->cashIncome * 0.5) ;
+
+	// and only 75% of ZRP and Pru taxable if we haven't taken 25% lump sum
 	if (!Pru25)
 		taxable -= (lastyear->PruIncome * 0.25) ;
 	if (!ZRP25)
@@ -223,7 +237,8 @@ calculateNewTotals (Year *year, Year *lastyear)
 
 int calculateIncome (Year *year)
 {
-	double income = year->FerrantiIncome + year->SimonIncome + year->cashIncome ;
+	// note - assume only half the cashIncome is taxable (ISAs, allowances etc)
+	double income = year->FerrantiIncome + year->SimonIncome + (year->cashIncome * 0.5) ;
 	if (year->year >= InheritYear)
 		income += year->rentIncome ;
 	if (year->year > 2031)
@@ -289,19 +304,17 @@ int calculateIncome (Year *year)
 
 int setupReturns(Year *year) 
 {
-	int inflation = random()%75 ;
-	year->inflation = inflation / 10.0 ;
+	int InflationDiff = (InflationMax - InflationMin) * 10 ;
+	int inflation = (InflationDiff > 0) ? random()%InflationDiff : 0;
+	year->inflation = (inflation / 10.0) + InflationMin ;
 
-	int invest = random()%100 ;
-    year->investmentReturn = year->inflation + (invest / 10.0 - 5.0);
+	int InvestDiff = (InvestMax - InvestMin) * 10 ;
+	int invest = (InvestDiff > 0) ? random()%InvestDiff : 0;
+	year->investmentReturn = (invest / 10.0) + InvestMin ;
 
-	int cash = random()%50 ;
-	year->cashReturn = year->inflation - (cash / 10.0) ;
-
-	if (year->cashReturn < 0.5)
-		year->cashReturn = 0.5 ;
-
-
+	int CashDiff = (CashMax - CashMin) * 10 ;
+	int cash = (CashDiff > 0) ? random()%CashDiff : 0;
+	year->cashReturn = (cash / 10.0) + CashMin ;
 }
 
 int processYear (Year *year, Year *lastyear)
@@ -330,9 +343,10 @@ char	**argv ;
 	int loop = 0 ;
 	Year *firstyear = NULL ;
 
-	if (argc != 12)
+	if (argc != 19)
 	{
 		printf ("Usage: cash <random seed> <rent> <inherit> <inheritYear> <spend> <ZRPYear> <ZRP25> <PruYear> <Pru25> <FerrantiYear> <SimonYear>\n");
+		printf ("                                   <InflationMin> <InflationMax> <InvestMin> <InvestMax> <CashMin> <CashMax> <SpendDecrease>\n");
 		exit (0) ;
 	}
     // init random seed
@@ -384,6 +398,13 @@ char	**argv ;
 	Pru25 = atoi (argv[9]) ;
 	FerrantiYear = atoi (argv[10]) ;
 	SimonYear = atoi (argv[11]) ;
+	InflationMin = atof (argv[12]) ;
+	InflationMax = atof (argv[13]) ;
+	InvestMin = atof (argv[14]) ;
+	InvestMax = atof (argv[15]) ;
+	CashMin = atof (argv[16]) ;
+	CashMax = atof (argv[17]) ;
+	SpendDecrease = atof (argv[18]) ;
 	firstyear->F1 = 1171;
 	firstyear->F2 = 870;
 	firstyear->F3 = 313;
@@ -456,8 +477,8 @@ char	**argv ;
 		printf ("<center><TABLE COLS=10\n border=3>") ;
 		printf ("<TR>\n") ;
 		printf ("<TD><center>year<center>\n") ;
-		printf ("<TD><center>ZRP<center>\n") ;
-		printf ("<TD><center>Pru<center>\n") ;
+		printf ("<TD><center>ZRPTotal<center>\n") ;
+		printf ("<TD><center>PruTotal<center>\n") ;
 		printf ("<TD><center>investReturn<center>\n") ;
 		printf ("<TD><center>Cash<center>\n") ;
 		printf ("<TD><center>CashReturn<center>\n") ;
@@ -475,6 +496,7 @@ char	**argv ;
 		printf ("<TD><center>total<center>\n") ;
 		printf ("<TD><center>inheritance<center>\n") ;
 		printf ("<TD><center>income<center>\n") ;
+		printf ("<TD><center>Ratio<center>\n") ;
 		printf ("<TR>\n") ;
 		for (loop=0;loop<nextYear-1;loop++)
 		{
@@ -499,6 +521,7 @@ char	**argv ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].total) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].inheritance) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].income) ;
+			printf ("<TD><center>%.1f<center>\n", (years[loop].total / years[loop].Spend)) ;
 			printf ("</TR>\n") ;
 		}
 		printf ("</TABLE>\n") ;
