@@ -381,10 +381,11 @@ char	**argv ;
 	int loop = 0 ;
 	Year *firstyear = NULL ;
 
-	if (argc != 19)
+	if (argc != 23)
 	{
 		printf ("Usage: cash <random seed> <rent> <inherit> <inheritYear> <spend> <ZRPYear> <ZRP25> <PruYear> <Pru25> <FerrantiYear> <SimonYear>\n");
 		printf ("                                   <InflationMean> <InflationSD> <InvestMean> <InvestSD> <CashMean> <CashSD> <SpendDecrease>\n");
+		printf ("                                   <FirstYear> <ZRP> <Pru> <cash> \n");
 		exit (0) ;
 	}
     // init random seed
@@ -419,15 +420,15 @@ char	**argv ;
 
 	//readStart(&years[0]) ;
 	firstyear = &years[0];
-	firstyear->year = 2019;
-	firstyear->ZRP = 350620;
-	firstyear->Pru = 238277;
-	firstyear->cash = 139517;
+	firstyear->year = atoi (argv[19]);
+	firstyear->ZRP = atof (argv[20]) * 1000;
+	firstyear->Pru = atof (argv[21]) * 1000;
+	firstyear->cash = atof (argv[22]) * 1000;
 	firstyear->FerrantiIncome = 0 ;
 	firstyear->SimonIncome = 0 ;
 	firstyear->stateIncome = 7700 ;
 	firstyear->rentIncome = atof(argv[2]) ;
-	firstyear->inheritance = atof(argv[3]) ;
+	firstyear->inheritance = atof(argv[3]) * 1000;
 	firstyear->TaxAllowance = 12000 ;
 	firstyear->Spend = atof(argv[5]) ;
 	ZRPYear = atoi (argv[6]) ;

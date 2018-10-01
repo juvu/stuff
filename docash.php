@@ -20,7 +20,11 @@
 	$CashMean = $_POST["CashMean"] ;
 	$CashSD = $_POST["CashSD"] ;
 	$SpendDecrease = $_POST["SpendDecrease"] ;
-	$str = "./cash $randomSeed $rent $inherit $inheritYear $YearSpend $ZRPYear $ZRP25 $PruYear $Pru25 $FerrantiYear $SimonYear $InflationMean $InflationSD $InvestMean $InvestSD $CashMean $CashSD $SpendDecrease" ;
+	$FirstYear = $_POST["FirstYear"] ;
+	$ZRP = $_POST["ZRP"] ;
+	$Pru = $_POST["Pru"] ;
+	$cash = $_POST["Cash"] ;
+	$str = "./cash $randomSeed $rent $inherit $inheritYear $YearSpend $ZRPYear $ZRP25 $PruYear $Pru25 $FerrantiYear $SimonYear $InflationMean $InflationSD $InvestMean $InvestSD $CashMean $CashSD $SpendDecrease $FirstYear $ZRP $Pru $cash" ;
 	//echo $str;
 	$handle = popen($str, 'r');
 	while ($read = fread($handle, 1024))
