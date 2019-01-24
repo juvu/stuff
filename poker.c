@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <string.h>
+#include <sys/time.h>
 #include <math.h>
 
 // scores for different hands
@@ -21,6 +22,9 @@
 #define SPADES 4
 
 #define NUM_CARDS 7
+#define NUM_DECK_CARDS 36
+
+#define ITERATIONS 200000
 
 typedef struct
 {
@@ -28,11 +32,15 @@ typedef struct
 	unsigned long suit ;
 } Card ;
 
+Card deckCards[NUM_DECK_CARDS] ;
 Card myCards[NUM_CARDS] ;
-Card myFlushCards[NUM_CARDS] ;
+Card oppoCards[NUM_CARDS] ;
+Card FlushCards[NUM_CARDS] ;
 
 int nextCard = 0 ;
+int nextDeckCard = 0 ;
 int nextFlushCard = 0 ;
+int nextOppoCard = 0 ;
 
 int highestOfSuit (Card *cards, int numCards, int suit)
 {
@@ -71,7 +79,7 @@ int isFlush (Card *cards, int numCards, int *flushSuit)
 		{
 			highest = highestOfSuit (cards, numCards, i) ;
 			*flushSuit = i ;
-			printf ("Flush %d\n", FLUSH + highest) ;
+			//printf ("Flush %d\n", FLUSH + highest) ;
 			return (FLUSH + highest) ;
 		}
 	}
@@ -98,7 +106,7 @@ int isFourOfKind (Card *cards, int numCards)
 	{
 		if (totals[i] == 4)
 		{
-			printf ("Four of a Kind %d\n", FOUR_OF_KIND + i) ;
+			//printf ("Four of a Kind %d\n", FOUR_OF_KIND + i) ;
 			return (FOUR_OF_KIND + i) ;
 		}
 	}
@@ -132,7 +140,7 @@ int isFullHouse (Card *cards, int numCards)
 			
 				if (totals[j] == 2)
 				{
-					printf ("Full House %d\n", FULL_HOUSE + (i*500) + j) ;
+					//printf ("Full House %d\n", FULL_HOUSE + (i*500) + j) ;
 					return (FULL_HOUSE + (i*500) + j) ;
 				}
 			}
@@ -176,7 +184,7 @@ int isTwoPairs (Card *cards, int numCards)
 
 						if (totals[k] == 1)
 						{
-							printf ("Two Pairs %d\n", TWO_PAIRS + (i*500) + (j*50) + k) ;
+							//printf ("Two Pairs %d\n", TWO_PAIRS + (i*500) + (j*50) + k) ;
 							return (TWO_PAIRS + (i*500) + (j*50) + k) ;
 						}
 					}
@@ -222,7 +230,7 @@ int isPair (Card *cards, int numCards)
 
 						if (totals[k] == 1)
 						{
-							printf ("Pair %d\n", PAIR + (i*500) + (j*50) + k) ;
+							//printf ("Pair %d\n", PAIR + (i*500) + (j*50) + k) ;
 							return (PAIR + (i*500) + (j*50) + k) ;
 						}
 					}
@@ -268,7 +276,7 @@ int highCard (Card *cards, int numCards)
 
 						if (totals[k] == 1)
 						{
-							printf ("High Card %d\n", (i*500) + (j*50) + k) ;
+							//printf ("High Card %d\n", (i*500) + (j*50) + k) ;
 							return ((i*500) + (j*50) + k) ;
 						}
 					}
@@ -298,7 +306,7 @@ int isThreeOfKind (Card *cards, int numCards)
 	{
 		if (totals[i] == 3)
 		{
-			printf ("Three of a Kind %d\n", THREE_OF_KIND + i) ;
+			//printf ("Three of a Kind %d\n", THREE_OF_KIND + i) ;
 			return (THREE_OF_KIND + i) ;
 		}
 	}
@@ -321,35 +329,35 @@ int isStraight (Card *cards, int numCards)
 	handMask = 31 << 10 ;
 	if (handMask == (handMask & handMap))
 	{
-		printf ("Ace high straight %d\n", STRAIGHT + 14) ;
+		//printf ("Ace high straight %d\n", STRAIGHT + 14) ;
 		return (STRAIGHT + 14) ;
 	}
 
 	handMask = 31 << 9 ;
 	if (handMask == (handMask & handMap))
 	{
-		printf ("King high straight %d\n", STRAIGHT + 13) ;
+		//printf ("King high straight %d\n", STRAIGHT + 13) ;
 		return (STRAIGHT + 13) ;
 	}
 
 	handMask = 31 << 8 ;
 	if (handMask == (handMask & handMap))
 	{
-		printf ("Queen high straight %d\n", STRAIGHT + 12) ;
+		//printf ("Queen high straight %d\n", STRAIGHT + 12) ;
 		return (STRAIGHT + 12) ;
 	}
 
 	handMask = 31 << 7 ;
 	if (handMask == (handMask & handMap))
 	{
-		printf ("Jack high straight %d\n", STRAIGHT + 11) ;
+		//printf ("Jack high straight %d\n", STRAIGHT + 11) ;
 		return (STRAIGHT + 11) ;
 	}
 
 	handMask = 31 << 6 ;
 	if (handMask == (handMask & handMap))
 	{
-		printf ("Jack high straight %d\n", STRAIGHT + 10) ;
+		//printf ("Jack high straight %d\n", STRAIGHT + 10) ;
 		return (STRAIGHT + 10) ;
 	}
 
@@ -381,42 +389,50 @@ int isStraightFlush (Card *cards, int numCards)
 	if (!score)
 		return (0) ;
 
-	collectFlushCards (cards, myFlushCards, numCards, FlushSuit);
+	collectFlushCards (cards, FlushCards, numCards, FlushSuit);
 
-	score = isStraight (myFlushCards, nextFlushCard) ;
+	score = isStraight (FlushCards, nextFlushCard) ;
 	if (score)
 	{
 		// wow, a straight flush
-		printf ("Straight Flush %d\n", STRAIGHT_FLUSH + score) ;
+		//printf ("Straight Flush %d\n", STRAIGHT_FLUSH + score) ;
 		return (STRAIGHT_FLUSH + score) ;
 	}
 
 	return (0); 
 }
 
-
-addCard (Card *cards, char *str)
+addDeckCard (Card *cards, int deckPos, int *nextCard)
 {
-	cards[nextCard].value = str[0] - 48;
+	cards[*nextCard].value = deckCards[deckPos].value ;
+	cards[*nextCard].suit = deckCards[deckPos].suit ;
+	(*nextCard)++;
+}
+
+addCard (Card *cards, char *str, int *nextCard)
+{
+	cards[*nextCard].value = str[0] - 48;
 	if (str[0] == 't' || str[0] == 'T')
-		cards[nextCard].value = 10 ;
+		cards[*nextCard].value = 10 ;
 	else if (str[0] == 'j' || str[0] == 'J')
-		cards[nextCard].value = 11 ;
+		cards[*nextCard].value = 11 ;
 	else if (str[0] == 'q' || str[0] == 'Q')
-		cards[nextCard].value = 12 ;
+		cards[*nextCard].value = 12 ;
 	else if (str[0] == 'k' || str[0] == 'K')
-		cards[nextCard].value = 13 ;
+		cards[*nextCard].value = 13 ;
 	else if (str[0] == 'a' || str[0] == 'A')
-		cards[nextCard].value = 14 ;
+		cards[*nextCard].value = 14 ;
 
 	if (str[1] == 'h' || str[1] == 'H')
-		cards[nextCard++].suit = HEARTS ;	
+		cards[*nextCard].suit = HEARTS ;	
 	else if (str[1] == 'd' || str[1] == 'D')
-		cards[nextCard++].suit = DIAMONDS ;	
+		cards[*nextCard].suit = DIAMONDS ;	
 	else if (str[1] == 'c' || str[1] == 'C')
-		cards[nextCard++].suit = CLUBS ;	
+		cards[*nextCard].suit = CLUBS ;	
 	else if (str[1] == 's' || str[1] == 'S')
-		cards[nextCard++].suit = SPADES ;	
+		cards[*nextCard].suit = SPADES ;	
+
+	(*nextCard)++;
 }
 
 setCards (Card *cards, int numCards, ...)
@@ -431,7 +447,7 @@ setCards (Card *cards, int numCards, ...)
 	for (i=0; i<numCards; i++)
 	{
 		str = va_arg (ap, char *) ;
-		addCard (cards, str) ;
+		addCard (cards, str, &nextCard) ;
 	}
 	va_end (ap) ;
 }
@@ -442,36 +458,28 @@ int evaluateHand (Card *cards, int numCards)
 	int FlushSuit = 0 ;
 
 	int score = 0 ;
-	score = isStraightFlush (myCards, numCards) ;
+	score = isStraightFlush (cards, numCards) ;
 	if (score) return (score) ;
-	score = isFourOfKind (myCards, numCards) ;
+	score = isFourOfKind (cards, numCards) ;
 	if (score) return (score) ;
-	score = isFlush (myCards, numCards, &FlushSuit) ;
+	score = isFlush (cards, numCards, &FlushSuit) ;
 	if (score) return (score) ;
-	score = isFullHouse (myCards, numCards) ;
+	score = isFullHouse (cards, numCards) ;
 	if (score) return (score) ;
-	score = isThreeOfKind (myCards, numCards) ;
+	score = isThreeOfKind (cards, numCards) ;
 	if (score) return (score) ;
-	score = isStraight (myCards, numCards) ;
+	score = isStraight (cards, numCards) ;
 	if (score) return (score) ;
-	score = isTwoPairs (myCards, numCards) ;
+	score = isTwoPairs (cards, numCards) ;
 	if (score) return (score) ;
-	score = isPair (myCards, numCards) ;
+	score = isPair (cards, numCards) ;
 	if (score) return (score) ;
-	score = highCard (myCards, numCards) ;
+	score = highCard (cards, numCards) ;
 	return (score) ;
 }
 
-main (int argc, char **argv)
+test()
 {
-	addCard (myCards, "TH") ;
-	addCard (myCards, "QC") ;
-	addCard (myCards, "7H") ;
-	addCard (myCards, "AD") ;
-	addCard (myCards, "JH") ;
-	addCard (myCards, "8H") ;
-	addCard (myCards, "9H") ;
-	evaluateHand (myCards, nextCard) ;
 	setCards (myCards, 7, "TH", "8S", "TD", "9H", "TC", "JS", "TS") ;
 	evaluateHand (myCards, nextCard) ;
 	setCards (myCards, 5, "TH", "8S", "9H", "JS", "QS") ;
@@ -523,3 +531,149 @@ main (int argc, char **argv)
 	evaluateHand (myCards, nextCard) ;
 }
 
+populateDeckCards()
+{
+	int i=0;
+	int j=0;
+
+	nextDeckCard = 0 ;
+	for (i=1;i<=4;i++)
+	{
+		for (j=6;j<15;j++)
+		{
+			deckCards[nextDeckCard].value = j;
+			deckCards[nextDeckCard++].suit = i;
+		}
+	}
+
+	for (i=0;i<2;i++)
+	{
+		for (j=0;j<nextDeckCard;j++)
+		{
+			if (deckCards[j].value == myCards[i].value
+			&&  deckCards[j].suit == myCards[i].suit)
+			{
+				deckCards[j].value = deckCards[nextDeckCard-1].value ;
+				deckCards[j].suit = deckCards[nextDeckCard-1].suit ;
+				nextDeckCard-- ;
+			}
+		}
+	}
+
+	for (i=2;i<nextCard;i++)
+	{
+		int tmpSuit = 0 ;
+		int tmpVal = 0 ;
+
+		for (j=0;j<nextDeckCard;j++)
+		{
+			if (deckCards[j].value == myCards[i].value
+			&&  deckCards[j].suit == myCards[i].suit)
+			{
+				tmpVal = deckCards[i-2].value ;
+				tmpSuit = deckCards[i-2].suit ;
+				deckCards[i-2].value = myCards[i].value ;
+				deckCards[i-2].suit = myCards[i].suit ;
+				deckCards[j].value = tmpVal ;
+				deckCards[j].suit = tmpSuit ;
+			}
+		}
+	}
+}
+
+shuffleDeckCards(int inputNumCards)
+{
+	int i = 0;
+	int numShuffleCards = nextDeckCard - inputNumCards + 2;
+	int startPos = inputNumCards - 2;
+
+	for (i=startPos; i < nextDeckCard; i++)
+	{
+		int pos = random()%numShuffleCards + startPos;
+		int tmpVal = deckCards[pos].value;
+		int tmpSuit = deckCards[pos].suit;
+		deckCards[pos].value = deckCards[i].value;
+		deckCards[pos].suit = deckCards[i].suit;
+		deckCards[i].value = tmpVal;
+		deckCards[i].suit = tmpSuit;
+	}
+}
+		
+createOppoHand(int handNum)
+{
+	int i=0;
+
+	nextOppoCard = 0;
+	for (i=0;i<5;i++)
+	{
+		addDeckCard(oppoCards, i, &nextOppoCard) ;
+	}
+
+	addDeckCard (oppoCards, handNum * 2 + 5, &nextOppoCard) ;
+	addDeckCard (oppoCards, handNum * 2 + 6, &nextOppoCard) ;
+}
+	
+main (int argc, char **argv)
+{
+	int i = 0 ;
+	int myScore = 0 ;
+	int inputNumCards = atoi (argv[1]) ;
+	int NumSeen = atoi (argv[2]) ;
+	int NumNotSeen = atoi (argv[3]) ;
+
+    // init random seed
+    struct timeval tp ;
+    gettimeofday (&tp, NULL) ;
+
+    srandom (tp.tv_usec) ;
+
+	nextCard = 0 ;
+
+	for (i=0;i<inputNumCards;i++)
+	{
+		addCard (myCards, argv[4+i], &nextCard) ;
+	}
+
+	populateDeckCards () ;
+
+	int myWins = 0 ;
+	int goes = 0;
+	int oppoScore = 0;
+
+	for (goes=0;goes<ITERATIONS;goes++)
+	{
+		shuffleDeckCards (inputNumCards);
+
+		nextCard = inputNumCards;
+		for (i=inputNumCards-2;i<5;i++)
+		{
+			addDeckCard(myCards, i, &nextCard) ;
+		}
+		myScore = evaluateHand (myCards, nextCard) ;
+
+		int maxOppoScore = 0 ;
+
+		int j = 0 ;
+		for (j=0;j<NumSeen + NumNotSeen;j++)
+		{
+			createOppoHand(j);
+			oppoScore = evaluateHand (oppoCards, nextOppoCard) ;
+			if (oppoScore > maxOppoScore)
+				maxOppoScore = oppoScore ;
+		}
+
+		if (myScore >= maxOppoScore)
+			myWins++;
+	}
+
+	double winPercent = ((double) myWins / (double) ITERATIONS) * 100.0 ;
+
+	printf ("<center><TABLE COLS=10\n border=3>") ;
+	printf ("<TR>\n") ;
+	printf ("<TD><center>WinPercent<center>\n") ;
+	printf ("</TR>\n") ;
+	printf ("<TR>\n") ;
+	printf ("<TD><center>%.2f<center>\n", winPercent) ;
+	printf ("</TR>\n") ;
+	printf ("</TABLE>\n") ;
+}
