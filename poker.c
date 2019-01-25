@@ -216,6 +216,9 @@ int isPair (Card *cards, int numCards)
 	{
 		if (totals[i] == 2)
 		{
+			if (numCards == 2)
+				return (PAIR + (i*500)) ;
+			
 			for (j = 14; j >= 6; j--)
 			{
 				if (j == i)
@@ -227,7 +230,7 @@ int isPair (Card *cards, int numCards)
 					{
 						if (k == i || k == j)
 							continue ;
-
+	
 						if (totals[k] == 1)
 						{
 							//printf ("Pair %d\n", PAIR + (i*500) + (j*50) + k) ;
