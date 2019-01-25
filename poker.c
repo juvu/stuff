@@ -269,16 +269,23 @@ int highCard (Card *cards, int numCards)
 			
 				if (totals[j] == 1)
 				{
-					for (k = 14; k >=6; k--)
+					if (numCards > 2)
 					{
-						if (k == i || k == j)
-							continue ;
-
-						if (totals[k] == 1)
+						for (k = 14; k >=6; k--)
 						{
-							//printf ("High Card %d\n", (i*500) + (j*50) + k) ;
-							return ((i*500) + (j*50) + k) ;
+							if (k == i || k == j)
+								continue ;
+	
+							if (totals[k] == 1)
+							{
+								//printf ("High Card %d\n", (i*500) + (j*50) + k) ;
+								return ((i*500) + (j*50) + k) ;
+							}
 						}
+					}
+					else
+					{
+								return ((i*500) + (j*50)) ;
 					}
 				}
 			}
