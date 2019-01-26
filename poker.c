@@ -651,7 +651,7 @@ main (int argc, char **argv)
 	int i = 0 ;
 	char	desc[200] = "" ;
 	char	calcdesc[200] = "" ;
-	int inputNumCards = atoi (argv[1]) ;
+	int inputNumCards = strlen (argv[3]) / 2;
 
 	int Pounds = atoi (argv[2]) ;
 	int Pence = atoi (argv[3]) ;
@@ -664,9 +664,14 @@ main (int argc, char **argv)
 
 	nextCard = 0 ;
 
-	for (i=0;i<inputNumCards;i++)
+	for (i=0;i<inputNumCards*2;i+=2)
 	{
-		addCard (myCards, argv[4+i], &nextCard) ;
+		char theCard[3];
+
+		theCard[0] = argv[3][i];
+		theCard[1] = argv[3][i+1];
+		theCard[2] = '\0';
+		addCard (myCards, theCard, &nextCard) ;
 	}
 
 	evaluateHand (myCards, nextCard, desc) ;
