@@ -57,7 +57,7 @@ int highestOfSuit (Card *cards, int numCards, int suit)
 	return (highest) ;
 }
 
-int isFlush (Card *cards, int numCards, int *flushSuit)
+int isFlush (Card *cards, int numCards, int *flushSuit, char *desc)
 {
 	int i = 0 ;
 	int totals[5];
@@ -79,7 +79,7 @@ int isFlush (Card *cards, int numCards, int *flushSuit)
 		{
 			highest = highestOfSuit (cards, numCards, i) ;
 			*flushSuit = i ;
-			//printf ("Flush %d\n", FLUSH + highest) ;
+			sprintf (desc, "Flush %d\n", FLUSH + highest) ;
 			return (FLUSH + highest) ;
 		}
 	}
@@ -87,7 +87,7 @@ int isFlush (Card *cards, int numCards, int *flushSuit)
 	return (0) ;
 }
 
-int isFourOfKind (Card *cards, int numCards)
+int isFourOfKind (Card *cards, int numCards, char *desc)
 {
 	int i = 0 ;
 	int totals[15];
@@ -106,14 +106,14 @@ int isFourOfKind (Card *cards, int numCards)
 	{
 		if (totals[i] == 4)
 		{
-			//printf ("Four of a Kind %d\n", FOUR_OF_KIND + i) ;
+			sprintf (desc, "Four of a Kind %d\n", FOUR_OF_KIND + i) ;
 			return (FOUR_OF_KIND + i) ;
 		}
 	}
 	return (0) ;
 }
 
-int isFullHouse (Card *cards, int numCards)
+int isFullHouse (Card *cards, int numCards, char *desc)
 {
 	int i = 0 ;
 	int j = 0 ;
@@ -140,7 +140,7 @@ int isFullHouse (Card *cards, int numCards)
 			
 				if (totals[j] == 2)
 				{
-					//printf ("Full House %d\n", FULL_HOUSE + (i*500) + j) ;
+					sprintf (desc, "Full House %d\n", FULL_HOUSE + (i*500) + j) ;
 					return (FULL_HOUSE + (i*500) + j) ;
 				}
 			}
@@ -149,7 +149,7 @@ int isFullHouse (Card *cards, int numCards)
 	return (0) ;
 }
 
-int isTwoPairs (Card *cards, int numCards)
+int isTwoPairs (Card *cards, int numCards, char *desc)
 {
 	int i = 0 ;
 	int j = 0 ;
@@ -184,7 +184,7 @@ int isTwoPairs (Card *cards, int numCards)
 
 						if (totals[k] == 1)
 						{
-							//printf ("Two Pairs %d\n", TWO_PAIRS + (i*500) + (j*50) + k) ;
+							sprintf (desc, "Two Pairs %d\n", TWO_PAIRS + (i*500) + (j*50) + k) ;
 							return (TWO_PAIRS + (i*500) + (j*50) + k) ;
 						}
 					}
@@ -195,7 +195,7 @@ int isTwoPairs (Card *cards, int numCards)
 	return (0) ;
 }
 
-int isPair (Card *cards, int numCards)
+int isPair (Card *cards, int numCards, char *desc)
 {
 	int i = 0 ;
 	int j = 0 ;
@@ -233,7 +233,7 @@ int isPair (Card *cards, int numCards)
 	
 						if (totals[k] == 1)
 						{
-							//printf ("Pair %d\n", PAIR + (i*500) + (j*50) + k) ;
+							sprintf (desc, "Pair %d\n", PAIR + (i*500) + (j*50) + k) ;
 							return (PAIR + (i*500) + (j*50) + k) ;
 						}
 					}
@@ -244,7 +244,7 @@ int isPair (Card *cards, int numCards)
 	return (0) ;
 }
 
-int highCard (Card *cards, int numCards)
+int highCard (Card *cards, int numCards, char *desc)
 {
 	int i = 0 ;
 	int j = 0 ;
@@ -281,14 +281,14 @@ int highCard (Card *cards, int numCards)
 	
 							if (totals[k] == 1)
 							{
-								//printf ("High Card %d\n", (i*500) + (j*50) + k) ;
+								sprintf (desc, "High Card %d\n", (i*500) + (j*50) + k) ;
 								return ((i*500) + (j*50) + k) ;
 							}
 						}
 					}
 					else
 					{
-								return ((i*500) + (j*50)) ;
+						return ((i*500) + (j*50)) ;
 					}
 				}
 			}
@@ -297,7 +297,7 @@ int highCard (Card *cards, int numCards)
 	return (0) ;
 }
 
-int isThreeOfKind (Card *cards, int numCards)
+int isThreeOfKind (Card *cards, int numCards, char *desc)
 {
 	int i = 0 ;
 	int totals[15];
@@ -316,14 +316,14 @@ int isThreeOfKind (Card *cards, int numCards)
 	{
 		if (totals[i] == 3)
 		{
-			//printf ("Three of a Kind %d\n", THREE_OF_KIND + i) ;
+			sprintf (desc, "Three of a Kind %d\n", THREE_OF_KIND + i) ;
 			return (THREE_OF_KIND + i) ;
 		}
 	}
 	return (0) ;
 }
 
-int isStraight (Card *cards, int numCards)
+int isStraight (Card *cards, int numCards, char *desc)
 {
 	unsigned long handMap = 0 ;
 
@@ -339,35 +339,35 @@ int isStraight (Card *cards, int numCards)
 	handMask = 31 << 10 ;
 	if (handMask == (handMask & handMap))
 	{
-		//printf ("Ace high straight %d\n", STRAIGHT + 14) ;
+		sprintf (desc, "Ace high straight %d\n", STRAIGHT + 14) ;
 		return (STRAIGHT + 14) ;
 	}
 
 	handMask = 31 << 9 ;
 	if (handMask == (handMask & handMap))
 	{
-		//printf ("King high straight %d\n", STRAIGHT + 13) ;
+		sprintf (desc, "King high straight %d\n", STRAIGHT + 13) ;
 		return (STRAIGHT + 13) ;
 	}
 
 	handMask = 31 << 8 ;
 	if (handMask == (handMask & handMap))
 	{
-		//printf ("Queen high straight %d\n", STRAIGHT + 12) ;
+		sprintf (desc, "Queen high straight %d\n", STRAIGHT + 12) ;
 		return (STRAIGHT + 12) ;
 	}
 
 	handMask = 31 << 7 ;
 	if (handMask == (handMask & handMap))
 	{
-		//printf ("Jack high straight %d\n", STRAIGHT + 11) ;
+		sprintf (desc, "Jack high straight %d\n", STRAIGHT + 11) ;
 		return (STRAIGHT + 11) ;
 	}
 
 	handMask = 31 << 6 ;
 	if (handMask == (handMask & handMap))
 	{
-		//printf ("Jack high straight %d\n", STRAIGHT + 10) ;
+		sprintf (desc, "Ten high straight %d\n", STRAIGHT + 10) ;
 		return (STRAIGHT + 10) ;
 	}
 
@@ -390,22 +390,22 @@ collectFlushCards (Card *cards, Card *flushCards, int numCards, int flushSuit)
 	}
 }
 
-int isStraightFlush (Card *cards, int numCards)
+int isStraightFlush (Card *cards, int numCards, char *desc)
 {
 	int score = 0 ;
 	int FlushSuit = 0 ;
 
-	score = isFlush (cards, numCards, &FlushSuit) ;
+	score = isFlush (cards, numCards, &FlushSuit, desc) ;
 	if (!score)
 		return (0) ;
 
 	collectFlushCards (cards, FlushCards, numCards, FlushSuit);
 
-	score = isStraight (FlushCards, nextFlushCard) ;
+	score = isStraight (FlushCards, nextFlushCard, desc) ;
 	if (score)
 	{
 		// wow, a straight flush
-		//printf ("Straight Flush %d\n", STRAIGHT_FLUSH + score) ;
+		strcpy (desc, "Straight Flush") ;
 		return (STRAIGHT_FLUSH + score) ;
 	}
 
@@ -463,82 +463,29 @@ setCards (Card *cards, int numCards, ...)
 }
 
 
-int evaluateHand (Card *cards, int numCards)
+int evaluateHand (Card *cards, int numCards, char *desc)
 {
 	int FlushSuit = 0 ;
 
 	int score = 0 ;
-	score = isStraightFlush (cards, numCards) ;
+	score = isStraightFlush (cards, numCards, desc) ;
 	if (score) return (score) ;
-	score = isFourOfKind (cards, numCards) ;
+	score = isFourOfKind (cards, numCards, desc) ;
 	if (score) return (score) ;
-	score = isFlush (cards, numCards, &FlushSuit) ;
+	score = isFlush (cards, numCards, &FlushSuit, desc) ;
 	if (score) return (score) ;
-	score = isFullHouse (cards, numCards) ;
+	score = isFullHouse (cards, numCards, desc) ;
 	if (score) return (score) ;
-	score = isThreeOfKind (cards, numCards) ;
+	score = isThreeOfKind (cards, numCards, desc) ;
 	if (score) return (score) ;
-	score = isStraight (cards, numCards) ;
+	score = isStraight (cards, numCards, desc) ;
 	if (score) return (score) ;
-	score = isTwoPairs (cards, numCards) ;
+	score = isTwoPairs (cards, numCards, desc) ;
 	if (score) return (score) ;
-	score = isPair (cards, numCards) ;
+	score = isPair (cards, numCards, desc) ;
 	if (score) return (score) ;
-	score = highCard (cards, numCards) ;
+	score = highCard (cards, numCards, desc) ;
 	return (score) ;
-}
-
-test()
-{
-	setCards (myCards, 7, "TH", "8S", "TD", "9H", "TC", "JS", "TS") ;
-	evaluateHand (myCards, nextCard) ;
-	setCards (myCards, 5, "TH", "8S", "9H", "JS", "QS") ;
-	evaluateHand (myCards, nextCard) ;
-	setCards (myCards, 7, "TH", "8S", "6H", "9H", "TC", "JH", "TH") ;
-	evaluateHand (myCards, nextCard) ;
-	setCards (myCards, 7, "TH", "8S", "6H", "9H", "TC", "7H", "6H") ;
-	evaluateHand (myCards, nextCard) ;
-	setCards (myCards, 7, "AH", "8S", "6S", "6D", "TC", "7H", "6H") ;
-	evaluateHand (myCards, nextCard) ;
-	printf ("Full Houses\n") ;
-	setCards (myCards, 7, "6H", "8S", "AS", "AD", "AC", "7H", "6H") ;
-	evaluateHand (myCards, nextCard) ;
-	setCards (myCards, 7, "AH", "8S", "KS", "KD", "KC", "7H", "AH") ;
-	evaluateHand (myCards, nextCard) ;
-	setCards (myCards, 7, "AH", "8S", "QS", "QD", "QC", "7H", "AH") ;
-	evaluateHand (myCards, nextCard) ;
-	setCards (myCards, 7, "6H", "8S", "7S", "7D", "6C", "7H", "9H") ;
-	evaluateHand (myCards, nextCard) ;
-	setCards (myCards, 7, "AH", "8S", "6S", "6D", "AC", "7H", "6H") ;
-	evaluateHand (myCards, nextCard) ;
-	printf ("Two Pairs\n") ;
-	setCards (myCards, 7, "6H", "8S", "9S", "AD", "AC", "7H", "6H") ;
-	evaluateHand (myCards, nextCard) ;
-	setCards (myCards, 7, "QH", "8S", "9S", "KD", "KC", "7H", "QH") ;
-	evaluateHand (myCards, nextCard) ;
-	setCards (myCards, 7, "TH", "8S", "9S", "QD", "QC", "7H", "TH") ;
-	evaluateHand (myCards, nextCard) ;
-	setCards (myCards, 7, "6H", "8S", "9S", "7D", "6C", "7H", "9H") ;
-	evaluateHand (myCards, nextCard) ;
-	setCards (myCards, 7, "6H", "8S", "9S", "8D", "AC", "7H", "6H") ;
-	evaluateHand (myCards, nextCard) ;
-	printf ("Pairs\n") ;
-	setCards (myCards, 7, "6H", "8S", "9S", "TD", "TC", "AH", "KS") ;
-	evaluateHand (myCards, nextCard) ;
-	setCards (myCards, 7, "6H", "8S", "9S", "TD", "TC", "QH", "KS") ;
-	evaluateHand (myCards, nextCard) ;
-	printf ("HighCard\n") ;
-	setCards (myCards, 7, "6H", "8S", "9S", "TD", "QC", "AH", "KS") ;
-	evaluateHand (myCards, nextCard) ;
-	setCards (myCards, 7, "6H", "8S", "9S", "TD", "QC", "AH", "3S") ;
-	evaluateHand (myCards, nextCard) ;
-	printf ("Straight Flush\n") ;
-	setCards (myCards, 7, "JH", "TH", "9H", "TD", "QC", "8H", "7H") ;
-	evaluateHand (myCards, nextCard) ;
-	setCards (myCards, 7, "6H", "TH", "9H", "TD", "QC", "8H", "7H") ;
-	evaluateHand (myCards, nextCard) ;
-	setCards (myCards, 7, "6H", "TH", "9H", "TD", "AH", "8H", "7H") ;
-	evaluateHand (myCards, nextCard) ;
 }
 
 populateDeckCards()
@@ -655,9 +602,10 @@ createOppoHand(int *oppoPair, int checkPos)
 	(*oppoPair) += 2 ;
 }
 
-double calculateOdds (int inputNumCards, int checkPos, int NumOppo)
+double calculateOdds (int inputNumCards, int checkPos, int NumOppo, char *desc)
 {
 	int myScore = 0 ;
+	char oppodesc[200] = "" ;
 	int i = 0;
 
 	int myWins = 0 ;
@@ -674,7 +622,7 @@ double calculateOdds (int inputNumCards, int checkPos, int NumOppo)
 		{
 			addDeckCard(myCards, i, &nextCard) ;
 		}
-		myScore = evaluateHand (myCards, nextCard) ;
+		myScore = evaluateHand (myCards, nextCard, desc) ;
 
 		int maxOppoScore = 0 ;
 
@@ -684,7 +632,7 @@ double calculateOdds (int inputNumCards, int checkPos, int NumOppo)
 		for (j=0;j<NumOppo;j++)
 		{
 			createOppoHand(&nextOppoPair, checkPos);
-			oppoScore = evaluateHand (oppoCards, nextOppoCard) ;
+			oppoScore = evaluateHand (oppoCards, nextOppoCard, oppodesc) ;
 			if (oppoScore > maxOppoScore)
 				maxOppoScore = oppoScore ;
 		}
@@ -701,6 +649,8 @@ double calculateOdds (int inputNumCards, int checkPos, int NumOppo)
 main (int argc, char **argv)
 {
 	int i = 0 ;
+	char	desc[200] = "" ;
+	char	calcdesc[200] = "" ;
 	int inputNumCards = atoi (argv[1]) ;
 
     // init random seed
@@ -715,6 +665,8 @@ main (int argc, char **argv)
 	{
 		addCard (myCards, argv[2+i], &nextCard) ;
 	}
+
+	evaluateHand (myCards, nextCard, desc) ;
 
 	populateDeckCards () ;
 
@@ -733,45 +685,45 @@ main (int argc, char **argv)
 
 	if (inputNumCards == 2)
 	{
-		winPercent21 = calculateOdds (inputNumCards, 0, 1) ;
-		winPercent22 = calculateOdds (inputNumCards, 0, 2) ;
-		winPercent23 = calculateOdds (inputNumCards, 0, 3) ;
-		winPercent51 = calculateOdds (inputNumCards, 3, 1) ;
-		winPercent52 = calculateOdds (inputNumCards, 3, 2) ;
-		winPercent53 = calculateOdds (inputNumCards, 3, 3) ;
-		winPercent61 = calculateOdds (inputNumCards, 4, 1) ;
-		winPercent62 = calculateOdds (inputNumCards, 4, 2) ;
-		winPercent63 = calculateOdds (inputNumCards, 4, 3) ;
-		winPercent71 = calculateOdds (inputNumCards, 5, 1) ;
-		winPercent72 = calculateOdds (inputNumCards, 5, 2) ;
-		winPercent73 = calculateOdds (inputNumCards, 5, 3) ;
+		winPercent21 = calculateOdds (inputNumCards, 0, 1, calcdesc) ;
+		winPercent22 = calculateOdds (inputNumCards, 0, 2, calcdesc) ;
+		winPercent23 = calculateOdds (inputNumCards, 0, 3, calcdesc) ;
+		winPercent51 = calculateOdds (inputNumCards, 3, 1, calcdesc) ;
+		winPercent52 = calculateOdds (inputNumCards, 3, 2, calcdesc) ;
+		winPercent53 = calculateOdds (inputNumCards, 3, 3, calcdesc) ;
+		winPercent61 = calculateOdds (inputNumCards, 4, 1, calcdesc) ;
+		winPercent62 = calculateOdds (inputNumCards, 4, 2, calcdesc) ;
+		winPercent63 = calculateOdds (inputNumCards, 4, 3, calcdesc) ;
+		winPercent71 = calculateOdds (inputNumCards, 5, 1, calcdesc) ;
+		winPercent72 = calculateOdds (inputNumCards, 5, 2, calcdesc) ;
+		winPercent73 = calculateOdds (inputNumCards, 5, 3, calcdesc) ;
 	}
 	else if (inputNumCards == 5)
 	{
-		winPercent51 = calculateOdds (inputNumCards, 3, 1) ;
-		winPercent52 = calculateOdds (inputNumCards, 3, 2) ;
-		winPercent53 = calculateOdds (inputNumCards, 3, 3) ;
-		winPercent61 = calculateOdds (inputNumCards, 4, 1) ;
-		winPercent62 = calculateOdds (inputNumCards, 4, 2) ;
-		winPercent63 = calculateOdds (inputNumCards, 4, 3) ;
-		winPercent71 = calculateOdds (inputNumCards, 5, 1) ;
-		winPercent72 = calculateOdds (inputNumCards, 5, 2) ;
-		winPercent73 = calculateOdds (inputNumCards, 5, 3) ;
+		winPercent51 = calculateOdds (inputNumCards, 3, 1, calcdesc) ;
+		winPercent52 = calculateOdds (inputNumCards, 3, 2, calcdesc) ;
+		winPercent53 = calculateOdds (inputNumCards, 3, 3, calcdesc) ;
+		winPercent61 = calculateOdds (inputNumCards, 4, 1, calcdesc) ;
+		winPercent62 = calculateOdds (inputNumCards, 4, 2, calcdesc) ;
+		winPercent63 = calculateOdds (inputNumCards, 4, 3, calcdesc) ;
+		winPercent71 = calculateOdds (inputNumCards, 5, 1, calcdesc) ;
+		winPercent72 = calculateOdds (inputNumCards, 5, 2, calcdesc) ;
+		winPercent73 = calculateOdds (inputNumCards, 5, 3, calcdesc) ;
 	}	
 	else if (inputNumCards == 6)
 	{
-		winPercent61 = calculateOdds (inputNumCards, 4, 1) ;
-		winPercent62 = calculateOdds (inputNumCards, 4, 2) ;
-		winPercent63 = calculateOdds (inputNumCards, 4, 3) ;
-		winPercent71 = calculateOdds (inputNumCards, 5, 1) ;
-		winPercent72 = calculateOdds (inputNumCards, 5, 2) ;
-		winPercent73 = calculateOdds (inputNumCards, 5, 3) ;
+		winPercent61 = calculateOdds (inputNumCards, 4, 1, calcdesc) ;
+		winPercent62 = calculateOdds (inputNumCards, 4, 2, calcdesc) ;
+		winPercent63 = calculateOdds (inputNumCards, 4, 3, calcdesc) ;
+		winPercent71 = calculateOdds (inputNumCards, 5, 1, calcdesc) ;
+		winPercent72 = calculateOdds (inputNumCards, 5, 2, calcdesc) ;
+		winPercent73 = calculateOdds (inputNumCards, 5, 3, calcdesc) ;
 	}
 	else if (inputNumCards == 7)
 	{
-		winPercent71 = calculateOdds (inputNumCards, 5, 1) ;
-		winPercent72 = calculateOdds (inputNumCards, 5, 2) ;
-		winPercent73 = calculateOdds (inputNumCards, 5, 3) ;
+		winPercent71 = calculateOdds (inputNumCards, 5, 1, calcdesc) ;
+		winPercent72 = calculateOdds (inputNumCards, 5, 2, calcdesc) ;
+		winPercent73 = calculateOdds (inputNumCards, 5, 3, calcdesc) ;
 	}
 
 	printf ("<center><TABLE COLS=10\n border=3>") ;
@@ -804,6 +756,9 @@ main (int argc, char **argv)
 	printf ("<TD><center>%.2f<center>\n", winPercent71) ;
 	printf ("<TD><center>%.2f<center>\n", winPercent72) ;
 	printf ("<TD><center>%.2f<center>\n", winPercent73) ;
+	printf ("</TR>\n") ;
+	printf ("<TR>\n") ;
+	printf ("<TD><center>%s<center>\n", desc) ;
 	printf ("</TR>\n") ;
 	printf ("</TABLE>\n") ;
 }
