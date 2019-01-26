@@ -1,5 +1,27 @@
 
+<SCRIPT type="text/javascript">
+function updatePounds(val) {
+          document.getElementById('pounds').value=val; 
+        }
+function updatePence(val) {
+          document.getElementById('pence').value=val; 
+        }
+</SCRIPT>
+
 <FORM NAME=INFO ACTION=dopoker.php METHOD=POST>
+
+	<div>
+		<label>Pot Size (Pounds):</label>
+		<input type="range" name="rangeInput1" value="0" min="0" max="10" onchange="updatePounds(this.value);">
+		<input type="text" id="pounds" name="pounds" value="0">
+	</div>
+	<BR>
+	<div>
+		<label>Pot Size (Pence):</label>
+		<input type="range" name="rangeInput2" value="6" min="0" max="100" onchange="updatePence(this.value);">
+		<input type="text" id="pence" name="pence" value="6">
+	</div>
+	<BR>
 	<div>
 		<label>Card1:</label>
 		<label>6H</label>

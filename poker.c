@@ -653,6 +653,9 @@ main (int argc, char **argv)
 	char	calcdesc[200] = "" ;
 	int inputNumCards = atoi (argv[1]) ;
 
+	int Pounds = atoi (argv[2]) ;
+	int Pence = atoi (argv[3]) ;
+
     // init random seed
     struct timeval tp ;
     gettimeofday (&tp, NULL) ;
@@ -663,7 +666,7 @@ main (int argc, char **argv)
 
 	for (i=0;i<inputNumCards;i++)
 	{
-		addCard (myCards, argv[2+i], &nextCard) ;
+		addCard (myCards, argv[4+i], &nextCard) ;
 	}
 
 	evaluateHand (myCards, nextCard, desc) ;
@@ -726,6 +729,8 @@ main (int argc, char **argv)
 		winPercent73 = calculateOdds (inputNumCards, 5, 3, calcdesc) ;
 	}
 
+	double pot = (double) Pounds + ((double) Pence * 0.01);
+
 	printf ("<center><TABLE COLS=10\n border=3>") ;
 	printf ("<TR>\n") ;
 	printf ("<TD><center>Stage<center>\n") ;
@@ -756,6 +761,12 @@ main (int argc, char **argv)
 	printf ("<TD><center>%.2f<center>\n", winPercent71) ;
 	printf ("<TD><center>%.2f<center>\n", winPercent72) ;
 	printf ("<TD><center>%.2f<center>\n", winPercent73) ;
+	printf ("</TR>\n") ;
+	printf ("<TR>\n") ;
+	printf ("<TD><center>Bet<center>\n") ;
+	printf ("<TD><center>%.2f<center>\n", winPercent71 * 0.01 * pot) ;
+	printf ("<TD><center>%.2f<center>\n", winPercent72 * 0.01 * pot) ;
+	printf ("<TD><center>%.2f<center>\n", winPercent73 * 0.01 * pot) ;
 	printf ("</TR>\n") ;
 	printf ("<TR>\n") ;
 	printf ("<TD><center>%s<center>\n", desc) ;

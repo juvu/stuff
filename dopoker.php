@@ -290,21 +290,29 @@
 	$flop5 .= "$flop56s$flop57s$flop58s$flop59s$flop5ts$flop5js$flop5qs$flop5ks$flop5as";
 	$flop5 .= "$flop56c$flop57c$flop58c$flop59c$flop5tc$flop5jc$flop5qc$flop5kc$flop5ac";
 
+	
+	$pounds = $_POST["pounds"] ;
+	if (!$pounds)
+		$pounds = 0;
+	$pence = $_POST["pence"] ;
+	if (!$pence)
+		$pence = 0;
+
 	if ($flop5 != "")
 	{
-		$str = "./poker 7 $card1 $card2 $flop1 $flop2 $flop3 $flop4 $flop5" ;
+		$str = "./poker 7 $pounds $pence $card1 $card2 $flop1 $flop2 $flop3 $flop4 $flop5" ;
 	}
 	else if ($flop4 != "")
 	{
-		$str = "./poker 6 $card1 $card2 $flop1 $flop2 $flop3 $flop4" ;
+		$str = "./poker 6 $pounds $pence $card1 $card2 $flop1 $flop2 $flop3 $flop4" ;
 	}
 	else if ($flop3 != "")
 	{
-		$str = "./poker 5 $card1 $card2 $flop1 $flop2 $flop3" ;
+		$str = "./poker 5 $pounds $pence $card1 $card2 $flop1 $flop2 $flop3" ;
 	}
 	else if ($card2 != "")
 	{
-		$str = "./poker 2 $card1 $card2" ;
+		$str = "./poker 2 $pounds $pence $card1 $card2" ;
 	}
 
 	echo "$str" ;
