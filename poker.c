@@ -24,7 +24,7 @@
 #define NUM_CARDS 7
 #define NUM_DECK_CARDS 36
 
-#define ITERATIONS 100000
+#define ITERATIONS 50000
 
 typedef struct
 {
