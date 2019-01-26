@@ -138,7 +138,7 @@ int isFullHouse (Card *cards, int numCards, char *desc)
 				if (j == i)
 					continue ;
 			
-				if (totals[j] == 2)
+				if (totals[j] >= 2)
 				{
 					sprintf (desc, "Full House %d\n", FULL_HOUSE + (i*500) + j) ;
 					return (FULL_HOUSE + (i*500) + j) ;
