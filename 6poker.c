@@ -9,10 +9,10 @@
 // scores for different hands
 #define STRAIGHT_FLUSH 80000
 #define FOUR_OF_KIND 70000
-#define FULL_HOUSE 60000
-#define FLUSH 50000
-#define STRAIGHT 40000
-#define THREE_OF_KIND 30000
+#define FLUSH 60000
+#define FULL_HOUSE 50000
+#define THREE_OF_KIND 40000
+#define STRAIGHT 30000
 #define TWO_PAIRS 20000
 #define PAIR 10000
 
@@ -22,7 +22,7 @@
 #define SPADES 4
 
 #define NUM_CARDS 7
-#define NUM_DECK_CARDS 52 
+#define NUM_DECK_CARDS 36
 
 #define ITERATIONS 50000
 
@@ -92,7 +92,7 @@ int isFourOfKind (Card *cards, int numCards, char *desc)
 	int i = 0 ;
 	int totals[15];
 
-	for (i = 14; i >= 2; i--)
+	for (i = 14; i >= 6; i--)
 	{
 		totals[i] = 0 ;
 	}
@@ -102,7 +102,7 @@ int isFourOfKind (Card *cards, int numCards, char *desc)
 		totals[cards[i].value] ++ ;
 	}
 
-	for (i = 14; i >= 2; i--)
+	for (i = 14; i >= 6; i--)
 	{
 		if (totals[i] == 4)
 		{
@@ -119,7 +119,7 @@ int isFullHouse (Card *cards, int numCards, char *desc)
 	int j = 0 ;
 	int totals[15];
 
-	for (i = 14; i >= 2; i--)
+	for (i = 14; i >= 6; i--)
 	{
 		totals[i] = 0 ;
 	}
@@ -129,11 +129,11 @@ int isFullHouse (Card *cards, int numCards, char *desc)
 		totals[cards[i].value] ++ ;
 	}
 
-	for (i = 14; i >= 2; i--)
+	for (i = 14; i >= 6; i--)
 	{
 		if (totals[i] == 3)
 		{
-			for (j = 14; j >= 2; j--)
+			for (j = 14; j >= 6; j--)
 			{
 				if (j == i)
 					continue ;
@@ -156,7 +156,7 @@ int isTwoPairs (Card *cards, int numCards, char *desc)
 	int k = 0 ;
 	int totals[15];
 
-	for (i = 14; i >= 2; i--)
+	for (i = 14; i >= 6; i--)
 	{
 		totals[i] = 0 ;
 	}
@@ -166,18 +166,18 @@ int isTwoPairs (Card *cards, int numCards, char *desc)
 		totals[cards[i].value] ++ ;
 	}
 
-	for (i = 14; i >= 2; i--)
+	for (i = 14; i >= 6; i--)
 	{
 		if (totals[i] == 2)
 		{
-			for (j = 14; j >= 2; j--)
+			for (j = 14; j >= 6; j--)
 			{
 				if (j == i)
 					continue ;
 			
 				if (totals[j] == 2)
 				{
-					for (k = 14; k >=2; k--)
+					for (k = 14; k >=6; k--)
 					{
 						if (k == i || k == j)
 							continue ;
@@ -202,7 +202,7 @@ int isPair (Card *cards, int numCards, char *desc)
 	int k = 0 ;
 	int totals[15];
 
-	for (i = 14; i >= 2; i--)
+	for (i = 14; i >= 6; i--)
 	{
 		totals[i] = 0 ;
 	}
@@ -212,21 +212,21 @@ int isPair (Card *cards, int numCards, char *desc)
 		totals[cards[i].value] ++ ;
 	}
 
-	for (i = 14; i >= 2; i--)
+	for (i = 14; i >= 6; i--)
 	{
 		if (totals[i] == 2)
 		{
 			if (numCards == 2)
 				return (PAIR + (i*500)) ;
 			
-			for (j = 14; j >= 2; j--)
+			for (j = 14; j >= 6; j--)
 			{
 				if (j == i)
 					continue ;
 			
 				if (totals[j] == 1)
 				{
-					for (k = 14; k >=2; k--)
+					for (k = 14; k >=6; k--)
 					{
 						if (k == i || k == j)
 							continue ;
@@ -251,7 +251,7 @@ int highCard (Card *cards, int numCards, char *desc)
 	int k = 0 ;
 	int totals[15];
 
-	for (i = 14; i >= 2; i--)
+	for (i = 14; i >= 6; i--)
 	{
 		totals[i] = 0 ;
 	}
@@ -261,11 +261,11 @@ int highCard (Card *cards, int numCards, char *desc)
 		totals[cards[i].value] ++ ;
 	}
 
-	for (i = 14; i >= 2; i--)
+	for (i = 14; i >= 6; i--)
 	{
 		if (totals[i] == 1)
 		{
-			for (j = 14; j >= 2; j--)
+			for (j = 14; j >= 6; j--)
 			{
 				if (j == i)
 					continue ;
@@ -274,7 +274,7 @@ int highCard (Card *cards, int numCards, char *desc)
 				{
 					if (numCards > 2)
 					{
-						for (k = 14; k >=2; k--)
+						for (k = 14; k >=6; k--)
 						{
 							if (k == i || k == j)
 								continue ;
@@ -302,7 +302,7 @@ int isThreeOfKind (Card *cards, int numCards, char *desc)
 	int i = 0 ;
 	int totals[15];
 
-	for (i = 14; i >= 2; i--)
+	for (i = 14; i >= 6; i--)
 	{
 		totals[i] = 0 ;
 	}
@@ -312,7 +312,7 @@ int isThreeOfKind (Card *cards, int numCards, char *desc)
 		totals[cards[i].value] ++ ;
 	}
 
-	for (i = 14; i >= 2; i--)
+	for (i = 14; i >= 6; i--)
 	{
 		if (totals[i] == 3)
 		{
@@ -370,35 +370,6 @@ int isStraight (Card *cards, int numCards, char *desc)
 		sprintf (desc, "Ten high straight %d\n", STRAIGHT + 10) ;
 		return (STRAIGHT + 10) ;
 	}
-
-	handMask = 31 << 5 ;
-	if (handMask == (handMask & handMap))
-	{
-		sprintf (desc, "Nine high straight %d\n", STRAIGHT + 9) ;
-		return (STRAIGHT + 9) ;
-	}
-
-	handMask = 31 << 4 ;
-	if (handMask == (handMask & handMap))
-	{
-		sprintf (desc, "Eight high straight %d\n", STRAIGHT + 8) ;
-		return (STRAIGHT + 8) ;
-	}
-
-	handMask = 31 << 3 ;
-	if (handMask == (handMask & handMap))
-	{
-		sprintf (desc, "Seven high straight %d\n", STRAIGHT + 7) ;
-		return (STRAIGHT + 7) ;
-	}
-
-	handMask = 31 << 2 ;
-	if (handMask == (handMask & handMap))
-	{
-		sprintf (desc, "Six high straight %d\n", STRAIGHT + 6) ;
-		return (STRAIGHT + 6) ;
-	}
-
 
 	return (0) ;
 }
@@ -501,13 +472,13 @@ int evaluateHand (Card *cards, int numCards, char *desc)
 	if (score) return (score) ;
 	score = isFourOfKind (cards, numCards, desc) ;
 	if (score) return (score) ;
-	score = isFullHouse (cards, numCards, desc) ;
-	if (score) return (score) ;
 	score = isFlush (cards, numCards, &FlushSuit, desc) ;
 	if (score) return (score) ;
-	score = isStraight (cards, numCards, desc) ;
+	score = isFullHouse (cards, numCards, desc) ;
 	if (score) return (score) ;
 	score = isThreeOfKind (cards, numCards, desc) ;
+	if (score) return (score) ;
+	score = isStraight (cards, numCards, desc) ;
 	if (score) return (score) ;
 	score = isTwoPairs (cards, numCards, desc) ;
 	if (score) return (score) ;
@@ -525,7 +496,7 @@ populateDeckCards()
 	nextDeckCard = 0 ;
 	for (i=1;i<=4;i++)
 	{
-		for (j=2;j<15;j++)
+		for (j=6;j<15;j++)
 		{
 			deckCards[nextDeckCard].value = j;
 			deckCards[nextDeckCard++].suit = i;
