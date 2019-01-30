@@ -587,13 +587,15 @@ shuffleDeckCards(int inputNumCards)
 
 int checkOppoPair (int oppoPos)
 {
-	if (deckCards[oppoPos].value == 10 && deckCards[oppoPos+1].value == 10)
+	if (deckCards[oppoPos].value == 9 && deckCards[oppoPos+1].value == 9)
 		return 1 ;
-	if (deckCards[oppoPos].value <= 10 && deckCards[oppoPos+1].value <= 10)
+	if (deckCards[oppoPos].value == 8 && deckCards[oppoPos+1].value == 8)
+		return 1 ;
+	if (deckCards[oppoPos].value < 10 && deckCards[oppoPos+1].value < 10)
 		return 0 ;
-	if (deckCards[oppoPos].value >= 12)
+	if (deckCards[oppoPos].value >= 11)
 		return 1 ;
-	if (deckCards[oppoPos+1].value >= 12)
+	if (deckCards[oppoPos+1].value >= 11)
 		return 1 ;
 	if (deckCards[oppoPos].suit == deckCards[oppoPos+1].suit) 
 		return 1 ;
