@@ -4,6 +4,14 @@
 
 #define WIDTH 54
 #define HEIGHT 73
+#define CARD_GAP 71
+
+#define EMPTY1 41133321573.0
+#define EMPTY2 44008972453.0
+#define EMPTY3 45289204225.0
+#define EMPTY4 50884741815.0
+#define EMPTY5 44985043359.0
+
 
 double values[52] = { 18177952911.0, 7682500513.0, 10325406097.0, 9203852322.0, 9276333579.0, 13672230557.0, 7758037321.0, 17347243922.0,
             16141506534.0, 17271333463.0, 8963267466.0, 7365181911.0, 7357748331.0, 18697157637.0, 8695077024.0, 8229043733.0,
@@ -18,22 +26,19 @@ char *card[52] = { "KH", "6S", "AS", "9C", "TS", "9D", "7S", "QC", "JC", "KS", "
             "AD", "JH", "6D", "9H", "6H", "QS", "AC", "2D", "9S", "4S", "TC"};
 
 
-int doCalibration(void) 
+
+int getTheFlop(int x, int y) 
 {
 	POINT p;
 	COLORREF color;
 	HDC hDC;
-	BOOL b;
+	
  
 	/* Get the device context for the screen */
 	hDC = GetDC(NULL);
 	if (hDC == NULL)
 		return 0;
  
-	/* Get the current cursor position */
-	b = GetCursorPos(&p);
-	if (!b)
-		return 0;
 
 	LPVOID lpvBits[WIDTH*(HEIGHT+1)];
 	HBITMAP bitmap = CreateBitmap (WIDTH, HEIGHT, 1, 32, lpvBits) ;
@@ -43,57 +48,55 @@ int doCalibration(void)
 	HDC hDC2 = CreateCompatibleDC(hDC);
 	SelectObject (hDC2, bitmap) ;
 
-	int x = 0 ;
-	int y = 0 ;
-	int nearestX = 0 ;
-	int nearestY = 0 ;
-	int nearestPX = 0 ;
-	int nearestPY = 0 ;
-	int cardIndex = -1 ;
+	int cards = 0;
+	int cardFound = 0 ;
 
-	double minTotal = 99999999999.0 ;
-	for (x=p.x-5; x<=p.x+5; x++)
+	for (cards=0; cards<5; cards++)
 	{
-		for (y=p.y-5; y<=p.y+5; y++)
+		BitBlt (hDC2, 0, 0, WIDTH, HEIGHT, hDC, x + (cards * CARD_GAP), y, SRCCOPY) ;
+
+		int i = 0 ;
+		int j = 0;
+		double total = 0.0;
+
+		total = 0.0;
+		for (i=0;i<HEIGHT;i++)
 		{
-			BitBlt (hDC2, 0, 0, WIDTH, HEIGHT, hDC, x, y, SRCCOPY) ;
-
-			int i = 0 ;
-			int j = 0;
-			double total = 0.0;
-
-			total = 0.0;
-			for (i=0;i<HEIGHT;i++)
+			for (j=0;j<WIDTH;j++)
 			{
-				for (j=0;j<WIDTH;j++)
-				{
- 					color = GetPixel(hDC2, j, i);
-					if (color < 15000000)
-						total += color;
-				}
+ 				color = GetPixel(hDC2, j, i);
+				if (color < 15000000)
+					total += color;
 			}
-			
-			for (i=0;i<52;i++)
+		}
+
+		if (total == EMPTY1)
+			continue ;
+		if (total == EMPTY2)
+			continue ;
+		if (total == EMPTY3)
+			continue ;
+		if (total == EMPTY4)
+			continue ;
+		if (total == EMPTY5)
+			continue ;
+
+		cardFound = 0 ;	
+		for (i=0;i<52;i++)
+		{
+			if (values[i] == total)
 			{
-				if (fabs(values[i] - total) < minTotal)
-				{
-					minTotal = fabs(values[i] - total) ;
-					cardIndex = i ;
-					nearestX = x ;
-					nearestY = y ;
-					nearestPX = p.x ;
-					nearestPY = p.y ;
-				}
+				cardFound = 1 ;
+				printf ("Card%d FOUND: %s\n", cards+1, card[i]);
 			}
+		}
+
+		if (!cardFound)
+		{
+			printf ("Card%d UNKNOWN: %f\n", cards+1, total);
 		}
 	}
 
-	
-	if (minTotal == 0.0)
-		printf ("Card %s FOUND at %d,%d\n", card[cardIndex], nearestX, nearestY);
-	else
-		printf ("Nearest Card %s found at %d,%d Cursor %d,%d\n", card[cardIndex], nearestX, nearestY, nearestPX, nearestPY);
- 
 	/* Release the device context again */
 	ReleaseDC(GetDesktopWindow(), hDC);
 	ReleaseDC(GetDesktopWindow(), hDC2);
@@ -101,13 +104,15 @@ int doCalibration(void)
 	return 0;
 }
 
-int main()
+int main(int arc, char **argv)
 {
+	int x = atoi (argv[1]) ;
+	int y = atoi (argv[2]) ;
+
 	while (1)
 	{
-		doCalibration() ;
+		getTheFlop(x,y) ;
 		Sleep (1000);
 	}
 	return 0;
 }
-
