@@ -646,15 +646,29 @@ double calculateOdds (int inputNumCards, int checkPos, int NumOppo, char *desc)
 	return (winPercent) ;
 }
 	
+char *determineBet (char *bet, double BigBlind, double winPercent, int numCards)
+{
+	if (winPercent < 50.0)
+		return ("CHECK/FOLD") ;
+
+	double factor = (winPercent - 50.0) * 0.1 * numCards * BigBlind ;
+
+	sprintf (bet, "CALL/RAISE %.2f", factor) ;
+}
+
 main (int argc, char **argv)
 {
 	int i = 0 ;
+	int nohtml = 0 ;
 	char	desc[200] = "" ;
 	char	calcdesc[200] = "" ;
 	int inputNumCards = strlen (argv[3]) / 2;
 
-	int Pounds = atoi (argv[2]) ;
-	int Pence = atoi (argv[3]) ;
+	double BigBlind = atoi (argv[1]) * 0.01 ;
+	double SmallBlind = atoi (argv[2]) * 0.01 ;
+
+    if (argc == 5 && !strcmp (argv[4], "nohtml"))
+        nohtml = 1 ;
 
     // init random seed
     struct timeval tp ;
@@ -696,12 +710,15 @@ main (int argc, char **argv)
 		winPercent21 = calculateOdds (inputNumCards, 0, 1, calcdesc) ;
 		winPercent22 = calculateOdds (inputNumCards, 0, 2, calcdesc) ;
 		winPercent23 = calculateOdds (inputNumCards, 0, 3, calcdesc) ;
-		winPercent51 = calculateOdds (inputNumCards, 3, 1, calcdesc) ;
-		winPercent52 = calculateOdds (inputNumCards, 3, 2, calcdesc) ;
-		winPercent53 = calculateOdds (inputNumCards, 3, 3, calcdesc) ;
-		winPercent61 = calculateOdds (inputNumCards, 4, 1, calcdesc) ;
-		winPercent62 = calculateOdds (inputNumCards, 4, 2, calcdesc) ;
-		winPercent63 = calculateOdds (inputNumCards, 4, 3, calcdesc) ;
+		if (!nohtml)
+		{
+			winPercent51 = calculateOdds (inputNumCards, 3, 1, calcdesc) ;
+			winPercent52 = calculateOdds (inputNumCards, 3, 2, calcdesc) ;
+			winPercent53 = calculateOdds (inputNumCards, 3, 3, calcdesc) ;
+			winPercent61 = calculateOdds (inputNumCards, 4, 1, calcdesc) ;
+			winPercent62 = calculateOdds (inputNumCards, 4, 2, calcdesc) ;
+			winPercent63 = calculateOdds (inputNumCards, 4, 3, calcdesc) ;
+		}
 		winPercent71 = calculateOdds (inputNumCards, 5, 1, calcdesc) ;
 		winPercent72 = calculateOdds (inputNumCards, 5, 2, calcdesc) ;
 		winPercent73 = calculateOdds (inputNumCards, 5, 3, calcdesc) ;
@@ -711,9 +728,12 @@ main (int argc, char **argv)
 		winPercent51 = calculateOdds (inputNumCards, 3, 1, calcdesc) ;
 		winPercent52 = calculateOdds (inputNumCards, 3, 2, calcdesc) ;
 		winPercent53 = calculateOdds (inputNumCards, 3, 3, calcdesc) ;
-		winPercent61 = calculateOdds (inputNumCards, 4, 1, calcdesc) ;
-		winPercent62 = calculateOdds (inputNumCards, 4, 2, calcdesc) ;
-		winPercent63 = calculateOdds (inputNumCards, 4, 3, calcdesc) ;
+		if (!nohtml)
+		{
+			winPercent61 = calculateOdds (inputNumCards, 4, 1, calcdesc) ;
+			winPercent62 = calculateOdds (inputNumCards, 4, 2, calcdesc) ;
+			winPercent63 = calculateOdds (inputNumCards, 4, 3, calcdesc) ;
+		}
 		winPercent71 = calculateOdds (inputNumCards, 5, 1, calcdesc) ;
 		winPercent72 = calculateOdds (inputNumCards, 5, 2, calcdesc) ;
 		winPercent73 = calculateOdds (inputNumCards, 5, 3, calcdesc) ;
@@ -734,47 +754,79 @@ main (int argc, char **argv)
 		winPercent73 = calculateOdds (inputNumCards, 5, 3, calcdesc) ;
 	}
 
-	double pot = (double) Pounds + ((double) Pence * 0.01);
 
-	printf ("<center><TABLE COLS=10\n border=3>") ;
-	printf ("<TR>\n") ;
-	printf ("<TD><center>Stage<center>\n") ;
-	printf ("<TD><center>1 Oppo<center>\n") ;
-	printf ("<TD><center>2 Oppo<center>\n") ;
-	printf ("<TD><center>3 Oppo<center>\n") ;
-	printf ("</TR>\n") ;
-	printf ("<TR>\n") ;
-	printf ("<TD><center>Deal<center>\n") ;
-	printf ("<TD><center>%.2f<center>\n", winPercent21) ;
-	printf ("<TD><center>%.2f<center>\n", winPercent22) ;
-	printf ("<TD><center>%.2f<center>\n", winPercent23) ;
-	printf ("</TR>\n") ;
-	printf ("<TR>\n") ;
-	printf ("<TD><center>Flop<center>\n") ;
-	printf ("<TD><center>%.2f<center>\n", winPercent51) ;
-	printf ("<TD><center>%.2f<center>\n", winPercent52) ;
-	printf ("<TD><center>%.2f<center>\n", winPercent53) ;
-	printf ("</TR>\n") ;
-	printf ("<TR>\n") ;
-	printf ("<TD><center>Fourth Card<center>\n") ;
-	printf ("<TD><center>%.2f<center>\n", winPercent61) ;
-	printf ("<TD><center>%.2f<center>\n", winPercent62) ;
-	printf ("<TD><center>%.2f<center>\n", winPercent63) ;
-	printf ("</TR>\n") ;
-	printf ("<TR>\n") ;
-	printf ("<TD><center>River<center>\n") ;
-	printf ("<TD><center>%.2f<center>\n", winPercent71) ;
-	printf ("<TD><center>%.2f<center>\n", winPercent72) ;
-	printf ("<TD><center>%.2f<center>\n", winPercent73) ;
-	printf ("</TR>\n") ;
-	printf ("<TR>\n") ;
-	printf ("<TD><center>Bet<center>\n") ;
-	printf ("<TD><center>%.2f<center>\n", winPercent71 * 0.01 * pot) ;
-	printf ("<TD><center>%.2f<center>\n", winPercent72 * 0.01 * pot) ;
-	printf ("<TD><center>%.2f<center>\n", winPercent73 * 0.01 * pot) ;
-	printf ("</TR>\n") ;
-	printf ("<TR>\n") ;
-	printf ("<TD><center>%s<center>\n", desc) ;
-	printf ("</TR>\n") ;
-	printf ("</TABLE>\n") ;
+	char bet[100] = "" ;
+	determineBet (bet, BigBlind, winPercent71, inputNumCards) ;
+
+    if (nohtml)
+    {
+        if (inputNumCards == 2)
+        {
+            //printf ("Bet        %.2f        %.2f         %.2f  of pot\n", winPercent21, winPercent22, winPercent23) ;
+            printf ("Win chance %.2f        %.2f         %.2f  \n", winPercent71, winPercent72, winPercent73) ;
+			printf ("%s\n", bet) ;
+        }
+        else if (inputNumCards == 5)
+        {
+            //printf ("Bet        %.2f        %.2f         %.2f  of pot\n", winPercent51, winPercent52, winPercent53) ;
+            printf ("Win chance %.2f        %.2f         %.2f  \n", winPercent71, winPercent72, winPercent73) ;
+			printf ("%s\n", bet) ;
+        }
+        else if (inputNumCards == 6)
+        {
+            //printf ("Bet        %.2f        %.2f         %.2f  of pot\n", winPercent61, winPercent62, winPercent63) ;
+            printf ("Win chance %.2f        %.2f         %.2f  \n", winPercent71, winPercent72, winPercent73) ;
+			printf ("%s\n", bet) ;
+        }
+        else if (inputNumCards == 7)
+        {
+            //printf ("Bet        %.2f        %.2f         %.2f  of pot\n", winPercent71, winPercent72, winPercent73) ;
+            printf ("Win chance %.2f        %.2f         %.2f \n", winPercent71, winPercent72, winPercent73) ;
+			printf ("%s\n", bet) ;
+        }
+    }
+    else
+    {
+		printf ("<center><TABLE COLS=10\n border=3>") ;
+		printf ("<TR>\n") ;
+		printf ("<TD><center>Stage<center>\n") ;
+		printf ("<TD><center>1 Oppo<center>\n") ;
+		printf ("<TD><center>2 Oppo<center>\n") ;
+		printf ("<TD><center>3 Oppo<center>\n") ;
+		printf ("</TR>\n") ;
+		printf ("<TR>\n") ;
+		printf ("<TD><center>Deal<center>\n") ;
+		printf ("<TD><center>%.2f<center>\n", winPercent21) ;
+		printf ("<TD><center>%.2f<center>\n", winPercent22) ;
+		printf ("<TD><center>%.2f<center>\n", winPercent23) ;
+		printf ("</TR>\n") ;
+		printf ("<TR>\n") ;
+		printf ("<TD><center>Flop<center>\n") ;
+		printf ("<TD><center>%.2f<center>\n", winPercent51) ;
+		printf ("<TD><center>%.2f<center>\n", winPercent52) ;
+		printf ("<TD><center>%.2f<center>\n", winPercent53) ;
+		printf ("</TR>\n") ;
+		printf ("<TR>\n") ;
+		printf ("<TD><center>Fourth Card<center>\n") ;
+		printf ("<TD><center>%.2f<center>\n", winPercent61) ;
+		printf ("<TD><center>%.2f<center>\n", winPercent62) ;
+		printf ("<TD><center>%.2f<center>\n", winPercent63) ;
+		printf ("</TR>\n") ;
+		printf ("<TR>\n") ;
+		printf ("<TD><center>River<center>\n") ;
+		printf ("<TD><center>%.2f<center>\n", winPercent71) ;
+		printf ("<TD><center>%.2f<center>\n", winPercent72) ;
+		printf ("<TD><center>%.2f<center>\n", winPercent73) ;
+		printf ("</TR>\n") ;
+		printf ("<TR>\n") ;
+		printf ("<TD><center>Bet<center>\n") ;
+		printf ("<TD><center>%s<center>\n", bet) ;
+		printf ("<TD><center>%s<center>\n", bet) ;
+		printf ("<TD><center>%s<center>\n", bet) ;
+		printf ("</TR>\n") ;
+		printf ("<TR>\n") ;
+		printf ("<TD><center>%s<center>\n", desc) ;
+		printf ("</TR>\n") ;
+		printf ("</TABLE>\n") ;
+	}
 }
