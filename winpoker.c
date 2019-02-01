@@ -26,7 +26,7 @@ int YBase = 0 ;
 
 static char cardBuffer[100] = "" ;
 
-int getCards(int x, int y) 
+int getCards() 
 {
 	POINT p;
 	COLORREF color;
@@ -76,13 +76,14 @@ int getCards(int x, int y)
 			if (values[i] == total)
 			{
 				cardFound = 1 ;
-				printf ("Card%d FOUND: %s\n", cards+1, card[i]);
+				strcat (cardBuffer, card[i]) ;
+				//printf ("Card%d FOUND: %s\n", cards+1, card[i]);
 			}
 		}
 
 		if (!cardFound)
 		{
-			printf ("Card%d UNKNOWN: %f\n", cards+1, total);
+			//printf ("Card%d UNKNOWN: %f\n", cards+1, total);
 		}
 	}
 
@@ -93,19 +94,118 @@ int getCards(int x, int y)
 	return 0;
 }
 
+int doCalibration(void) 
+{
+	POINT p;
+	COLORREF color;
+	HDC hDC;
+	BOOL b;
+ 
+	printf ("CALIBRATING.....\n") ;
+
+	/* Get the device context for the screen */
+	hDC = GetDC(NULL);
+	if (hDC == NULL)
+		return 0;
+ 
+	/* Get the current cursor position */
+	b = GetCursorPos(&p);
+	if (!b)
+		return 0;
+
+	LPVOID lpvBits[WIDTH*(HEIGHT+1)];
+	HBITMAP bitmap = CreateBitmap (WIDTH, HEIGHT, 1, 32, lpvBits) ;
+
+	//HGDIOBJ bitobj = SelectObject (hDC, bitmap) ;
+
+	HDC hDC2 = CreateCompatibleDC(hDC);
+	SelectObject (hDC2, bitmap) ;
+
+	int x = 0 ;
+	int y = 0 ;
+	int nearestX = 0 ;
+	int nearestY = 0 ;
+	int nearestPX = 0 ;
+	int nearestPY = 0 ;
+	int cardIndex = -1 ;
+
+	double minTotal = 99999999999.0 ;
+	for (x=p.x-5; x<=p.x+5; x++)
+	{
+		for (y=p.y-5; y<=p.y+5; y++)
+		{
+			BitBlt (hDC2, 0, 0, WIDTH, HEIGHT, hDC, x, y, SRCCOPY) ;
+
+			int i = 0 ;
+			int j = 0;
+			double total = 0.0;
+
+			total = 0.0;
+			for (i=0;i<HEIGHT;i++)
+			{
+				for (j=0;j<WIDTH;j++)
+				{
+ 					color = GetPixel(hDC2, j, i);
+					if (color < 15000000)
+						total += color;
+				}
+			}
+			
+			for (i=0;i<52;i++)
+			{
+				if (fabs(values[i] - total) < minTotal)
+				{
+					minTotal = fabs(values[i] - total) ;
+					cardIndex = i ;
+					nearestX = x ;
+					nearestY = y ;
+					nearestPX = p.x ;
+					nearestPY = p.y ;
+				}
+			}
+		}
+	}
+
+	
+	if (minTotal == 0.0)
+	{
+		XBase = nearestX ;
+		YBase = nearestY ;
+	}
+
+ 
+	/* Release the device context again */
+	ReleaseDC(GetDesktopWindow(), hDC);
+	ReleaseDC(GetDesktopWindow(), hDC2);
+
+	return 0;
+}
+
+
+
+
 int main(int argc, char **argv)
 {
 	char cmd[1000] = "" ;
 	char buffer[1025] = "" ;
 
-	if (argc !=6)
+	if (argc !=7)
 	{
-		printf ("Usage: winpoker <user> <pass> <host> <XBase> <YBase>\n") ;
+		printf ("Usage: winpoker <user> <pass> <host> <2|6> <BigBlind> <SmallBlind>\n") ;
 		exit(0) ;
 	}
 
-	XBase = atoi (argv[4]) ;
-	YBase = atoi (argv[5]) ;
+	XBase = 0 ;
+	YBase = 0 ;
+	int mode = atoi (argv[4]) ;
+	int BigBlind = atoi (argv[5]) ;
+	int SmallBlind = atoi (argv[6]) ;
+
+	while (!XBase)
+	{
+		doCalibration() ;
+		Sleep (1000) ;
+	}
 
 	while (1)
 	{
@@ -122,20 +222,30 @@ int main(int argc, char **argv)
 
 		if (strlen (cardBuffer) >= 4)
 		{
-			sprintf (cmd, "plink -pw %s %s@%s github/stuff/poker 0 0 %s nohtml", 
-							argv[2], argv[1], argv[3], cardBuffer) ;
+			if (mode !=6)
+			{
+				sprintf (cmd, "plink -pw %s %s@%s github/stuff/poker %d %d %s nohtml", 
+							argv[2], argv[1], argv[3], BigBlind, SmallBlind, cardBuffer) ;
+			}
+			else
+			{
+				sprintf (cmd, "plink -pw %s %s@%s github/stuff/6poker %d %d %s nohtml", 
+							argv[2], argv[1], argv[3], BigBlind, SmallBlind, cardBuffer) ;
+			}
 			printf ("%s\n", cmd) ;
-		}	
 
-		FILE *pp = popen (cmd, "r") ;
 
-		// now read the results
-		while (fgets (buffer, 1024, pp))
-		{
-			printf (buffer) ;
+			FILE *pp = popen (cmd, "r") ;
+
+			// now read the results
+			while (fgets (buffer, 1024, pp))
+			{
+				printf (buffer) ;
+			}
+	
+			pclose (pp) ;
 		}
-
-		pclose (pp) ;
+		Sleep (1000) ;
 	}
 
 	return 0;
