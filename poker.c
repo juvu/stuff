@@ -681,11 +681,13 @@ double calculateOdds (int inputNumCards, int checkPos, int NumOppo, char *desc)
 char *determineBet (char *bet, double BigBlind, double winPercent, int numCards)
 {
     if (winPercent < 50.0)
-        return ("CHECK/FOLD") ;
-
-    double factor = (winPercent - 50.0) * 0.1 * numCards * BigBlind ;
-
-    sprintf (bet, "CALL/RAISE %.2f", factor) ;
+        strcpy (bet, "CHECK/FOLD") ;
+	else
+	{
+    	double factor = (winPercent - 50.0) * 0.1 * numCards * BigBlind ;
+	
+    	sprintf (bet, "CALL/RAISE %.2f", factor) ;
+	}
 }
 
 	
