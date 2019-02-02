@@ -648,6 +648,7 @@ double calculateOdds (int inputNumCards, int checkPos, int NumOppo, char *desc)
 	
 char *determineBet (char *bet, double BigBlind, double winPercent, int numCards)
 {
+#if 0
 	if (winPercent < 50.0)
 		strcpy (bet, "CHECK/FOLD") ;
 	else
@@ -656,6 +657,18 @@ char *determineBet (char *bet, double BigBlind, double winPercent, int numCards)
 
 		sprintf (bet, "CALL/RAISE %.2f", factor) ;
 	}
+#endif
+
+	double choosePosFactor[8] = {0.0, 0.0, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5} ;
+
+	double prob = winPercent * 0.01 ;
+	double posFactor = choosePosFactor[numCards] ;
+	
+	double probFactor = prob / (1.0 - prob) ;
+	double betAmount = probFactor * posFactor ;
+
+	sprintf (bet, "Bet at most %.2f of pot", betAmount) ;
+
 }
 
 main (int argc, char **argv)
@@ -667,7 +680,7 @@ main (int argc, char **argv)
 	int inputNumCards = strlen (argv[3]) / 2;
 
 	double BigBlind = atoi (argv[1]) * 0.01 ;
-	double SmallBlind = atoi (argv[2]) * 0.01 ;
+	int numOppos = atoi (argv[2]) ;
 
     if (argc == 5 && !strcmp (argv[4], "nohtml"))
         nohtml = 1 ;
@@ -703,10 +716,14 @@ main (int argc, char **argv)
 	double winPercent61 = 0.0 ;
 	double winPercent62 = 0.0 ;
 	double winPercent63 = 0.0 ;
+	double winPercent7 = 0.0 ;
 	double winPercent71 = 0.0 ;
 	double winPercent72 = 0.0 ;
 	double winPercent73 = 0.0 ;
 
+	winPercent7 = calculateOdds (inputNumCards, 5, numOppos, calcdesc) ;
+
+#if 0
 	if (inputNumCards == 2)
 	{
 		winPercent21 = calculateOdds (inputNumCards, 0, 1, calcdesc) ;
@@ -724,6 +741,7 @@ main (int argc, char **argv)
 		winPercent71 = calculateOdds (inputNumCards, 5, 1, calcdesc) ;
 		winPercent72 = calculateOdds (inputNumCards, 5, 2, calcdesc) ;
 		winPercent73 = calculateOdds (inputNumCards, 5, 3, calcdesc) ;
+		winPercent7 = calculateOdds (inputNumCards, 5, numOppos, calcdesc) ;
 	}
 	else if (inputNumCards == 5)
 	{
@@ -755,13 +773,17 @@ main (int argc, char **argv)
 		winPercent72 = calculateOdds (inputNumCards, 5, 2, calcdesc) ;
 		winPercent73 = calculateOdds (inputNumCards, 5, 3, calcdesc) ;
 	}
+#endif
 
 
 	char bet[100] = "" ;
-	determineBet (bet, BigBlind, winPercent71, inputNumCards) ;
+	determineBet (bet, BigBlind, winPercent7, inputNumCards) ;
 
     if (nohtml)
     {
+            printf ("Win chance %.2f\n", winPercent7) ;
+			printf ("%s\n", bet) ;
+#if 0
         if (inputNumCards == 2)
         {
             //printf ("Bet        %.2f        %.2f         %.2f  of pot\n", winPercent21, winPercent22, winPercent23) ;
@@ -786,6 +808,7 @@ main (int argc, char **argv)
             printf ("Win chance %.2f        %.2f         %.2f \n", winPercent71, winPercent72, winPercent73) ;
 			printf ("%s\n", bet) ;
         }
+#endif
     }
     else
     {
