@@ -4,6 +4,8 @@
 
 #define WIDTH 54
 #define HEIGHT 73
+#define INPLAYWIDTH 20
+#define INPLAYHEIGHT 20
 
 double values[52] = { 18177952911.0, 7682500513.0, 10325406097.0, 9203852322.0, 9276333579.0, 13672230557.0, 7758037321.0, 17347243922.0,
             16141506534.0, 17271333463.0, 8963267466.0, 7365181911.0, 7357748331.0, 18697157637.0, 8695077024.0, 8229043733.0,
@@ -17,14 +19,77 @@ char *card[52] = { "KH", "6S", "AS", "9C", "TS", "9D", "7S", "QC", "JC", "KS", "
             "QD", "3H", "6C", "TD", "4C", "3C", "4H", "5H", "7H", "8D", "3D", "3S", "5C", "2C", "AH", "JS", "4D", "2H", "KD", "TH", "JD",
             "AD", "JH", "6D", "9H", "6H", "QS", "AC", "2D", "9S", "4S", "TC"};
 
+double inPlay = 3252920674.0;
 
 int XOffsets[7] = {0, 65, -160, -89, -18, 53, 124} ;
 int YOffsets[7] = {0, 0, -198, -198, -198, -198, -198} ;
+
+int playerXOffset[5] = {-426, -426, 14, 369, 369} ;
+int playerYOffset[5] = {-55, -330, -403, -330, -55} ;
 
 int XBase = 0 ;
 int YBase = 0 ;
 
 static char cardBuffer[100] = "" ;
+
+int getNumInPlay() 
+{
+	POINT p;
+	COLORREF color;
+	HDC hDC;
+	
+ 
+	/* Get the device context for the screen */
+	hDC = GetDC(NULL);
+	if (hDC == NULL)
+		return 0;
+ 
+
+	LPVOID lpvBits[INPLAYWIDTH*(INPLAYHEIGHT+1)];
+	HBITMAP bitmap = CreateBitmap (INPLAYWIDTH, INPLAYHEIGHT, 1, 32, lpvBits) ;
+
+	//HGDIOBJ bitobj = SelectObject (hDC, bitmap) ;
+
+	HDC hDC2 = CreateCompatibleDC(hDC);
+	SelectObject (hDC2, bitmap) ;
+
+	int numPlayers = 0 ;
+	int players = 0 ;
+
+	for (players=0; players<5; players++)
+	{
+		BitBlt (hDC2, 0, 0, INPLAYWIDTH, INPLAYHEIGHT, hDC, XBase + playerXOffset[players], 
+							YBase + playerYOffset[players], SRCCOPY) ;
+
+		int i = 0 ;
+		int j = 0;
+		double total = 0.0;
+
+		total = 0.0;
+		for (i=0;i<INPLAYHEIGHT;i++)
+		{
+			for (j=0;j<INPLAYWIDTH;j++)
+			{
+ 				color = GetPixel(hDC2, j, i);
+				if (color < 15000000)
+					total += color;
+			}
+		}
+		
+
+		if (inPlay == total)
+		{
+			numPlayers++ ;
+		}
+
+	}
+
+	/* Release the device context again */
+	ReleaseDC(GetDesktopWindow(), hDC);
+	ReleaseDC(GetDesktopWindow(), hDC2);
+
+	return numPlayers;
+}
 
 int getCards() 
 {
@@ -83,6 +148,8 @@ int getCards()
 
 		if (!cardFound)
 		{
+			if (cards == 0)
+				return (0) ;
 			//printf ("Card%d UNKNOWN: %f\n", cards+1, total);
 		}
 	}
@@ -222,15 +289,17 @@ int main(int argc, char **argv)
 
 		if (strlen (cardBuffer) >= 4)
 		{
+			int numInPlay = getNumInPlay() ;
+
 			if (mode !=6)
 			{
 				sprintf (cmd, "plink -pw %s %s@%s github/stuff/poker %d %d %s nohtml", 
-							argv[2], argv[1], argv[3], BigBlind, SmallBlind, cardBuffer) ;
+							argv[2], argv[1], argv[3], BigBlind, numInPlay, cardBuffer) ;
 			}
 			else
 			{
 				sprintf (cmd, "plink -pw %s %s@%s github/stuff/6poker %d %d %s nohtml", 
-							argv[2], argv[1], argv[3], BigBlind, SmallBlind, cardBuffer) ;
+							argv[2], argv[1], argv[3], BigBlind, numInPlay, cardBuffer) ;
 			}
 			printf ("%s\n", cmd) ;
 
