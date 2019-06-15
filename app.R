@@ -1,7 +1,7 @@
 library(shiny)
 library(RgeoProfile)
 library(ggmap)
-register_google(key="<your key here>")
+register_google(key="<your-key-here>")
 rm(list=ls(all=TRUE))
 
 
@@ -24,9 +24,9 @@ ui <- fluidPage(
 	# Input: Slider for the zoom ----
 	sliderInput(inputId = "zoom",
                   label = "Plot size:",
-                  min = 200,
-                  max = 1000,
-                  value = 600),
+                  min = 300,
+                  max = 1500,
+                  value = 800),
 
 	hr(),
 
@@ -79,6 +79,12 @@ ui <- fluidPage(
                  		"Satellite" = "satellite",
                  		"Roadmap" = "roadmap",
                  		"Hybrid" = "hybrid"))
+			),
+		column (4,
+  			radioButtons("plot", "Plot type:",
+               			c("Normal" = "normal",
+                 		"Perspective raw" = "raw",
+                 		"Perspective geoProfile" = "geoprofile"))
 			),
 		column (4,
 			numericInput("SigmaMean", "SigmaMean", "1.0")
@@ -146,13 +152,32 @@ server <- function(input, output, session) {
 		p <- geoParams(data = d, sigma_mean = 1.0, sigma_squared_shape = 2)
 		m <- geoMCMC(data = d, params = p, lambda=0.05)
 		type <- input$map
+    		plottype <- switch(input$plot,
+                   normal = 1,
+                   raw = 2,
+                   geoprofile = 3,
+                   1)
 
-  		output$distPlot <- renderPlot({
+		if (plottype == 1)
+		{
+  			output$distPlot <- renderPlot({
 
 			geoPlotMap(params = p, data = d, source = s, surface = m$geoProfile,
                 		breakPercent = seq(0, 50, 5), mapType = type,
-                		crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 2)},height = scale, width = scale
-    )
+                		crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 2)},height = scale, width = scale)
+		}
+		else if (plottype == 2)
+		{
+  			output$distPlot <- renderPlot({
+
+			geoPersp(m$posteriorSurface, surface_type = "prob")},height = scale, width = scale)
+		}
+		else if (plottype == 3)
+		{
+  			output$distPlot <- renderPlot({
+
+			geoPersp(surface = m$geoProfile, aggregate_size = 3, surface_type = "gp")},height = scale, width = scale)
+		}
       })
 
       observeEvent(input$generateButton, {
@@ -212,3 +237,4 @@ server <- function(input, output, session) {
 
 # Create Shiny app ----
 shinyApp(ui = ui, server = server)
+
