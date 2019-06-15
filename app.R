@@ -1,7 +1,6 @@
 brary(shiny)
 library(RgeoProfile)
 library(ggmap)
-register_google(key="AIzaSyARaYyk7hkCmk6bv8F_SNNgUZXQ8e4eywo")
 rm(list=ls(all=TRUE))
 d <- Cholera
 s <- WaterPumps
