@@ -645,8 +645,44 @@ double calculateOdds (int inputNumCards, int checkPos, int NumOppo, char *desc)
 
 	return (winPercent) ;
 }
+
+double StandardDeviationsFromMean(double SD)
+{
+    int sdkey = random()%1000 ;
+    int interval = random()%50 ;
+    double adjust = interval / 100.0 ;
+    double amount = 0.0 ;
+
+    if (sdkey <= 6)
+        amount = -2.5 ;
+    else if (sdkey <= 23)
+        amount = -2.0 ;
+    else if (sdkey <= 67)
+        amount = -1.5 ;
+    else if (sdkey <= 159)
+        amount = -1.0 ;
+    else if (sdkey <= 309)
+        amount = -0.5 ;
+    else if (sdkey <= 500)
+        amount = 0.0 ;
+    else if (sdkey <= 691)
+        amount = 0.5 ;
+    else if (sdkey <= 841)
+        amount = 1.0 ;
+    else if (sdkey <= 933)
+        amount = 1.5 ;
+    else if (sdkey <= 977)
+        amount = 2.0 ;
+    else if (sdkey <= 994)
+        amount = 2.5 ;
+    else
+        amount = 3.0 ;
+
+    return ((amount - adjust) * SD) ;
+}
+
 	
-char *determineBet (char *bet, double BigBlind, double winPercent, int numCards)
+char *determineBet (char *bet, char *recommended, double BigBlind, double winPercent, int numCards)
 {
 #if 0
 	if (winPercent < 50.0)
@@ -659,7 +695,7 @@ char *determineBet (char *bet, double BigBlind, double winPercent, int numCards)
 	}
 #endif
 
-	double choosePosFactor[8] = {0.0, 0.0, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5} ;
+	double choosePosFactor[8] = {0.0, 0.0, 1.0, 0.7, 0.5, 0.5, 0.4, 0.3} ;
 
 	double prob = winPercent * 0.01 ;
 	double posFactor = choosePosFactor[numCards] ;
@@ -668,6 +704,9 @@ char *determineBet (char *bet, double BigBlind, double winPercent, int numCards)
 	double betAmount = probFactor * posFactor ;
 
 	sprintf (bet, "Bet at most %.2f of pot", betAmount) ;
+
+	double recommendedAmount = (betAmount / 2.0) + StandardDeviationsFromMean (betAmount / 6.0) ;
+	sprintf (recommended, "Recommended Bet %.2f of pot", recommendedAmount) ;
 
 }
 
@@ -777,12 +816,14 @@ main (int argc, char **argv)
 
 
 	char bet[100] = "" ;
-	determineBet (bet, BigBlind, winPercent7, inputNumCards) ;
+	char recommended[100] = "" ;
+	determineBet (bet, recommended, BigBlind, winPercent7, inputNumCards) ;
 
     if (nohtml)
     {
             printf ("Win chance %.2f\n", winPercent7) ;
 			printf ("%s\n", bet) ;
+			//printf ("%s\n", recommended) ;
 #if 0
         if (inputNumCards == 2)
         {
