@@ -1,11 +1,11 @@
 library(shiny)
 library(RgeoProfile)
 library(ggmap)
-register_google(key="<your-Key-here>")
+register_google(key="<your key here>")
 rm(list=ls(all=TRUE))
 
 
-# Define UI for app that drives RgeoProfile
+# Define UI for app that drives RgeoProfile ----
 ui <- fluidPage(
 
   tags$head(
@@ -99,6 +99,19 @@ ui <- fluidPage(
 
 
 	hr(),
+h4("Coordinate Data"),
+
+	fluidRow(
+		column (4,			
+			downloadButton("downloadData", "Download Events")
+			),
+		column (4,
+			downloadButton("downloadSource", "Download Sources")
+			),
+		column (6,
+			textInput("downloadFile", "Download Filename", "data")
+			)
+	),
 
 	fluidRow(
 		column (6,
@@ -155,22 +168,45 @@ server <- function(input, output, session) {
 		d <- attr (session, "d")
 		s <- attr (session,"s")
 
-  		output$events <- renderTable(d)
-  		output$sources <- renderTable(s)
+  		output$events <- renderTable(d, digits = 7)
+  		output$sources <- renderTable(s, digits = 7)
       })
+
+
+       output$downloadData <- downloadHandler(
+
+    		filename = function() {
+     			 paste(input$downloadFile, "_events", ".txt", sep = "")
+   		 },
+   		 content = function(file) {
+			d <- attr (session, "d")
+			write.table (d, file, sep=" ")
+    		})
+
+       output$downloadSource <- downloadHandler(
+
+    		filename = function() {
+     			 paste(input$downloadFile, "_sources", ".txt", sep = "")
+   		 },
+   		 content = function(file) {
+			s <- attr (session, "s")
+			write.table (s, file, sep=" ")
+    		})
+
+
 
       observeEvent(input$File1, {
   		output$events <- renderTable({
 			inFile <- input$File1
 			attr (session,"d") <- read.table(inFile$datapath)
-		})
+		},digits = 7)
 	})
 
       observeEvent(input$File2, {
   		output$sources <- renderTable({
 			inFile <- input$File2
 			attr (session,"s") <- read.table(inFile$datapath)
-		})
+		},digits = 7)
 	})
 }
 
