@@ -1,18 +1,19 @@
-brary(shiny)
+library(shiny)
 library(RgeoProfile)
 library(ggmap)
+register_google(key="<your-Key-here>")
 rm(list=ls(all=TRUE))
-d <- Cholera
-s <- WaterPumps
-p <- geoParams(data = d, sigma_mean = 1.0, sigma_squared_shape = 2)
-m <- geoMCMC(data = d, params = p, lambda=0.05)
 
 
-# Define UI for app that draws a histogram ----
+# Define UI for app that drives RgeoProfile
 ui <- fluidPage(
 
+  tags$head(
+    tags$style(HTML("hr {border-top: 1px solid #000000;}"))
+  ),
+
   # App title ----
-  titlePanel("RgeoPlot!"),
+  #titlePanel("RgeoProfile!"),
 
   # Sidebar layout with input and output definitions ----
   sidebarLayout(
@@ -20,48 +21,157 @@ ui <- fluidPage(
     # Sidebar panel for inputs ----
     sidebarPanel(
 
-      # Input: Slider for the number of bins ----
-      sliderInput(inputId = "zoom",
-                  label = "size:",
+	# Input: Slider for the zoom ----
+	sliderInput(inputId = "zoom",
+                  label = "Plot size:",
                   min = 200,
                   max = 1000,
-                  value = 600)
+                  value = 600),
 
+	hr(),
+
+	h4("Load Data"),
+	fluidRow(
+		column (6,
+			fileInput("File1", "Events")
+			),
+		column (6,
+			fileInput("File2", "Sources")
+			)
+
+	),
+
+	hr(),
+
+	h4("Generate Data"),
+
+	fluidRow(
+		column (4,
+			numericInput("Latitude", "Latitude", "51.5235505")
+			),
+		column (4,
+			numericInput("Longitude", "Longitude", "-0.04217491")
+			),
+		column (4,
+			numericInput("numPoints", "numPoints", "50")
+			),
+		column (4,
+			numericInput("Alpha", "Alpha", "1")
+			),
+		column (4,
+			numericInput("Sigma", "Sigma", "1")
+			),
+		column (4,
+			numericInput("Tau", "Tau", "3")
+			),
+		column (4,
+			actionButton("generateButton", "Generate!")
+			)
+	),
+
+	hr(),
+	h4("Plot Data"),
+
+	fluidRow(
+		column (4,
+  			radioButtons("map", "Map type:",
+               			c("Terrain" = "terrain",
+                 		"Satellite" = "satellite",
+                 		"Roadmap" = "roadmap",
+                 		"Hybrid" = "hybrid"))
+			),
+		column (4,
+			numericInput("SigmaMean", "SigmaMean", "1.0")
+			),
+		column (4,
+			numericInput("SigmaSquaredShape", "SigmaSquaredShape", "2")
+			),
+		column (4,
+			numericInput("Lambda", "Lambda", "1.0")
+			),
+		column (4,
+			numericInput("numPoints", "numPoints", "50")
+			),
+		column (4,
+			actionButton("goButton", "Go!")
+			)
+	),
+
+
+	hr(),
+
+	fluidRow(
+		column (6,
+			h4("Events"),
+			tableOutput (outputId = "events")
+			),
+		column (6,
+			h4("Sources"),
+			tableOutput (outputId = "sources")
+			)
+	)
     ),
 
     # Main panel for displaying outputs ----
     mainPanel(
-
-      # Output: Histogram ----
+      # Output: RgeoProfile map ----
       imageOutput(outputId = "distPlot")
 
     )
   )
 )
 
-# Define server logic required to draw a histogram ----
-server <- function(input, output) {
-
-  # Histogram of the Old Faithful Geyser Data ----
-  # with requested number of bins
-  # This expression that generates a histogram is wrapped in a call
-  # to renderPlot to indicate that:
-  #
-  # 1. It is "reactive" and therefore should be automatically
-  #    re-executed when inputs (input$bins) change
-  # 2. Its output type is a plot
+# Define server logic required to draw the RgeoPlot ----
+server <- function(input, output, session) {
 
   x    <- faithful$waiting
- 
   scale <- reactive ({input$zoom})
 
-  output$distPlot <- renderPlot({
+      observeEvent(input$goButton, {
+		d <- attr (session, "d")
+		s <- attr (session,"s")
+		p <- geoParams(data = d, sigma_mean = 1.0, sigma_squared_shape = 2)
+		m <- geoMCMC(data = d, params = p, lambda=0.05)
+		type <- input$map
 
-	geoPlotMap(params = p, data = d, source = s, surface = m$geoProfile,
-                breakPercent = seq(0, 50, 5), mapType = "roadmap",
-                crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 2)},height = scale, width = scale
+  		output$distPlot <- renderPlot({
+
+			geoPlotMap(params = p, data = d, source = s, surface = m$geoProfile,
+                		breakPercent = seq(0, 50, 5), mapType = type,
+                		crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 2)},height = scale, width = scale
     )
+      })
 
+      observeEvent(input$generateButton, {
+		lattude <- input$Latitude
+		longtude <- input$Longitude
+		numPoints <- input$numPoints
+		Alpha <- input$Alpha
+		Sigma <- input$Sigma
+		Tau <- input$Tau
+		sim <-rDPM(numPoints, priorMean_longitude = longtude, priorMean_latitude = lattude, alpha=Alpha, sigma=Sigma, tau=Tau)
+		attr (session,"d") <- geoData(sim$longitude, sim$latitude)
+		attr (session,"s") <- geoData(sim$source_lon, sim$source_lat)
+		d <- attr (session, "d")
+		s <- attr (session,"s")
+
+  		output$events <- renderTable(d)
+  		output$sources <- renderTable(s)
+      })
+
+      observeEvent(input$File1, {
+  		output$events <- renderTable({
+			inFile <- input$File1
+			attr (session,"d") <- read.table(inFile$datapath)
+		})
+	})
+
+      observeEvent(input$File2, {
+  		output$sources <- renderTable({
+			inFile <- input$File2
+			attr (session,"s") <- read.table(inFile$datapath)
+		})
+	})
 }
 
 # Create Shiny app ----
