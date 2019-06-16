@@ -1,7 +1,7 @@
 library(shiny)
 library(RgeoProfile)
 library(ggmap)
-register_google(key="<Your key here>")
+register_google(key="Your key here")
 rm(list=ls(all=TRUE))
 
 
@@ -160,7 +160,7 @@ server <- function(input, output, session) {
 		d <- attr (session, "d")
 		s <- attr (session,"s")
 		l <- input$Lambda
-		p <- geoParams(data = d, sigma_mean = 1.0, sigma_squared_shape = 2)
+		p <- geoParams(data = d, sigma_mean = input$SigmaMean, sigma_squared_shape = input$SigmaSquaredShape)
 		m <- geoMCMC(data = d, params = p, lambda=l)
 		type <- input$map
     		plottype <- switch(input$plot,
@@ -255,27 +255,31 @@ server <- function(input, output, session) {
 
 
       observeEvent(input$reloadButton, {
+		inFile <- input$File1
+		attr (session,"d") <- read.table(inFile$datapath)
   		output$events <- renderTable({
-			inFile <- input$File1
-			attr (session,"d") <- read.table(inFile$datapath)
+			attr (session,"d")
 		},digits = 7)
+		inFile <- input$File2
+		attr (session,"s") <- read.table(inFile$datapath)
   		output$sources <- renderTable({
-			inFile <- input$File2
-			attr (session,"s") <- read.table(inFile$datapath)
+			attr (session,"s")
 		},digits = 7)
 	})
 
       observeEvent(input$File1, {
+		inFile <- input$File1
+		attr (session,"d") <- read.table(inFile$datapath)
   		output$events <- renderTable({
-			inFile <- input$File1
-			attr (session,"d") <- read.table(inFile$datapath)
+			read.table(inFile$datapath)
 		},digits = 7)
 	})
 
       observeEvent(input$File2, {
+		inFile <- input$File2
+		attr (session,"s") <- read.table(inFile$datapath)
   		output$sources <- renderTable({
-			inFile <- input$File2
-			attr (session,"s") <- read.table(inFile$datapath)
+			read.table(inFile$datapath)
 		},digits = 7)
 	})
 }
