@@ -4,6 +4,8 @@ library(ggmap)
 register_google(key="Your key here")
 rm(list=ls(all=TRUE))
 
+dyn.load("../getCoords.dll")
+
 
 # Define UI for app that drives RgeoProfile ----
 ui <- fluidPage(
@@ -67,6 +69,7 @@ ui <- fluidPage(
 					hr(),
 					actionButton("goButton", "Run simulation and plot"),
 					hr()
+
     				),
         			tabPanel("Coordinate Data", 
 
@@ -75,10 +78,16 @@ ui <- fluidPage(
 					h4("Load Data"),
 					fluidRow(
 						column (6,
-							fileInput("File1", "Events")
+							fileInput("File1", "Events (txt)")
 						),
 						column (6,
-							fileInput("File2", "Sources")
+							fileInput("File2", "Sources (txt)")
+						),
+						column (6,
+							fileInput("File3", "Events (kml)")
+						),
+						column (6,
+							fileInput("File4", "Sources (kml)")
 						)
 					),
 
@@ -162,10 +171,13 @@ server <- function(input, output, session) {
   x    <- faithful$waiting
   scale <- reactive ({input$zoom})
 
+
       observeEvent(input$goButton, {
 		d <- attr (session, "d")
 		s <- attr (session,"s")
 		l <- input$Lambda
+
+
 		# min value for Sigma Squared shape is apparently 2
 		sss <- input$SigmaSquaredShape
 		if (sss < 2)
@@ -173,10 +185,18 @@ server <- function(input, output, session) {
 			sss <- 2
 		}
 
+
 		if (!is.null(d))
 		{
+
+
+			# Create a Progress object
+			progress <- shiny::Progress$new(style = "notification")
+
 			p <- geoParams(data = d, sigma_mean = input$SigmaMean, sigma_squared_shape = sss, samples = input$Iterations)
+    			progress$set(message = "Running geoMCMC- Please wait", value = 1)
 			m <- geoMCMC(data = d, params = p, lambda=l)
+
 			type <- input$map
     			plottype <- switch(input$plot,
                    		normal = 1,
@@ -187,13 +207,19 @@ server <- function(input, output, session) {
   		   		sigma = 6,
                    		1)
 
+    		
 			if (plottype == 1)
 			{
-  				output$distPlot <- renderPlot({
+				output$distPlot <- renderPlot({
 
-				geoPlotMap(params = p, data = d, source = s, surface = m$geoProfile,
-                			breakPercent = seq(0, 50, 5), mapType = type,
-                			crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 2)},height = scale, width = scale)
+				withProgress(message = 'Making plot - plot may take a few seconds to appear after this message disappears', value = 2, {
+ 				
+					geoPlotMap(params = p, data = d, source = s, surface = m$geoProfile,
+                				breakPercent = seq(0, 50, 5), mapType = type,
+                				crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 2)
+					})
+				},height = scale, width = scale)
+
 			}
 			else if (plottype == 2)
 			{
@@ -228,6 +254,10 @@ server <- function(input, output, session) {
 
 				geoPlotSigma(params = p, mcmc = m)},height = scale, width = scale)
 			}
+
+
+			progress$close()
+
 		}
       })
 
@@ -292,6 +322,30 @@ server <- function(input, output, session) {
 			read.table(inFile$datapath)
 		},digits = 7)
 	})
+
+	getCoords <- function(kmlData) {
+		result <- .C("getCoords", kmlData=kmlData)
+		return (result$kmlData)
+	}
+
+      observeEvent(input$File3, {
+		inFile <- input$File3
+		newFile <- getCoords (inFile$datapath)
+		attr (session,"d") <- read.table(newFile)
+  		output$events <- renderTable({
+			read.table(newFile)
+		},digits = 7)
+	})
+
+      observeEvent(input$File4, {
+		inFile <- input$File4
+		newFile <- getCoords (inFile$datapath)
+		attr (session,"s") <- read.table(newFile)
+  		output$sources <- renderTable({
+			read.table(newFile)
+		},digits = 7)
+	})
+
 }
 
 # Create Shiny app ----
