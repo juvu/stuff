@@ -1,7 +1,7 @@
 library(shiny)
 library(RgeoProfile)
 library(ggmap)
-register_google(key="<your-key-here>")
+register_google(key="<Your key here>")
 rm(list=ls(all=TRUE))
 
 
@@ -37,6 +37,9 @@ ui <- fluidPage(
 			),
 		column (6,
 			fileInput("File2", "Sources")
+			),
+		column (4,
+			actionButton("reloadButton", "Reload")
 			)
 
 	),
@@ -65,7 +68,7 @@ ui <- fluidPage(
 			numericInput("Tau", "Tau", "3")
 			),
 		column (4,
-			actionButton("generateButton", "Generate!")
+			actionButton("generateButton", "Generate")
 			)
 	),
 
@@ -84,7 +87,10 @@ ui <- fluidPage(
   			radioButtons("plot", "Plot type:",
                			c("Normal" = "normal",
                  		"Perspective raw" = "raw",
-                 		"Perspective geoProfile" = "geoprofile"))
+                 		"Perspective geoProfile" = "geoprofile",
+                 		"Lorentz" = "lorentz",
+                 		"Map Ring" = "mapring",
+				"Sigma" = "sigma"))
 			),
 		column (4,
 			numericInput("SigmaMean", "SigmaMean", "1.0")
@@ -93,51 +99,55 @@ ui <- fluidPage(
 			numericInput("SigmaSquaredShape", "SigmaSquaredShape", "2")
 			),
 		column (4,
-			numericInput("Lambda", "Lambda", "1.0")
+			numericInput("Lambda", "Lambda", "0.05")
 			),
 		column (4,
-			numericInput("numPoints", "numPoints", "50")
-			),
-		column (4,
-			actionButton("goButton", "Go!")
+			actionButton("goButton", "Go")
 			)
 	),
 
 
-	hr(),
-h4("Coordinate Data"),
+	hr()
 
-	fluidRow(
-		column (4,			
-			downloadButton("downloadData", "Download Events")
-			),
-		column (4,
-			downloadButton("downloadSource", "Download Sources")
-			),
-		column (6,
-			textInput("downloadFile", "Download Filename", "data")
-			)
-	),
-
-	fluidRow(
-		column (6,
-			h4("Events"),
-			tableOutput (outputId = "events")
-			),
-		column (6,
-			h4("Sources"),
-			tableOutput (outputId = "sources")
-			)
-	)
     ),
 
     # Main panel for displaying outputs ----
     mainPanel(
-      # Output: RgeoProfile map ----
-      imageOutput(outputId = "distPlot")
+      	tabsetPanel(
+        	tabPanel("Plot",  imageOutput(outputId = "distPlot")), 
+        	tabPanel("Coordinate Data", 
 
-    )
-  )
+			h4("Coordinate Data"),
+
+			fluidRow(
+					column (4,			
+						downloadButton("downloadData", "Download Events")
+					),
+					column (4,
+						downloadButton("downloadSource", "Download Sources")
+					),
+					column (6,
+						textInput("downloadFile", "Download Filename", "data")
+					)
+				),
+
+			fluidRow(
+					column (4,
+						h4("Events"),
+						tableOutput (outputId = "events")
+					),
+					column (4,
+						h4("Sources"),
+						tableOutput (outputId = "sources")
+					)
+				)
+	
+      		)
+
+    	)
+   )
+ )
+  
 )
 
 # Define server logic required to draw the RgeoPlot ----
@@ -149,13 +159,17 @@ server <- function(input, output, session) {
       observeEvent(input$goButton, {
 		d <- attr (session, "d")
 		s <- attr (session,"s")
+		l <- input$Lambda
 		p <- geoParams(data = d, sigma_mean = 1.0, sigma_squared_shape = 2)
-		m <- geoMCMC(data = d, params = p, lambda=0.05)
+		m <- geoMCMC(data = d, params = p, lambda=l)
 		type <- input$map
     		plottype <- switch(input$plot,
                    normal = 1,
                    raw = 2,
                    geoprofile = 3,
+		   lorentz = 4,
+		   mapring = 5,
+  		   sigma = 6,
                    1)
 
 		if (plottype == 1)
@@ -177,6 +191,27 @@ server <- function(input, output, session) {
   			output$distPlot <- renderPlot({
 
 			geoPersp(surface = m$geoProfile, aggregate_size = 3, surface_type = "gp")},height = scale, width = scale)
+		}
+		else if (plottype == 4)
+		{
+  			output$distPlot <- renderPlot({
+
+			hs <- geoReportHitscores(params = p, source = s, surface =m$geoProfile)
+			geoPlotLorenz(hit_scores = hs, crimeNumbers = NULL)},height = scale, width = scale)
+		}
+		else if (plottype == 5)
+		{
+  			output$distPlot <- renderPlot({
+
+			surface_ring <- geoRing(params = p, data = d, source = s, mcmc = m)
+			gp_ring <- geoProfile(surface = surface_ring)
+			geoPlotMap(params = p, data = d, source = s, surface = gp_ring, surfaceCols <- c("red", "white"))},height = scale, width = scale)
+		}
+		else if (plottype == 6)
+		{
+  			output$distPlot <- renderPlot({
+
+			geoPlotSigma(params = p, mcmc = m)},height = scale, width = scale)
 		}
       })
 
@@ -219,6 +254,16 @@ server <- function(input, output, session) {
     		})
 
 
+      observeEvent(input$reloadButton, {
+  		output$events <- renderTable({
+			inFile <- input$File1
+			attr (session,"d") <- read.table(inFile$datapath)
+		},digits = 7)
+  		output$sources <- renderTable({
+			inFile <- input$File2
+			attr (session,"s") <- read.table(inFile$datapath)
+		},digits = 7)
+	})
 
       observeEvent(input$File1, {
   		output$events <- renderTable({
@@ -237,4 +282,3 @@ server <- function(input, output, session) {
 
 # Create Shiny app ----
 shinyApp(ui = ui, server = server)
-
