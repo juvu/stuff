@@ -65,9 +65,33 @@ ui <- fluidPage(
 						column (4,
 							numericInput("Iterations", "Iterations", "10000")
 						)
+
+					),
+					hr(),
+					h4("Area restriction"),
+
+					fluidRow(
+						column (12,
+  							radioButtons("restrict", "Restrict Area:",
+               								c("No" = "no",
+									  "Yes" = "yes"))
+						),
+						column (6,
+							textInput("plotMinLat", "Min Latitude", "50.0")
+						),
+						column (6,
+							textInput("plotMaxLat", "Max Latitude", "53.0")
+						),
+						column (6,
+							textInput("plotMinLong", "Min Longitude", "-2.0")
+						),
+						column (6,
+							textInput("plotMaxLong", "Max Longitude", "2.0")
+						)
 					),
 					hr(),
 					actionButton("goButton", "Run simulation and plot"),
+					actionButton("plotButton", "Plot Only"),
 					hr()
 
     				),
@@ -88,6 +112,18 @@ ui <- fluidPage(
 						),
 						column (6,
 							fileInput("File4", "Sources (kml)")
+						),
+						column (6,
+							textInput("minLat", "Min Latitude", "50.0")
+						),
+						column (6,
+							textInput("maxLat", "Max Latitude", "53.0")
+						),
+						column (6,
+							textInput("minLong", "Min Longitude", "-2.0")
+						),
+						column (6,
+							textInput("maxLong", "Max Longitude", "2.0")
 						)
 					),
 
@@ -193,9 +229,28 @@ server <- function(input, output, session) {
 			# Create a Progress object
 			progress <- shiny::Progress$new(style = "notification")
 
+    			restrict <- switch(input$restrict,
+                   		no = 1,
+                   		yes = 2,
+                   		1)
+
 			p <- geoParams(data = d, sigma_mean = input$SigmaMean, sigma_squared_shape = sss, samples = input$Iterations)
+
+			if (restrict == 2)
+			{
+				zoomLon <- c(as.numeric(input$plotMinLong), as.numeric(input$plotMaxLong))
+				zoomLat <- c(as.numeric(input$plotMinLat), as.numeric(input$plotMaxLat))
+				p$output$longitude_minMax <- zoomLon
+				p$output$latitude_minMax <- zoomLat
+			}
+
+
     			progress$set(message = "Running geoMCMC- Please wait", value = 1)
 			m <- geoMCMC(data = d, params = p, lambda=l)
+
+			attr (session,"m") <- m
+			attr (session,"p") <- p
+
 
 			type <- input$map
     			plottype <- switch(input$plot,
@@ -210,15 +265,15 @@ server <- function(input, output, session) {
     		
 			if (plottype == 1)
 			{
-				output$distPlot <- renderPlot({
+					output$distPlot <- renderPlot({
 
-				withProgress(message = 'Making plot - plot may take a few seconds to appear after this message disappears', value = 2, {
- 				
-					geoPlotMap(params = p, data = d, source = s, surface = m$geoProfile,
-                				breakPercent = seq(0, 50, 5), mapType = type,
-                				crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 2)
-					})
-				},height = scale, width = scale)
+						withProgress(message = 'Making plot - plot may take a few seconds to appear after this message disappears', value = 2, {
+
+							geoPlotMap(params = p, data = d, source = s, surface = m$geoProfile,
+                						breakPercent = seq(0, 50, 5), mapType = type, 
+                						crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 4)
+						})
+					},height = scale, width = scale)
 
 			}
 			else if (plottype == 2)
@@ -257,7 +312,103 @@ server <- function(input, output, session) {
 
 
 			progress$close()
+		}
+	})
 
+
+      observeEvent(input$plotButton, {
+		m <- attr (session, "m")
+		p <- attr (session, "p")
+		d <- attr (session, "d")
+		s <- attr (session,"s")
+
+
+		if (!is.null(d))
+		{
+			type <- input$map
+    			plottype <- switch(input$plot,
+                   		normal = 1,
+                   		raw = 2,
+                   		geoprofile = 3,
+		   		lorentz = 4,
+		   		mapring = 5,
+  		   		sigma = 6,
+                   		1)
+
+    		
+
+    			restrict <- switch(input$restrict,
+                   		no = 1,
+                   		yes = 2,
+                   		1)
+
+			if (restrict == 2)
+			{
+				zoomLon <- c(as.numeric(input$plotMinLong), as.numeric(input$plotMaxLong))
+				zoomLat <- c(as.numeric(input$plotMinLat), as.numeric(input$plotMaxLat))
+			}
+
+			if (plottype == 1)
+			{
+				if (restrict == 1)
+				{
+					output$distPlot <- renderPlot({
+
+						withProgress(message = 'Making plot - plot may take a few seconds to appear after this message disappears', value = 2, {
+
+							geoPlotMap(params = p, data = d, source = s, surface = m$geoProfile,
+                						breakPercent = seq(0, 50, 5), mapType = type, 
+                						crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 4)
+						})
+					},height = scale, width = scale)
+				}
+				else
+				{
+					output$distPlot <- renderPlot({
+
+						withProgress(message = 'Making plot - plot may take a few seconds to appear after this message disappears', value = 2, {
+
+							geoPlotMap(lonLimits = zoomLon, latLimits = zoomLat, params = p, data = d, source = s, surface = m$geoProfile,
+                						breakPercent = seq(0, 50, 5), mapType = type, 
+                						crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 4)
+						})
+					},height = scale, width = scale)
+				}
+
+			}
+			else if (plottype == 2)
+			{
+  				output$distPlot <- renderPlot({
+
+				geoPersp(m$posteriorSurface, surface_type = "prob")},height = scale, width = scale)
+			}
+			else if (plottype == 3)
+			{
+  				output$distPlot <- renderPlot({
+
+				geoPersp(surface = m$geoProfile, aggregate_size = 3, surface_type = "gp")},height = scale, width = scale)
+			}
+			else if (plottype == 4)
+			{
+  				output$distPlot <- renderPlot({
+
+				hs <- geoReportHitscores(params = p, source = s, surface =m$geoProfile)
+				geoPlotLorenz(hit_scores = hs, crimeNumbers = NULL)},height = scale, width = scale)
+			}
+			else if (plottype == 5)
+			{
+  				output$distPlot <- renderPlot({
+
+				surface_ring <- geoRing(params = p, data = d, source = s, mcmc = m)
+				gp_ring <- geoProfile(surface = surface_ring)
+				geoPlotMap(params = p, data = d, source = s, surface = gp_ring, surfaceCols <- c("red", "white"))},height = scale, width = scale)
+			}
+			else if (plottype == 6)
+			{
+  				output$distPlot <- renderPlot({
+
+				geoPlotSigma(params = p, mcmc = m)},height = scale, width = scale)
+			}
 		}
       })
 
@@ -323,14 +474,14 @@ server <- function(input, output, session) {
 		},digits = 7)
 	})
 
-	getCoords <- function(kmlData) {
-		result <- .C("getCoords", kmlData=kmlData)
+	getCoords <- function(kmlData, minLat, maxLat, minLong, maxLong) {
+		result <- .C("getCoords", kmlData=kmlData, minLat=minLat, maxLat=maxLat, minLong=minLong, maxLong=maxLong)
 		return (result$kmlData)
 	}
 
       observeEvent(input$File3, {
 		inFile <- input$File3
-		newFile <- getCoords (inFile$datapath)
+		newFile <- getCoords (inFile$datapath, input$minLat, input$maxLat, input$minLong, input$maxLong)
 		attr (session,"d") <- read.table(newFile)
   		output$events <- renderTable({
 			read.table(newFile)
@@ -339,7 +490,7 @@ server <- function(input, output, session) {
 
       observeEvent(input$File4, {
 		inFile <- input$File4
-		newFile <- getCoords (inFile$datapath)
+		newFile <- getCoords (inFile$datapath, input$minLat, input$maxLat, input$minLong, input$maxLong)
 		attr (session,"s") <- read.table(newFile)
   		output$sources <- renderTable({
 			read.table(newFile)
