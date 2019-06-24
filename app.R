@@ -76,18 +76,8 @@ ui <- fluidPage(
                								c("No" = "no",
 									  "Yes" = "yes"))
 						),
-						column (6,
-							textInput("plotMinLat", "Min Latitude", "50.0")
-						),
-						column (6,
-							textInput("plotMaxLat", "Max Latitude", "53.0")
-						),
-						column (6,
-							textInput("plotMinLong", "Min Longitude", "-2.0")
-						),
-						column (6,
-							textInput("plotMaxLong", "Max Longitude", "2.0")
-						)
+   						verbatimTextOutput("info")
+
 					),
 					hr(),
 					actionButton("goButton", "Run simulation and plot"),
@@ -195,7 +185,13 @@ ui <- fluidPage(
 		# Main panel for displaying outputs ----
 		mainPanel
 		(
-			imageOutput(outputId = "distPlot")
+			plotOutput(outputId = "distPlot",
+               click = "plot_click",
+
+    					brush = "plot_brush"
+  				)
+
+ 	
 		) 
 	)
 )
@@ -233,17 +229,21 @@ server <- function(input, output, session) {
                    		no = 1,
                    		yes = 2,
                    		1)
-
+		
 			p <- geoParams(data = d, sigma_mean = input$SigmaMean, sigma_squared_shape = sss, samples = input$Iterations)
+			attr (session,"p") <- p
 
 			if (restrict == 2)
 			{
-				zoomLon <- c(as.numeric(input$plotMinLong), as.numeric(input$plotMaxLong))
-				zoomLat <- c(as.numeric(input$plotMinLat), as.numeric(input$plotMaxLat))
+				minLat <- attr (session, "minLat")
+				maxLat <- attr (session, "maxLat")
+				minLong <- attr (session, "minLong")
+				maxLong <- attr (session, "maxLong")
+				zoomLon <- c(as.numeric(minLong), as.numeric(maxLong))
+				zoomLat <- c(as.numeric(minLat), as.numeric(maxLat))
 				p$output$longitude_minMax <- zoomLon
 				p$output$latitude_minMax <- zoomLat
 			}
-
 
     			progress$set(message = "Running geoMCMC- Please wait", value = 1)
 			m <- geoMCMC(data = d, params = p, lambda=l)
@@ -265,6 +265,8 @@ server <- function(input, output, session) {
     		
 			if (plottype == 1)
 			{
+				if (restrict == 1)
+				{
 					output$distPlot <- renderPlot({
 
 						withProgress(message = 'Making plot - plot may take a few seconds to appear after this message disappears', value = 2, {
@@ -274,6 +276,19 @@ server <- function(input, output, session) {
                 						crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 4)
 						})
 					},height = scale, width = scale)
+				}
+				else
+				{
+					output$distPlot <- renderPlot({
+
+						withProgress(message = 'Making plot - plot may take a few seconds to appear after this message disappears', value = 2, {
+
+							geoPlotMap(lonLimits = zoomLon, latLimits = zoomLat, params = p, data = d, source = s, surface = m$geoProfile,
+                						breakPercent = seq(0, 50, 5), mapType = type, 
+                						crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 4)
+						})
+					},height = scale, width = scale)
+				}
 
 			}
 			else if (plottype == 2)
@@ -336,16 +351,20 @@ server <- function(input, output, session) {
                    		1)
 
     		
-
     			restrict <- switch(input$restrict,
                    		no = 1,
                    		yes = 2,
                    		1)
+	
 
-			if (restrict == 2)
+			if (restrict == 1)
 			{
-				zoomLon <- c(as.numeric(input$plotMinLong), as.numeric(input$plotMaxLong))
-				zoomLat <- c(as.numeric(input$plotMinLat), as.numeric(input$plotMaxLat))
+				minLat <- attr (session, "minLat")
+				maxLat <- attr (session, "maxLat")
+				minLong <- attr (session, "minLong")
+				maxLong <- attr (session, "maxLong")
+				zoomLon <- c(as.numeric(minLong), as.numeric(maxLong))
+				zoomLat <- c(as.numeric(minLat), as.numeric(maxLat))
 			}
 
 			if (plottype == 1)
@@ -497,6 +516,40 @@ server <- function(input, output, session) {
 		},digits = 7)
 	})
 
+
+  output$info <- renderText({
+
+        xy_str <- function(e) {
+            if(is.null(e)) return("NULL\n")
+            paste0("x=", round(e$x, 7), " y=", round(e$y, 7), "\n")
+        }
+
+
+	attr (session, "minLat") <- NULL
+	attr (session, "maxLat") <- NULL
+	attr (session, "minLong") <- NULL
+	attr (session, "maxLong") <- NULL
+
+    xy_range_str <- function(e) {
+      if(is.null(e)) return("Entire Area\n")
+
+
+	attr (session, "minLat") <- round(e$ymin, 7)
+	attr (session, "maxLat") <- round(e$ymax, 7)
+	attr (session, "minLong") <- round(e$xmin, 7)
+	attr (session, "maxLong") <- round(e$xmax, 7)
+
+      paste0("Long=", round(e$xmin, 7), ",", round(e$xmax, 7), 
+             " Lat=", round(e$ymin, 7), ",", round(e$ymax, 7))
+
+
+
+    }
+
+    paste0(
+      "Area: ", xy_range_str(input$plot_brush)
+    )
+  })
 }
 
 # Create Shiny app ----
