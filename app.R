@@ -69,13 +69,9 @@ ui <- fluidPage(
 					),
 					hr(),
 					h4("Area restriction"),
+					h5("Click and drag on map to setup view area"),
 
 					fluidRow(
-						column (12,
-  							radioButtons("restrict", "Restrict Area:",
-               								c("No" = "no",
-									  "Yes" = "yes"))
-						),
    						verbatimTextOutput("info")
 
 					),
@@ -185,7 +181,7 @@ ui <- fluidPage(
 		# Main panel for displaying outputs ----
 		mainPanel
 		(
-			plotOutput(outputId = "distPlot",
+			imageOutput(outputId = "distPlot",
                click = "plot_click",
 
     					brush = "plot_brush"
@@ -208,6 +204,7 @@ server <- function(input, output, session) {
 		d <- attr (session, "d")
 		s <- attr (session,"s")
 		l <- input$Lambda
+		session$resetBrush("plot_brush")
 
 
 		# min value for Sigma Squared shape is apparently 2
@@ -225,25 +222,24 @@ server <- function(input, output, session) {
 			# Create a Progress object
 			progress <- shiny::Progress$new(style = "notification")
 
-    			restrict <- switch(input$restrict,
-                   		no = 1,
-                   		yes = 2,
-                   		1)
 		
 			p <- geoParams(data = d, sigma_mean = input$SigmaMean, sigma_squared_shape = sss, samples = input$Iterations)
 			attr (session,"p") <- p
 
-			if (restrict == 2)
-			{
+
+
 				minLat <- attr (session, "minLat")
-				maxLat <- attr (session, "maxLat")
-				minLong <- attr (session, "minLong")
-				maxLong <- attr (session, "maxLong")
-				zoomLon <- c(as.numeric(minLong), as.numeric(maxLong))
-				zoomLat <- c(as.numeric(minLat), as.numeric(maxLat))
-				p$output$longitude_minMax <- zoomLon
-				p$output$latitude_minMax <- zoomLat
-			}
+				if (!is.null(minLat))
+				{
+					maxLat <- attr (session, "maxLat")
+					minLong <- attr (session, "minLong")
+					maxLong <- attr (session, "maxLong")
+					zoomLon <- c(as.numeric(minLong), as.numeric(maxLong))
+					zoomLat <- c(as.numeric(minLat), as.numeric(maxLat))
+					p$output$longitude_minMax <- zoomLon
+					p$output$latitude_minMax <- zoomLat
+				}
+		
 
     			progress$set(message = "Running geoMCMC- Please wait", value = 1)
 			m <- geoMCMC(data = d, params = p, lambda=l)
@@ -265,8 +261,7 @@ server <- function(input, output, session) {
     		
 			if (plottype == 1)
 			{
-				if (restrict == 1)
-				{
+
 					output$distPlot <- renderPlot({
 
 						withProgress(message = 'Making plot - plot may take a few seconds to appear after this message disappears', value = 2, {
@@ -276,19 +271,6 @@ server <- function(input, output, session) {
                 						crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 4)
 						})
 					},height = scale, width = scale)
-				}
-				else
-				{
-					output$distPlot <- renderPlot({
-
-						withProgress(message = 'Making plot - plot may take a few seconds to appear after this message disappears', value = 2, {
-
-							geoPlotMap(lonLimits = zoomLon, latLimits = zoomLat, params = p, data = d, source = s, surface = m$geoProfile,
-                						breakPercent = seq(0, 50, 5), mapType = type, 
-                						crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 4)
-						})
-					},height = scale, width = scale)
-				}
 
 			}
 			else if (plottype == 2)
@@ -336,6 +318,7 @@ server <- function(input, output, session) {
 		p <- attr (session, "p")
 		d <- attr (session, "d")
 		s <- attr (session,"s")
+		session$resetBrush("plot_brush")
 
 
 		if (!is.null(d))
@@ -351,38 +334,25 @@ server <- function(input, output, session) {
                    		1)
 
     		
-    			restrict <- switch(input$restrict,
-                   		no = 1,
-                   		yes = 2,
-                   		1)
-	
 
-			if (restrict == 1)
-			{
+			zoomLon <- p$output$longitude_minMax 
+			zoomLat <- p$output$latitude_minMax 
+
+
 				minLat <- attr (session, "minLat")
-				maxLat <- attr (session, "maxLat")
-				minLong <- attr (session, "minLong")
-				maxLong <- attr (session, "maxLong")
-				zoomLon <- c(as.numeric(minLong), as.numeric(maxLong))
-				zoomLat <- c(as.numeric(minLat), as.numeric(maxLat))
-			}
+				if (!is.null(minLat))
+				{
+					maxLat <- attr (session, "maxLat")
+					minLong <- attr (session, "minLong")
+					maxLong <- attr (session, "maxLong")
+					zoomLon <- c(as.numeric(minLong), as.numeric(maxLong))
+					zoomLat <- c(as.numeric(minLat), as.numeric(maxLat))
+				}
+	
 
 			if (plottype == 1)
 			{
-				if (restrict == 1)
-				{
-					output$distPlot <- renderPlot({
 
-						withProgress(message = 'Making plot - plot may take a few seconds to appear after this message disappears', value = 2, {
-
-							geoPlotMap(params = p, data = d, source = s, surface = m$geoProfile,
-                						breakPercent = seq(0, 50, 5), mapType = type, 
-                						crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 4)
-						})
-					},height = scale, width = scale)
-				}
-				else
-				{
 					output$distPlot <- renderPlot({
 
 						withProgress(message = 'Making plot - plot may take a few seconds to appear after this message disappears', value = 2, {
@@ -392,7 +362,6 @@ server <- function(input, output, session) {
                 						crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 4)
 						})
 					},height = scale, width = scale)
-				}
 
 			}
 			else if (plottype == 2)
@@ -444,6 +413,26 @@ server <- function(input, output, session) {
 		d <- attr (session, "d")
 		s <- attr (session,"s")
 
+		# min value for Sigma Squared shape is apparently 2
+		sss <- input$SigmaSquaredShape
+		if (sss < 2)
+		{
+			sss <- 2
+		}
+
+			p <- geoParams(data = d, sigma_mean = input$SigmaMean, sigma_squared_shape = sss, samples = input$Iterations)
+
+
+					output$distPlot <- renderPlot({
+
+						withProgress(message = 'Making plot - plot may take a few seconds to appear after this message disappears', value = 2, {
+
+							geoPlotMap(params = p, data = d, source = s,
+                						breakPercent = seq(0, 50, 5), mapType = "roadmap", 
+                						crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 4)
+						})
+					},height = scale, width = scale)
+
   		output$events <- renderTable(d, digits = 7)
   		output$sources <- renderTable(s, digits = 7)
       })
@@ -480,17 +469,66 @@ server <- function(input, output, session) {
       observeEvent(input$File1, {
 		inFile <- input$File1
 		attr (session,"d") <- read.table(inFile$datapath)
+		s <- attr (session,"s")
+		d <- attr (session,"d")
   		output$events <- renderTable({
 			read.table(inFile$datapath)
 		},digits = 7)
+
+		# min value for Sigma Squared shape is apparently 2
+		sss <- input$SigmaSquaredShape
+		if (sss < 2)
+		{
+			sss <- 2
+		}
+
+		p <- geoParams(data = d, sigma_mean = input$SigmaMean, sigma_squared_shape = sss, samples = input$Iterations)
+
+
+					output$distPlot <- renderPlot({
+
+						withProgress(message = 'Making plot - plot may take a few seconds to appear after this message disappears', value = 2, {
+
+							geoPlotMap(params = p, data = d, source = s,
+                						breakPercent = seq(0, 50, 5), mapType = "roadmap", 
+                						crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 4)
+						})
+					},height = scale, width = scale)
+
 	})
 
       observeEvent(input$File2, {
 		inFile <- input$File2
 		attr (session,"s") <- read.table(inFile$datapath)
+		s <- attr (session,"s")
+		d <- attr (session,"d")
   		output$sources <- renderTable({
 			read.table(inFile$datapath)
 		},digits = 7)
+
+		# min value for Sigma Squared shape is apparently 2
+		sss <- input$SigmaSquaredShape
+		if (sss < 2)
+		{
+			sss <- 2
+		}
+
+		if (!is.null(d))
+		{
+			p <- geoParams(data = d, sigma_mean = input$SigmaMean, sigma_squared_shape = sss, samples = input$Iterations)
+
+
+			output$distPlot <- renderPlot({
+
+				withProgress(message = 'Making plot - plot may take a few seconds to appear after this message disappears', value = 2, {
+
+					geoPlotMap(params = p, data = d, source = s,
+                						breakPercent = seq(0, 50, 5), mapType = "roadmap", 
+                						crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 4)
+				})
+	
+			})
+		}
 	})
 
 	getCoords <- function(kmlData, minLat, maxLat, minLong, maxLong) {
@@ -542,7 +580,7 @@ server <- function(input, output, session) {
       paste0("Long=", round(e$xmin, 7), ",", round(e$xmax, 7), 
              " Lat=", round(e$ymin, 7), ",", round(e$ymax, 7))
 
-
+	
 
     }
 
