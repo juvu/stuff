@@ -80,7 +80,8 @@ ui <- fluidPage(
 					actionButton("plotButton", "Plot Only"),
 					actionButton("filterButton", "Filter data to area"),
 					hr(),
-					actionButton("previousButton", "Go back to previous plot")
+					actionButton("previousButton", "Go back to previous plot"),
+					verbatimTextOutput("previousPlot")
 
     				),
         			tabPanel("Coordinate Data", 
@@ -188,6 +189,27 @@ server <- function(input, output, session) {
 
 	x <- faithful$waiting
 	scale <- reactive ({input$zoom})
+
+	plotUnavailable <- function() {
+		attr (session, "lastplot") <- NULL
+		output$previousPlot <- renderText({
+			paste0("No Previous plot available\n")
+		})
+	}
+
+	plotAvailable <- function() {
+		mapplot <- attr (session, "mapplot")
+		if (!is.null(mapplot))
+		{
+			attr (session, "lastplot") <- attr (session, "mapplot")
+			attr (session, "lastm") <- attr (session, "m")
+			attr (session, "lastp") <- attr (session, "p")
+		}
+		output$previousPlot <- renderText({
+			paste0("Previous plot is available\n")
+		})
+	}
+
 
 	setupParams <- function() {
 
@@ -346,13 +368,7 @@ server <- function(input, output, session) {
 			# Create a Progress object
 			progress <- shiny::Progress$new(style = "notification")
 
-			mapplot <- attr (session, "mapplot")
-			if (!is.null(mapplot))
-			{
-				attr (session, "lastplot") <- attr (session, "mapplot")
-				attr (session, "lastm") <- attr (session, "m")
-				attr (session, "lastp") <- attr (session, "p")
-			}
+			plotAvailable()
 
 			setupParams()
 			p <- attr (session, "p")
@@ -362,7 +378,6 @@ server <- function(input, output, session) {
 			attr (session,"m") <- m
 
 			doPlotSelect()
-
 		
 			progress$close()
 		}
@@ -376,8 +391,8 @@ server <- function(input, output, session) {
 
 		if (!is.null(d))
 		{
+			plotAvailable()
 			doPlotSelect()
-			attr (session, "mapplot") <- NULL
 		}
       })
 
@@ -395,7 +410,7 @@ server <- function(input, output, session) {
 		attr (session, "p") <- NULL
 		attr (session, "m") <- NULL
 		attr (session, "mapplot") <- NULL
-		attr (session, "lastplot") <- NULL
+		plotUnavailable()
 		
 		tfile <- tempfile()
 		write.table (d, tfile, sep=" ")
@@ -469,7 +484,7 @@ server <- function(input, output, session) {
 		attr (session, "p") <- NULL
 		attr (session, "m") <- NULL
 		attr (session, "mapplot") <- NULL
-		attr (session, "lastplot") <- NULL
+		plotUnavailable()
 
 		setupParams()
 		doPlot()
@@ -489,6 +504,7 @@ server <- function(input, output, session) {
 			attr (session, "mapplot") <- lastplot
 			attr (session, "m") <- attr (session, "lastm")
 			attr (session, "p") <- attr (session, "lastp")
+			plotUnavailable()
 			output$distPlot <- renderPlot({
 
 				withProgress(message = 'Making plot - plot may take a few seconds to appear after this message disappears', value = 2, {
@@ -507,7 +523,7 @@ server <- function(input, output, session) {
 		attr (session, "p") <- NULL
 		attr (session, "m") <- NULL
 		attr (session, "mapplot") <- NULL
-		attr (session, "lastplot") <- NULL
+		plotUnavailable()
   		output$events <- renderTable({
 			read.table(inFile$datapath)
 		},digits = 7)
@@ -524,7 +540,7 @@ server <- function(input, output, session) {
 		attr (session, "p") <- NULL
 		attr (session, "m") <- NULL
 		attr (session, "mapplot") <- NULL
-		attr (session, "lastplot") <- NULL
+		plotUnavailable()
   		output$sources <- renderTable({
 			read.table(inFile$datapath)
 		},digits = 7)
@@ -544,7 +560,7 @@ server <- function(input, output, session) {
 		attr (session, "p") <- NULL
 		attr (session, "m") <- NULL
 		attr (session, "mapplot") <- NULL
-		attr (session, "lastplot") <- NULL
+		plotUnavailable()
 		attr (session,"d") <- read.table(newFile)
   		output$events <- renderTable({
 			read.table(newFile)
@@ -559,7 +575,7 @@ server <- function(input, output, session) {
 		attr (session, "p") <- NULL
 		attr (session, "m") <- NULL
 		attr (session, "mapplot") <- NULL
-		attr (session, "lastplot") <- NULL
+		plotUnavailable()
 		newFile <- getCoords (inFile$datapath)
 		attr (session,"s") <- read.table(newFile)
   		output$sources <- renderTable({
