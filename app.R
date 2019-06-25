@@ -78,6 +78,7 @@ ui <- fluidPage(
 					hr(),
 					actionButton("goButton", "Run simulation and plot"),
 					actionButton("plotButton", "Plot Only"),
+					actionButton("filterButton", "Filter data to area"),
 					hr()
 
     				),
@@ -458,6 +459,26 @@ server <- function(input, output, session) {
 			write.table (s, file, sep=" ")
     		})
 
+      observeEvent(input$filterButton, {
+		d <- attr (session, "d")
+		minLat <- attr (session, "minLat")
+		maxLat <- attr (session, "maxLat")
+		minLong <- attr (session, "minLong")
+		maxLong <- attr (session, "maxLong")
+		d <- d[(d$latitude > minLat),]
+		d <- d[(d$latitude < maxLat),]
+		d <- d[(d$longitude > minLong),]
+		d <- d[(d$longitude < maxLong),]
+		#d <- d[latitude < maxLat]
+		#d <- d[longitude > minLong]
+		#d <- d[longitude < maxLong]
+		#d$latitude <- d$latitude[-(minLat:maxLat)]
+		#d$longitude <- d$longitude[-(minLong:maxLong)]
+		attr (session,"d") <- d
+  		output$events <- renderTable({
+			attr (session,"d")
+		},digits = 7)
+	})
 
       observeEvent(input$rmSource, {
 		attr (session,"s") <- NULL
@@ -527,8 +548,9 @@ server <- function(input, output, session) {
                 						crimeCol = "black", crimeCex = 2, sourceCol = "red", sourceCex = 4)
 				})
 	
-			})
+			},height = scale, width = scale)
 		}
+	
 	})
 
 	getCoords <- function(kmlData, minLat, maxLat, minLong, maxLong) {
