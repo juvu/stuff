@@ -6,11 +6,11 @@
 
 #define MAXSTRING 32000
 
-void getCoords(char **kmlData, double *minLat, double *maxLat, double *minLong, double *maxLong) 
+void getCoords(char **kmlData) 
 {
 	char buffer[MAXSTRING+1] = "" ;
-	char buffer2[MAXSTRING+1] = "" ;
 	int count = 1 ;
+
 
 	FILE *fp1 = fopen (*kmlData, "r") ;
 
@@ -30,54 +30,41 @@ void getCoords(char **kmlData, double *minLat, double *maxLat, double *minLong, 
 		char *point = strstr (buffer, "<Point>") ;
 		if (point)
 		{
-       		while (fgets (buffer, MAXSTRING, fp1))
-       		{
-				char *pointBreak = strstr (buffer, "</Point>") ;
+    	    		while (fgets (buffer, MAXSTRING, fp1))
+    	    		{
+		                char *pointBreak = strstr (buffer, "</Point>") ;
 
-				if (pointBreak)
-					break ;
+		                if (pointBreak)
+                		    break ;
 
 				char *ptr1 = strstr (buffer, "<coordinates>") ;
+
 				if (ptr1)
 				{
-    				while (fgets (buffer, MAXSTRING, fp1))
-    				{
+    					while (fgets (buffer, MAXSTRING, fp1))
+    					{
 						char *ptr2 = strstr (buffer, "</coordinates>") ;
 
 						if (ptr2)
 							break ;
 
-						ptr2 = strstr (buffer, ",") ;
-			
+						ptr2 = strstr (buffer, ",");
 						if (ptr2)
 						{
-							*ptr2 = ' ' ;
-							char *ptr3 = strstr (ptr2, ",") ;
-							if (ptr3)
-								*ptr3 = '\0' ;
+							*ptr2 = ' ';
 
-            				char *rest = NULL ;
-            				char *ptr4= NULL;
-
-							strcpy (buffer2, buffer) ;
-
-            				ptr4 = (char *) strtok_r (buffer2, " ", &rest) ;
-							double longitude = atof(ptr4) ;
-							if (longitude < *minLong || longitude > *maxLong)
-								continue ;
-            				ptr4 = (char *) strtok_r (NULL, " ", &rest) ;
-							double latitude = atof(ptr4) ;
-							if (latitude < *minLat || latitude > *maxLat)
-								continue ;
+							ptr2 = strstr (ptr2, ",");
+							if (ptr2)
+								*ptr2 = '\0';
 
 							fprintf (fp, "\"%d\" %s\n", count++, buffer) ;
 						}
+
 					}
 				}
-			}
+	    		}
 		}
 	}
-
 	fclose (fp) ;
 
 	fclose(fp1);
@@ -89,5 +76,5 @@ main (int argc, char **argv)
 	double maxLat = 51.54;
 	double minLong = -0.16;
 	double maxLong = -0.07 ;
-	getCoords (&argv[1], &minLat, &maxLat, &minLong, &maxLong) ;
+	getCoords (&argv[1]) ;
 }
