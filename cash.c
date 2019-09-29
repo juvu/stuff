@@ -432,6 +432,7 @@ char	**argv ;
 	setupSimon (firstyear) ;
 	firstyear->stateIncome = atof (argv[25]) ;
 	firstyear->TaxAllowance = atof (argv[26]) ;
+	double RTSpend = firstyear->Spend ;
 	
 
 	setupReturns (firstyear) ;
@@ -517,6 +518,7 @@ char	**argv ;
 		printf ("<TD><center>inheritance<center>\n") ;
 		printf ("<TD><center>income<center>\n") ;
 		printf ("<TD><center>Ratio<center>\n") ;
+		printf ("<TD><center>RTSpend<center>\n") ;
 		printf ("<TR>\n") ;
 		for (loop=0;loop<nextYear-1;loop++)
 		{
@@ -542,6 +544,9 @@ char	**argv ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].inheritance) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].income) ;
 			printf ("<TD><center>%.1f<center>\n", (years[loop].total / years[loop].Spend)) ;
+			if (loop)
+				RTSpend *= (1.0 - (SpendDecrease * 0.01)) ;
+			printf ("<TD><center>%d<center>\n", (int)(RTSpend)) ;
 			printf ("</TR>\n") ;
 		}
 		printf ("</TABLE>\n") ;
