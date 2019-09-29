@@ -8,7 +8,7 @@ main (int argc, char **argv)
 	FILE	*fp ;
 	char	*seed ;
 	int n ;
-	char buff[19] ;
+	char buff[100] ;
 	int	newchar, achar ;
 
 /*
