@@ -186,7 +186,7 @@ class HomePageState extends State<HomePage> {
                     String myText = intPrice.toString();
                     textController.text = myText;
                     numPints = cost / price;
-                    String pintsText = numPints.toStringAsPrecision();
+                    String pintsText = numPints.toStringAsPrecision(2);
                     pintsController.text = pintsText ;
                   });
                 }
