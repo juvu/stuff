@@ -1,0 +1,76 @@
+git clone ssh://git@madcap/Cog/Mediator/Gateways/ldap ldap
+
+git status
+
+git branch -a
+
+https://git.wiki.kernel.org/index.php/QuickStart
+http://gitimmersion.com/lab_10.html
+git log --pretty=oneline
+git log --pretty=oneline --since='5 minutes ago'
+git log --pretty=oneline --author=<your name>
+
+
+git branch -a
+git branch
+git checkout -tb ProjectStormNew  remotes/origin/ProjectStormNew
+
+If you want to create one from another branch use checkout..
+e.g. 
+git checkout -tb <localbranch> <remote branch>
+
+
+git commit -a
+git commit <filename>
+
+Careful: checkout master throwing away all changes
+git checkout master — .
+
+
+Nothing in central respoitory until
+git push
+git push origin ProjectStormNew (if above does nothing)
+
+create a branch
+git branch -t <name>
+git checkout <name>
+git push origin <name>
+git push -u
+#git checkout master
+#git branch -D <name>
+#git checkout -tb <local> <remote>
+
+git branch branch_name --set-upstream-to your_new_remote/branch_name
+
+checking in issues?
+git commit --amend --reset-author
+git push origin --force
+
+
+Merge another branch with sandbox
+git merge <branch name>
+
+Reset a branch
+git reset --hard remotes/origin/master
+git clean -df
+git fetch origin
+
+git log --oneline
+borg02{msgmedia}8205% git log --oneline VFUKPCCRATING_CFG
+eada3c4 QC4920
+56df93e QC4643 Updates for 1.1.8 build
+fc820e8 QC 4444 PROFILE should not write to Echo Database
+2a0a22f QC 4448 and 4449
+
+git checkout fc820e8 VFUKRATING_CFG
+
+to see the differences in a particular revision eg
+
+git show 2a0a22f
+
+// to checkout a branch with tag at timestamp
+git checkout -b MediatorSOAPsvc-5_0 'master@{1979-02-26 18:30:00}' 
+
+// if you don't see a remote branch you are expecting
+git fetch --all
+
