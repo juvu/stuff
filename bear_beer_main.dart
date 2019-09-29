@@ -27,22 +27,23 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   var ansStr = "44";
-  var textController = new TextEditingController();
+  var textController = new TextEditingController(text: '0');
   var canOneController = new TextEditingController(text: '0');
   var canTwoController = new TextEditingController(text: '0');
   var canThreeController = new TextEditingController(text: '0');
   var canFourController = new TextEditingController(text: '0');
   var priceController = new TextEditingController(text: '0');
+  var pintsController = new TextEditingController(text: '0');
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
       backgroundColor: Colors.white,
       body: new Container(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(30.0),
         child: new Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
-            Text('Wight Bear Ber App'),
+            Text('Wight Bear Beer App'),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -104,13 +105,41 @@ class HomePageState extends State<HomePage> {
               keyboardType: TextInputType.number,
               controller: priceController,
             ),
-            TextField(
-              decoration: new InputDecoration(labelText: "Cost (Pence)"),
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-              controller: textController,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                Expanded( // wrap your Column in Expanded
+                  child: Column(
+                    children: <Widget>[
+                      Container(child: TextField(
+                        decoration: new InputDecoration(labelText: "Cost (Pence)"),
+                        enabled: false,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        controller: textController,
+                      )),
+                    ],
+                  ),
+                ),
+                Expanded( // wrap your Column in Expanded
+                  child: Column(
+                    children: <Widget>[
+                      Container(child: TextField(
+                        decoration: new InputDecoration(labelText: "Num Pints"),
+                        enabled: false,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        controller: pintsController,
+                      )),
+                    ],
+                  ),
+                ),
+              ],
             ),
             RaisedButton(
                 child: Text(
@@ -131,6 +160,8 @@ class HomePageState extends State<HomePage> {
                     assert (price is double);
                     var cost = double.parse(canOneController.text);
                     assert (cost is double);
+                    var numPints = double.parse(priceController.text);
+                    assert (numPints is double);
                     cost = 0.0;
                     if (canOne > 23.0) {
                       cost =
@@ -154,6 +185,9 @@ class HomePageState extends State<HomePage> {
                     var intPrice = cost.toInt();
                     String myText = intPrice.toString();
                     textController.text = myText;
+                    numPints = cost / price;
+                    String pintsText = numPints.toStringAsPrecision();
+                    pintsController.text = pintsText ;
                   });
                 }
             ),
