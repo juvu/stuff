@@ -37,6 +37,7 @@ class HomePageState extends State<HomePage> {
   var pintsController = new TextEditingController(text: '0');
   var chargedController = new TextEditingController(text: '0');
   var equivController = new TextEditingController(text: '0');
+  var canController = new TextEditingController(text: '20');
 
   @override
   Widget build(BuildContext context) {
@@ -126,18 +127,18 @@ class HomePageState extends State<HomePage> {
                         children: <Widget>[
                           Container(
                               child: TextField(
-                                decoration:
-                                new InputDecoration(labelText: "Price per pint (p)"),
-                                keyboardType: TextInputType.number,
-                                controller: priceController,
-                                onChanged: (text) {
-                                  var price = double.parse(priceController.text);
-                                  price = price * 1.0224;
-                                  var intPrice = price.toInt();
-                                  String takeawayText = intPrice.toString();
-                                  takeawayController.text = takeawayText;
-                                },
-                              )),
+                            decoration: new InputDecoration(
+                                labelText: "Price per pint (p)"),
+                            keyboardType: TextInputType.number,
+                            controller: priceController,
+                            onChanged: (text) {
+                              var price = double.parse(priceController.text);
+                              price = price * 1.0224;
+                              var intPrice = price.toInt();
+                              String takeawayText = intPrice.toString();
+                              takeawayController.text = takeawayText;
+                            },
+                          )),
                         ],
                       ),
                     ),
@@ -147,12 +148,12 @@ class HomePageState extends State<HomePage> {
                         children: <Widget>[
                           Container(
                               child: TextField(
-                                decoration:
-                                new InputDecoration(labelText: "Takeaway per pint (p)"),
-                                enabled: false,
-                                keyboardType: TextInputType.number,
-                                controller: takeawayController,
-                              )),
+                            decoration: new InputDecoration(
+                                labelText: "Takeaway per pint (p)"),
+                            enabled: false,
+                            keyboardType: TextInputType.number,
+                            controller: takeawayController,
+                          )),
                         ],
                       ),
                     ),
@@ -221,7 +222,8 @@ class HomePageState extends State<HomePage> {
                             keyboardType: TextInputType.number,
                             onChanged: (text) {
                               var numPints = double.parse(pintsController.text);
-                              var charged = double.parse(chargedController.text);
+                              var charged =
+                                  double.parse(chargedController.text);
                               var equiv = charged / numPints;
                               if (equiv >= 10.0) {
                                 String equivText = equiv.toStringAsPrecision(4);
@@ -255,12 +257,34 @@ class HomePageState extends State<HomePage> {
                     ),
                   ],
                 ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    Expanded(
+                      // wrap your Column in Expanded
+                      child: Column(
+                        children: <Widget>[
+                          Container(
+                              child: TextField(
+                            decoration:
+                                new InputDecoration(labelText: "Can Weight(g)"),
+                            enabled: true,
+                            controller: canController,
+                                keyboardType: TextInputType.number,
+                          )),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
                 RaisedButton(
                     child:
-                        Text('Calculate Price', style: TextStyle(fontSize: 20)),
+                        Text('Calculate', style: TextStyle(fontSize: 20)),
                     onPressed: () {
                       setState(() {
                         var numCans = int.parse(priceController.text);
+                        var canWeight = double.parse(canController.text);
                         numCans = 0;
                         var canOne = double.parse(canOneController.text);
                         //assert(canOne is double);
@@ -279,35 +303,59 @@ class HomePageState extends State<HomePage> {
                         cost = 0.0;
                         // 1.0224 is the takeaway surcharge. 500cc costs 90% of 1 pint
                         // but 90% of 568 is 511.2 so the surcharge is 511.2/500 = 1.0224
-                        if (canOne > 23.0) {
+                        if (canOne > 50) {
                           cost = cost +
                               ((price * 1.76) *
                                   1.0224 *
-                                  (((canOne - 23.0) * 0.001)));
+                                  (((canOne - canWeight) * 0.001)));
                           numCans = numCans + 1;
                         }
-                        if (canTwo > 23.0) {
+                        if (canTwo > 50) {
                           cost = cost +
                               ((price * 1.76) *
                                   1.0224 *
-                                  (((canTwo - 23.0) * 0.001)));
+                                  (((canTwo - canWeight) * 0.001)));
                           numCans = numCans + 1;
                         }
-                        if (canThree > 23.0) {
+                        if (canThree > 50) {
                           cost = cost +
                               ((price * 1.76) *
                                   1.0224 *
-                                  (((canThree - 23.0) * 0.001)));
+                                  (((canThree - canWeight) * 0.001)));
                           numCans = numCans + 1;
                         }
-                        if (canFour > 23.0) {
+                        if (canFour > 50) {
                           cost = cost +
                               ((price * 1.76) *
                                   1.0224 *
-                                  (((canFour - 23.0) * 0.001)));
+                                  (((canFour - canWeight) * 0.001)));
                           numCans = numCans + 1;
                         }
-                        var charged = price * 0.9 * numCans * 0.01;
+                        var charged = 0.0;
+                        if (canOne > 600.0) {
+                          charged = charged + (price * 1.8 *0.01);
+                        }
+                        else if (canOne > 50.0) {
+                          charged = charged + (price * 0.9 *0.01);
+                        }
+                        if (canTwo > 600.0) {
+                          charged = charged + (price * 1.8 *0.01);
+                        }
+                        else if (canTwo > 50.0) {
+                          charged = charged + (price * 0.9 *0.01);
+                        }
+                        if (canThree > 600.0) {
+                          charged = charged + (price * 1.8 *0.01);
+                        }
+                        else if (canThree > 50.0) {
+                          charged = charged + (price * 0.9 *0.01);
+                        }
+                        if (canFour > 600.0) {
+                          charged = charged + (price * 1.8 *0.01);
+                        }
+                        else if (canFour > 50.0) {
+                          charged = charged + (price * 0.9 *0.01);
+                        }
                         if (charged >= 10.0) {
                           String chargeText = charged.toStringAsPrecision(4);
                           chargedController.text = chargeText;
@@ -344,5 +392,4 @@ class HomePageState extends State<HomePage> {
     );
   }
 }
-
 
