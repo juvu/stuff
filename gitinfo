@@ -76,3 +76,6 @@ git fetch --all
 
 // good thing to try on windows
 git checkout origin
+
+// to push repository on windows
+git push origin HEAD:master
