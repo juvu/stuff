@@ -74,3 +74,5 @@ git checkout -b MediatorSOAPsvc-5_0 'master@{1979-02-26 18:30:00}'
 // if you don't see a remote branch you are expecting
 git fetch --all
 
+// good thing to try on windows
+git checkout origin

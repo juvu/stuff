@@ -38,6 +38,8 @@ class HomePageState extends State<HomePage> {
   var chargedController = new TextEditingController(text: '0');
   var equivController = new TextEditingController(text: '0');
   var canController = new TextEditingController(text: '20');
+  var canSizeController = new TextEditingController(text: '440');
+  var discountPercentController = new TextEditingController(text: '20');
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +135,10 @@ class HomePageState extends State<HomePage> {
                             controller: priceController,
                             onChanged: (text) {
                               var price = double.parse(priceController.text);
-                              price = price * 1.0224;
+                              var discountPercent = double.parse(discountPercentController.text);
+                              var canSize = double.parse(canSizeController.text);
+                              var takeawayRate = 568.0 * (1.0 - (discountPercent * 0.01)) / canSize ;
+                              price = price * takeawayRate;
                               var intPrice = price.toInt();
                               String takeawayText = intPrice.toString();
                               takeawayController.text = takeawayText;
@@ -276,6 +281,42 @@ class HomePageState extends State<HomePage> {
                         ],
                       ),
                     ),
+                    Expanded(
+                      // wrap your Column in Expanded
+                      child: Column(
+                        children: <Widget>[
+                          Container(
+                              child: TextField(
+                                decoration:
+                                new InputDecoration(labelText: "Can Size(ml)"),
+                                enabled: true,
+                                controller: canSizeController,
+                                keyboardType: TextInputType.number,
+                              )),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    Expanded(
+                      // wrap your Column in Expanded
+                      child: Column(
+                        children: <Widget>[
+                          Container(
+                              child: TextField(
+                                decoration:
+                                new InputDecoration(labelText: "Discount Percent(%)"),
+                                enabled: true,
+                                controller: discountPercentController,
+                                keyboardType: TextInputType.number,
+                              )),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
                 RaisedButton(
@@ -283,9 +324,9 @@ class HomePageState extends State<HomePage> {
                         Text('Calculate', style: TextStyle(fontSize: 20)),
                     onPressed: () {
                       setState(() {
-                        var numCans = int.parse(priceController.text);
                         var canWeight = double.parse(canController.text);
-                        numCans = 0;
+                        var numCans = 0;
+                        var numPints = 0.0 ;
                         var canOne = double.parse(canOneController.text);
                         //assert(canOne is double);
                         var canTwo = double.parse(canTwoController.text);
@@ -296,66 +337,61 @@ class HomePageState extends State<HomePage> {
                         //assert(canFour is double);
                         var price = double.parse(priceController.text);
                         //assert(price is double);
-                        var cost = double.parse(canOneController.text);
-                        //assert(cost is double);
-                        var numPints = double.parse(priceController.text);
-                        //assert(numPints is double);
-                        cost = 0.0;
-                        // 1.0224 is the takeaway surcharge. 500cc costs 90% of 1 pint
+                        var discountPercent = double.parse(discountPercentController.text);
+                        //assert(discountPercent is double);
+                        var canSize = double.parse(canSizeController.text);
+                        //assert(discountPercent is double);
+                        var cost = 0.0;
+                        // calculate takeaway surcharge. eg 500cc costs 90% of 1 pint
                         // but 90% of 568 is 511.2 so the surcharge is 511.2/500 = 1.0224
+                        var chargedRate = 1.0 - (discountPercent * 0.01) ;
+                        var takeawayRate = 568.0 * (1.0 - (discountPercent * 0.01)) / canSize ;
+
+
+
                         if (canOne > 50) {
                           cost = cost +
                               ((price * 1.76) *
-                                  1.0224 *
+                                  takeawayRate *
                                   (((canOne - canWeight) * 0.001)));
                           numCans = numCans + 1;
                         }
                         if (canTwo > 50) {
                           cost = cost +
                               ((price * 1.76) *
-                                  1.0224 *
+                                  takeawayRate *
                                   (((canTwo - canWeight) * 0.001)));
                           numCans = numCans + 1;
                         }
                         if (canThree > 50) {
                           cost = cost +
                               ((price * 1.76) *
-                                  1.0224 *
+                                  takeawayRate *
                                   (((canThree - canWeight) * 0.001)));
                           numCans = numCans + 1;
                         }
                         if (canFour > 50) {
                           cost = cost +
                               ((price * 1.76) *
-                                  1.0224 *
+                                  takeawayRate *
                                   (((canFour - canWeight) * 0.001)));
                           numCans = numCans + 1;
                         }
                         var charged = 0.0;
-                        if (canOne > 600.0) {
-                          charged = charged + (price * 1.8 *0.01);
+                        if (canOne > 50) {
+                          charged = charged + (price * chargedRate * 0.01);
                         }
-                        else if (canOne > 50.0) {
-                          charged = charged + (price * 0.9 *0.01);
+                        if (canTwo
+                            > 50) {
+                          charged = charged + (price * chargedRate * 0.01);
                         }
-                        if (canTwo > 600.0) {
-                          charged = charged + (price * 1.8 *0.01);
+                        if (canThree > 50) {
+                          charged = charged + (price * chargedRate * 0.01);
                         }
-                        else if (canTwo > 50.0) {
-                          charged = charged + (price * 0.9 *0.01);
+                        if (canFour > 50) {
+                          charged = charged + (price * chargedRate * 0.01);
                         }
-                        if (canThree > 600.0) {
-                          charged = charged + (price * 1.8 *0.01);
-                        }
-                        else if (canThree > 50.0) {
-                          charged = charged + (price * 0.9 *0.01);
-                        }
-                        if (canFour > 600.0) {
-                          charged = charged + (price * 1.8 *0.01);
-                        }
-                        else if (canFour > 50.0) {
-                          charged = charged + (price * 0.9 *0.01);
-                        }
+
                         if (charged >= 10.0) {
                           String chargeText = charged.toStringAsPrecision(4);
                           chargedController.text = chargeText;
@@ -363,7 +399,7 @@ class HomePageState extends State<HomePage> {
                           String chargeText = charged.toStringAsPrecision(3);
                           chargedController.text = chargeText;
                         }
-                        numPints = cost / (price * 1.0224);
+                        numPints = cost / (price * takeawayRate);
                         String pintsText = numPints.toStringAsPrecision(3);
                         pintsController.text = pintsText;
                         cost = cost * 0.01;
@@ -382,6 +418,10 @@ class HomePageState extends State<HomePage> {
                           String equivText = equiv.toStringAsPrecision(3);
                           equivController.text = equivText;
                         }
+                        price = price * takeawayRate;
+                        var intPrice = price.toInt();
+                        String takeawayText = intPrice.toString();
+                        takeawayController.text = takeawayText;
                       });
                     }),
               ],
