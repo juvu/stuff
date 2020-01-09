@@ -56,6 +56,7 @@ static double InvestSD = 2.0 ;
 static double CashMean = 3.0 ;
 static double CashSD = 0.5 ;
 static double SpendDecrease = 0.0 ;
+static int realTerms = 1 ;
 
 calculateAnnuityInflation(Year *year)
 {
@@ -369,11 +370,11 @@ char	**argv ;
 	int loop = 0 ;
 	Year *firstyear = NULL ;
 
-	if (argc != 28)
+	if (argc != 29)
 	{
 		printf ("Usage: %d cash <random seed> <rent> <inherit> <inheritYear> <spend> <ZurichYear> <Zurich25> <PruYear> <Pru25> <FerrantiYear> <SimonYear>\n", argc);
 		printf ("                                   <InflationMean> <InflationSD> <InvestMean> <InvestSD> <CashMean> <CashSD> <SpendDecrease>\n");
-		printf ("                                   <FirstYear> <ZRP> <Zurich> <Pru> <cash> <FerrantiAmount> <SimonAmount> <stateAmount> <taxAllowance>\n");
+		printf ("                                   <FirstYear> <ZRP> <Zurich> <Pru> <cash> <FerrantiAmount> <SimonAmount> <stateAmount> <taxAllowance> <realTerms>\n");
 		exit (0) ;
 	}
     // init random seed
@@ -434,6 +435,7 @@ char	**argv ;
 	setupSimon (firstyear) ;
 	firstyear->stateIncome = atof (argv[26]) ;
 	firstyear->TaxAllowance = atof (argv[27]) ;
+	realTerms = atoi (argv[28]) ;
 	double RTSpend = firstyear->Spend ;
 	
 
@@ -498,7 +500,7 @@ char	**argv ;
 	else
 	{
 		printf ("<center><TABLE COLS=10\n border=3>") ;
-		printf ("<TR>\n") ;
+		printf ("<TR bgcolor=red> \n") ;
 		printf ("<TD><center>year<center>\n") ;
 		printf ("<TD><center>ZRPTotal<center>\n") ;
 		printf ("<TD><center>ZurichTotal<center>\n") ;
@@ -524,31 +526,43 @@ char	**argv ;
 		printf ("<TD><center>Ratio<center>\n") ;
 		printf ("<TD><center>RTSpend<center>\n") ;
 		printf ("<TR>\n") ;
+
 		for (loop=0;loop<nextYear-1;loop++)
 		{
-			printf ("<TR>\n") ;
+			double inflationFactor = 1.0 ;
+
+			if (!(loop%5))
+				printf ("<TR bgcolor=red>\n") ;
+			else
+				printf ("<TR>\n") ;
+
+			inflationFactor = years[loop].Spend / years[0].Spend ;
+
+			if (!realTerms)
+				inflationFactor = 1.0 ;
+
 			printf ("<TD><center>%d<center>\n", years[loop].year) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].ZRP) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].Zurich) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].Pru) ;
-			printf ("<TD><center>%.2f<center>\n", years[loop].investmentReturn) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].cash) ;
-			printf ("<TD><center>%.2f<center>\n", years[loop].cashReturn) ;
+			printf ("<TD><center>%d<center>\n", (int) (years[loop].ZRP / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[loop].Zurich / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[loop].Pru / inflationFactor)) ;
+			printf ("<TD><center>%.2f<center>\n", (years[loop].investmentReturn / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[loop].cash / inflationFactor)) ;
+			printf ("<TD><center>%.2f<center>\n", (years[loop].cashReturn / inflationFactor)) ;
 			printf ("<TD><center>%.2f<center>\n", years[loop].inflation) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].ZRPIncome) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].ZurichIncome) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].PruIncome) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].cashIncome) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].rentIncome) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].stateIncome) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].FerrantiIncome) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].SimonIncome) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].Spend) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].TaxAllowance) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].tax) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].total) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].inheritance) ;
-			printf ("<TD><center>%d<center>\n", (int)years[loop].income) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[loop].ZRPIncome / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[loop].ZurichIncome / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[loop].PruIncome / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[loop].cashIncome / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[loop].rentIncome / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[loop].stateIncome / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[loop].FerrantiIncome / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[loop].SimonIncome / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[loop].Spend / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[loop].TaxAllowance / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[loop].tax / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[loop].total / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[loop].inheritance / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[loop].income / inflationFactor)) ;
 			printf ("<TD><center>%.1f<center>\n", (years[loop].total / years[loop].Spend)) ;
 			if (loop)
 				RTSpend *= (1.0 - (SpendDecrease * 0.01)) ;
