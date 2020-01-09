@@ -5,6 +5,7 @@
 #include <math.h>
 
 #define MAX_BUFF 1024
+#define NUM_ITERATIONS 10000
 
 typedef struct
 {
@@ -41,7 +42,7 @@ typedef struct
 	double tax ;
 } Year ;
 
-static Year	years[100] ;
+static Year	years[NUM_ITERATIONS][100] ;
 static int InheritYear = 2024 ;
 static int PruYear = 2029 ;
 static int Pru25 = 0 ;
@@ -360,6 +361,17 @@ setupSimon (Year *year)
 	fclose (stream) ;
 }
 
+int sortItOut(int *a, int *b)
+{
+    if (*a < *b)
+        return -1 ;
+    if (*a > *b)
+        return 1 ;
+
+    return 0 ;
+}
+
+
 main(argc, argv)
 int 	argc ;
 char	**argv ;
@@ -370,7 +382,7 @@ char	**argv ;
 	int loop = 0 ;
 	Year *firstyear = NULL ;
 
-	if (argc != 29)
+	if (argc != 30)
 	{
 		printf ("Usage: %d cash <random seed> <rent> <inherit> <inheritYear> <spend> <ZurichYear> <Zurich25> <PruYear> <Pru25> <FerrantiYear> <SimonYear>\n", argc);
 		printf ("                                   <InflationMean> <InflationSD> <InvestMean> <InvestSD> <CashMean> <CashSD> <SpendDecrease>\n");
@@ -407,84 +419,128 @@ char	**argv ;
 
 	// read in starting amounts
 
-	firstyear = &years[0];
-	firstyear->year = atoi (argv[19]);
-	firstyear->ZRP = atof (argv[20]) * 1000;
-	firstyear->Zurich = atof (argv[21]) * 1000;
-	firstyear->Pru = atof (argv[22]) * 1000;
-	firstyear->cash = atof (argv[23]) * 1000;
-	firstyear->rentIncome = atof(argv[2]) ;
-	firstyear->inheritance = atof(argv[3]) * 1000;
-	firstyear->Spend = atof(argv[5]) ;
-	ZurichYear = atoi (argv[6]) ;
-	Zurich25 = atoi (argv[7]) ;
-	PruYear = atoi (argv[8]) ;
-	Pru25 = atoi (argv[9]) ;
-	FerrantiYear = atoi (argv[10]) ;
-	SimonYear = atoi (argv[11]) ;
-	InflationMean = atof (argv[12]) ;
-	InflationSD = atof (argv[13]) ;
-	InvestMean = atof (argv[14]) ;
-	InvestSD = atof (argv[15]) ;
-	CashMean = atof (argv[16]) ;
-	CashSD = atof (argv[17]) ;
-	SpendDecrease = atof (argv[18]) ;
-	firstyear->FerrantiIncome = atof (argv[24]) ;
-	setupFerranti (firstyear) ;
-	firstyear->SimonIncome = atof (argv[25]) ;
-	setupSimon (firstyear) ;
-	firstyear->stateIncome = atof (argv[26]) ;
-	firstyear->TaxAllowance = atof (argv[27]) ;
-	realTerms = atoi (argv[28]) ;
-	double RTSpend = firstyear->Spend ;
+	int iteration = 0 ;
+	char resultsShow [100] ;
+	double RTSpend = 0.0 ;
+
+	for (iteration=0;iteration<NUM_ITERATIONS;iteration++)
+	{
+		firstyear = &years[iteration][0];
+		firstyear->year = atoi (argv[19]);
+		firstyear->ZRP = atof (argv[20]) * 1000;
+		firstyear->Zurich = atof (argv[21]) * 1000;
+		firstyear->Pru = atof (argv[22]) * 1000;
+		firstyear->cash = atof (argv[23]) * 1000;
+		firstyear->rentIncome = atof(argv[2]) ;
+		firstyear->inheritance = atof(argv[3]) * 1000;
+		firstyear->Spend = atof(argv[5]) ;
+		ZurichYear = atoi (argv[6]) ;
+		Zurich25 = atoi (argv[7]) ;
+		PruYear = atoi (argv[8]) ;
+		Pru25 = atoi (argv[9]) ;
+		FerrantiYear = atoi (argv[10]) ;
+		SimonYear = atoi (argv[11]) ;
+		InflationMean = atof (argv[12]) ;
+		InflationSD = atof (argv[13]) ;
+		InvestMean = atof (argv[14]) ;
+		InvestSD = atof (argv[15]) ;
+		CashMean = atof (argv[16]) ;
+		CashSD = atof (argv[17]) ;
+		SpendDecrease = atof (argv[18]) ;
+		firstyear->FerrantiIncome = atof (argv[24]) ;
+		setupFerranti (firstyear) ;
+		firstyear->SimonIncome = atof (argv[25]) ;
+		setupSimon (firstyear) ;
+		firstyear->stateIncome = atof (argv[26]) ;
+		firstyear->TaxAllowance = atof (argv[27]) ;
+		realTerms = atoi (argv[28]) ;
+		RTSpend = firstyear->Spend ;
+		strcpy (resultsShow, argv[29]) ;
+		
 	
-
-	setupReturns (firstyear) ;
-
-	if (firstyear->year == ZurichYear)
-	{
-		if (Zurich25)
+		setupReturns (firstyear) ;
+	
+		if (firstyear->year == ZurichYear)
 		{
-			double cashTake = firstyear->Zurich * 0.25 ;
-			firstyear->Zurich -= cashTake ;
-			firstyear->cash += cashTake ;
+			if (Zurich25)
+			{
+				double cashTake = firstyear->Zurich * 0.25 ;
+				firstyear->Zurich -= cashTake ;
+				firstyear->cash += cashTake ;
+			}
+		}
+		if (firstyear->year == PruYear)
+		{
+			if (Pru25)
+			{
+				double cashTake = firstyear->Pru * 0.25 ;
+				firstyear->Pru -= cashTake ;
+				firstyear->cash += cashTake ;
+			}
+		}
+		firstyear->total = firstyear->ZRP + firstyear->Zurich + firstyear->Pru + firstyear->cash ;
+		firstyear->cashIncome = (firstyear->cashReturn * 0.01) * firstyear->cash;
+	
+		if ((firstyear->FerrantiIncome < 1.0) && (firstyear->year == FerrantiYear))
+		{
+			int yearsEarly = 2029 - firstyear->year ;
+			double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
+			firstyear->FerrantiIncome = reductionFactor * (firstyear->F1 + firstyear->F2 + firstyear->F3 + firstyear->F4 + firstyear->F5 + firstyear->F6) ;
+		}
+		if ((firstyear->SimonIncome < 1.0) && (firstyear->year == SimonYear))
+		{
+			int yearsEarly = 2029 - firstyear->year ;
+			double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
+			firstyear->SimonIncome = reductionFactor * (firstyear->S1 + firstyear->S2) ;
+		}
+	
+		calculateAnnuityInflation(firstyear);
+		calculateIncome(firstyear);
+	
+		// now process every year
+	
+		for (nextYear = 1; nextYear<=45; nextYear++)
+		{
+			years[iteration][nextYear].year = nextYear + firstyear->year;
+			processYear(&years[iteration][nextYear], &years[iteration][nextYear-1]);
 		}
 	}
-	if (firstyear->year == PruYear)
-	{
-		if (Pru25)
-		{
-			double cashTake = firstyear->Pru * 0.25 ;
-			firstyear->Pru -= cashTake ;
-			firstyear->cash += cashTake ;
-		}
-	}
-	firstyear->total = firstyear->ZRP + firstyear->Zurich + firstyear->Pru + firstyear->cash ;
-	firstyear->cashIncome = (firstyear->cashReturn * 0.01) * firstyear->cash;
 
-	if ((firstyear->FerrantiIncome < 1.0) && (firstyear->year == FerrantiYear))
+	/* collect best, worst and average year info */
+
+	int bestYear = -1 ;
+	int worstYear = -1 ;
+	int averageYear = -1 ;
+
+	int year80 = 2044 - firstyear->year ;
+	int results80[NUM_ITERATIONS];
+
+	for (iteration=0;iteration<NUM_ITERATIONS;iteration++)
 	{
-		int yearsEarly = 2029 - firstyear->year ;
-		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
-		firstyear->FerrantiIncome = reductionFactor * (firstyear->F1 + firstyear->F2 + firstyear->F3 + firstyear->F4 + firstyear->F5 + firstyear->F6) ;
-	}
-	if ((firstyear->SimonIncome < 1.0) && (firstyear->year == SimonYear))
-	{
-		int yearsEarly = 2029 - firstyear->year ;
-		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
-		firstyear->SimonIncome = reductionFactor * (firstyear->S1 + firstyear->S2) ;
+		results80[iteration] = (int) years[iteration][year80].total;
 	}
 
-	calculateAnnuityInflation(firstyear);
-	calculateIncome(firstyear);
+    int (*sortfn)() = sortItOut ;
+    qsort (results80, NUM_ITERATIONS, sizeof(int), sortfn) ;
 
-	// now process every year
-
-	for (nextYear = 1; nextYear<=45; nextYear++)
+	for (iteration=0;iteration<NUM_ITERATIONS;iteration++)
 	{
-		years[nextYear].year = nextYear + firstyear->year;
-		processYear(&years[nextYear], &years[nextYear-1]);
+		if (results80[0] == (int) years[iteration][year80].total)
+			worstYear = iteration ;
+		if (results80[NUM_ITERATIONS/2] == (int) years[iteration][year80].total)
+			averageYear = iteration ;
+		if (results80[NUM_ITERATIONS-1] == (int) years[iteration][year80].total)
+			bestYear = iteration ;
 	}
+
+	int rs = 0 ;
+
+	if (!strcmp (resultsShow,"best"))
+		rs = bestYear ;
+	else if (!strcmp (resultsShow,"worst"))
+		rs = worstYear ;
+	else
+		rs = averageYear ;
 
 	/* print out the results */
 
@@ -492,15 +548,16 @@ char	**argv ;
 	{
 		for (loop=0;loop<nextYear-1;loop++)
 		{
-			printf ("%d, ZRP %d, Zurich %d, Pru %d, Cash %d Total %d Tax %d Spend %d\n", years[loop].year, (int) years[loop].ZRP, (int) years[loop].Zurich,
-														(int) years[loop].Pru, (int) years[loop].cash, (int) years[loop].total,
-															(int) years[loop].tax, (int) years[loop].Spend) ;
+			printf ("%d, ZRP %d, Zurich %d, Pru %d, Cash %d Total %d Tax %d Spend %d\n", years[rs][loop].year, (int) years[rs][loop].ZRP, (int) years[rs][loop].Zurich,
+														(int) years[rs][loop].Pru, (int) years[rs][loop].cash, (int) years[rs][loop].total,
+															(int) years[rs][loop].tax, (int) years[rs][loop].Spend) ;
 		}
 	}
 	else
 	{
 		printf ("<center><TABLE COLS=10\n border=3>") ;
-		printf ("<TR bgcolor=red> \n") ;
+		//printf ("<TR bgcolor=green> \n") ;
+		printf ("<TR> \n") ;
 		printf ("<TD><center>year<center>\n") ;
 		printf ("<TD><center>ZRPTotal<center>\n") ;
 		printf ("<TD><center>ZurichTotal<center>\n") ;
@@ -532,38 +589,41 @@ char	**argv ;
 			double inflationFactor = 1.0 ;
 
 			if (!(loop%5))
-				printf ("<TR bgcolor=red>\n") ;
+			{
+				printf ("<TR bgcolor=yellow>\n") ;
+				//printf ("<TR>\n") ;
+			}
 			else
 				printf ("<TR>\n") ;
 
-			inflationFactor = years[loop].Spend / years[0].Spend ;
+			inflationFactor = years[rs][loop].Spend / years[rs][0].Spend ;
 
 			if (!realTerms)
 				inflationFactor = 1.0 ;
 
-			printf ("<TD><center>%d<center>\n", years[loop].year) ;
-			printf ("<TD><center>%d<center>\n", (int) (years[loop].ZRP / inflationFactor)) ;
-			printf ("<TD><center>%d<center>\n", (int)(years[loop].Zurich / inflationFactor)) ;
-			printf ("<TD><center>%d<center>\n", (int)(years[loop].Pru / inflationFactor)) ;
-			printf ("<TD><center>%.2f<center>\n", (years[loop].investmentReturn / inflationFactor)) ;
-			printf ("<TD><center>%d<center>\n", (int)(years[loop].cash / inflationFactor)) ;
-			printf ("<TD><center>%.2f<center>\n", (years[loop].cashReturn / inflationFactor)) ;
-			printf ("<TD><center>%.2f<center>\n", years[loop].inflation) ;
-			printf ("<TD><center>%d<center>\n", (int)(years[loop].ZRPIncome / inflationFactor)) ;
-			printf ("<TD><center>%d<center>\n", (int)(years[loop].ZurichIncome / inflationFactor)) ;
-			printf ("<TD><center>%d<center>\n", (int)(years[loop].PruIncome / inflationFactor)) ;
-			printf ("<TD><center>%d<center>\n", (int)(years[loop].cashIncome / inflationFactor)) ;
-			printf ("<TD><center>%d<center>\n", (int)(years[loop].rentIncome / inflationFactor)) ;
-			printf ("<TD><center>%d<center>\n", (int)(years[loop].stateIncome / inflationFactor)) ;
-			printf ("<TD><center>%d<center>\n", (int)(years[loop].FerrantiIncome / inflationFactor)) ;
-			printf ("<TD><center>%d<center>\n", (int)(years[loop].SimonIncome / inflationFactor)) ;
-			printf ("<TD><center>%d<center>\n", (int)(years[loop].Spend / inflationFactor)) ;
-			printf ("<TD><center>%d<center>\n", (int)(years[loop].TaxAllowance / inflationFactor)) ;
-			printf ("<TD><center>%d<center>\n", (int)(years[loop].tax / inflationFactor)) ;
-			printf ("<TD><center>%d<center>\n", (int)(years[loop].total / inflationFactor)) ;
-			printf ("<TD><center>%d<center>\n", (int)(years[loop].inheritance / inflationFactor)) ;
-			printf ("<TD><center>%d<center>\n", (int)(years[loop].income / inflationFactor)) ;
-			printf ("<TD><center>%.1f<center>\n", (years[loop].total / years[loop].Spend)) ;
+			printf ("<TD><center>%d<center>\n", years[rs][loop].year) ;
+			printf ("<TD><center>%d<center>\n", (int) (years[rs][loop].ZRP / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].Zurich / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].Pru / inflationFactor)) ;
+			printf ("<TD><center>%.2f<center>\n", (years[rs][loop].investmentReturn / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].cash / inflationFactor)) ;
+			printf ("<TD><center>%.2f<center>\n", (years[rs][loop].cashReturn / inflationFactor)) ;
+			printf ("<TD><center>%.2f<center>\n", years[rs][loop].inflation) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].ZRPIncome / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].ZurichIncome / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].PruIncome / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].cashIncome / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].rentIncome / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].stateIncome / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].FerrantiIncome / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].SimonIncome / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].Spend / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].TaxAllowance / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].tax / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].total / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].inheritance / inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].income / inflationFactor)) ;
+			printf ("<TD><center>%.1f<center>\n", (years[rs][loop].total / years[rs][loop].Spend)) ;
 			if (loop)
 				RTSpend *= (1.0 - (SpendDecrease * 0.01)) ;
 			printf ("<TD><center>%d<center>\n", (int)(RTSpend)) ;
