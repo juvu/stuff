@@ -11,6 +11,7 @@ typedef struct
 	int	year ;
 	double Pru ;
 	double ZRP ;
+	double Zurich ;
 	double cash ;
 	double inflation ;
 	double AnnuityIncrease ;
@@ -18,6 +19,7 @@ typedef struct
 	double cashReturn ;
 	double PruIncome ;
 	double ZRPIncome ;
+	double ZurichIncome ;
 	double cashIncome ;
 	double rentIncome ;
 	double stateIncome ;
@@ -41,18 +43,18 @@ typedef struct
 
 static Year	years[100] ;
 static int InheritYear = 2024 ;
-static int PruYear = 2024 ;
+static int PruYear = 2029 ;
 static int Pru25 = 0 ;
-static int ZRPYear = 2019 ;
-static int ZRP25 = 1 ;
-static int FerrantiYear = 2019 ;
-static int SimonYear = 2019 ;
-static double InflationMean = 0.0 ;
-static double InflationSD = 0.0 ;
-static double InvestMean = 0.0 ;
-static double InvestSD = 0.0 ;
-static double CashMean = 0.0 ;
-static double CashSD = 0.0 ;
+static int ZurichYear = 2024 ;
+static int Zurich25 = 1 ;
+static int FerrantiYear = 2029 ;
+static int SimonYear = 2029 ;
+static double InflationMean = 2.0 ;
+static double InflationSD = 1.0 ;
+static double InvestMean = 3.0 ;
+static double InvestSD = 2.0 ;
+static double CashMean = 3.0 ;
+static double CashSD = 0.5 ;
 static double SpendDecrease = 0.0 ;
 
 calculateAnnuityInflation(Year *year)
@@ -108,7 +110,7 @@ calculateNewTotals (Year *year, Year *lastyear)
 	}
 
 	lastyear->income = lastyear->FerrantiIncome + lastyear->SimonIncome + lastyear->cashIncome 
-						+ lastyear->ZRPIncome + lastyear->PruIncome;
+						+ lastyear->ZurichIncome + +lastyear->ZRPIncome + lastyear->PruIncome;
 	if (year->year > InheritYear)
 		lastyear->income += lastyear->rentIncome ;
 
@@ -120,11 +122,11 @@ calculateNewTotals (Year *year, Year *lastyear)
 	// note - assume only half the cashIncome is taxable (ISAs, allowances etc)
 	taxable -= (lastyear->cashIncome * 0.5) ;
 
-	// and only 75% of ZRP and Pru taxable if we haven't taken 25% lump sum
+	// and only 75% of Zurich and Pru taxable if we haven't taken 25% lump sum
 	if (!Pru25)
 		taxable -= (lastyear->PruIncome * 0.25) ;
-	if (!ZRP25)
-		taxable -= (lastyear->ZRPIncome * 0.25) ;
+	if (!Zurich25)
+		taxable -= (lastyear->ZurichIncome * 0.25) ;
 
 	lastyear->tax = 0 ;
 	if (taxable > 0)
@@ -138,15 +140,16 @@ calculateNewTotals (Year *year, Year *lastyear)
 		year->cash += lastyear->inheritance ;
 	year->cashIncome = (year->cashReturn * 0.01) * year->cash;
 	year->ZRP = ((1.0 + (lastyear->investmentReturn * 0.01)) * lastyear->ZRP) - lastyear->ZRPIncome;
+	year->Zurich = ((1.0 + (lastyear->investmentReturn * 0.01)) * lastyear->Zurich) - lastyear->ZurichIncome;
 	year->Pru = ((1.0 + (lastyear->investmentReturn * 0.01)) * lastyear->Pru) - lastyear->PruIncome;
-	year->total = year->ZRP + year->Pru + year->cash ;
+	year->total = year->ZRP + year->Zurich + year->Pru + year->cash ;
 
-	if (year->year == ZRPYear)
+	if (year->year == ZurichYear)
 	{
-		if (ZRP25)
+		if (Zurich25)
 		{
-			double cashTake = year->ZRP * 0.25 ;
-			year->ZRP -= cashTake ;
+			double cashTake = year->Zurich * 0.25 ;
+			year->Zurich -= cashTake ;
 			year->cash += cashTake ;
 		}
 	}
@@ -184,18 +187,19 @@ int calculateIncome (Year *year)
 	if (taxFree < 0.0)
 		taxFree = 0.0;
 
-	// take the tax free amount from ZRP and pru
-	if (year->year >= ZRPYear && year->year < PruYear)
+	// take the tax free amount from Zurich and pru (or from ZRP before ZurichYear)
+	year->ZRPIncome = 0.0 ;
+	if (year->year < ZurichYear)
 	{
-		year->ZRPIncome = taxFree ;
+		year->ZRPIncome = year->TaxAllowance ;
 	}
-	else if (year->year >= PruYear && year->year < ZRPYear)
+	if (year->year >= ZurichYear && year->year < PruYear)
 	{
-		year->PruIncome = taxFree ;
+		year->ZurichIncome = taxFree ;
 	}
-	else if (year->year >= PruYear && year->year >= ZRPYear)
+	else if (year->year >= PruYear)
 	{
-		year->ZRPIncome = taxFree / 2.0 ;
+		year->ZurichIncome = taxFree / 2.0 ;
 		year->PruIncome = taxFree / 2.0 ;
 	}
 
@@ -204,24 +208,21 @@ int calculateIncome (Year *year)
 	if (required < 0)
 		required = 0 ;
 
-	// take the extra required (plus 25% for tax) proportionate to
+	// take the extra required proportionate to
 	// what we have left in each pot
 
 	if (required > 0)
 	{
-		required *= 1.25;
-		if (year->year >= ZRPYear && year->year < PruYear)
+		if (year->year >= ZurichYear && year->year < PruYear)
 		{
-			year->ZRPIncome += (year->ZRP / (year->ZRP + year->cash)) * required ;
+			year->ZurichIncome += (year->Zurich / (year->Zurich + year->ZRP + year->cash)) * required ;
+			year->ZRPIncome += (year->ZRP / (year->Zurich + year->ZRP + year->cash)) * required ;
 		}
-		else if (year->year >= PruYear && year->year < ZRPYear)
+		else if (year->year >= PruYear && year->year >= ZurichYear)
 		{
-			year->PruIncome += (year->Pru / (year->Pru + year->cash)) * required ;
-		}
-		else if (year->year >= PruYear && year->year >= ZRPYear)
-		{
-			year->ZRPIncome += (year->ZRP / year->total) * required ;
+			year->ZurichIncome += (year->Zurich / year->total) * required ;
 			year->PruIncome += (year->Pru / year->total) * required ;
+			year->ZRPIncome += (year->ZRP / year->total) * required ;
 		}
 	}
 
@@ -368,11 +369,11 @@ char	**argv ;
 	int loop = 0 ;
 	Year *firstyear = NULL ;
 
-	if (argc != 27)
+	if (argc != 28)
 	{
-		printf ("Usage: cash <random seed> <rent> <inherit> <inheritYear> <spend> <ZRPYear> <ZRP25> <PruYear> <Pru25> <FerrantiYear> <SimonYear>\n");
+		printf ("Usage: %d cash <random seed> <rent> <inherit> <inheritYear> <spend> <ZurichYear> <Zurich25> <PruYear> <Pru25> <FerrantiYear> <SimonYear>\n", argc);
 		printf ("                                   <InflationMean> <InflationSD> <InvestMean> <InvestSD> <CashMean> <CashSD> <SpendDecrease>\n");
-		printf ("                                   <FirstYear> <ZRP> <Pru> <cash> <FerrantiAmount> <SimonAmount> <stateAmount> <taxAllowance>\n");
+		printf ("                                   <FirstYear> <ZRP> <Zurich> <Pru> <cash> <FerrantiAmount> <SimonAmount> <stateAmount> <taxAllowance>\n");
 		exit (0) ;
 	}
     // init random seed
@@ -408,13 +409,14 @@ char	**argv ;
 	firstyear = &years[0];
 	firstyear->year = atoi (argv[19]);
 	firstyear->ZRP = atof (argv[20]) * 1000;
-	firstyear->Pru = atof (argv[21]) * 1000;
-	firstyear->cash = atof (argv[22]) * 1000;
+	firstyear->Zurich = atof (argv[21]) * 1000;
+	firstyear->Pru = atof (argv[22]) * 1000;
+	firstyear->cash = atof (argv[23]) * 1000;
 	firstyear->rentIncome = atof(argv[2]) ;
 	firstyear->inheritance = atof(argv[3]) * 1000;
 	firstyear->Spend = atof(argv[5]) ;
-	ZRPYear = atoi (argv[6]) ;
-	ZRP25 = atoi (argv[7]) ;
+	ZurichYear = atoi (argv[6]) ;
+	Zurich25 = atoi (argv[7]) ;
 	PruYear = atoi (argv[8]) ;
 	Pru25 = atoi (argv[9]) ;
 	FerrantiYear = atoi (argv[10]) ;
@@ -426,23 +428,23 @@ char	**argv ;
 	CashMean = atof (argv[16]) ;
 	CashSD = atof (argv[17]) ;
 	SpendDecrease = atof (argv[18]) ;
-	firstyear->FerrantiIncome = atof (argv[23]) ;
+	firstyear->FerrantiIncome = atof (argv[24]) ;
 	setupFerranti (firstyear) ;
-	firstyear->SimonIncome = atof (argv[24]) ;
+	firstyear->SimonIncome = atof (argv[25]) ;
 	setupSimon (firstyear) ;
-	firstyear->stateIncome = atof (argv[25]) ;
-	firstyear->TaxAllowance = atof (argv[26]) ;
+	firstyear->stateIncome = atof (argv[26]) ;
+	firstyear->TaxAllowance = atof (argv[27]) ;
 	double RTSpend = firstyear->Spend ;
 	
 
 	setupReturns (firstyear) ;
 
-	if (firstyear->year == ZRPYear)
+	if (firstyear->year == ZurichYear)
 	{
-		if (ZRP25)
+		if (Zurich25)
 		{
-			double cashTake = firstyear->ZRP * 0.25 ;
-			firstyear->ZRP -= cashTake ;
+			double cashTake = firstyear->Zurich * 0.25 ;
+			firstyear->Zurich -= cashTake ;
 			firstyear->cash += cashTake ;
 		}
 	}
@@ -455,7 +457,7 @@ char	**argv ;
 			firstyear->cash += cashTake ;
 		}
 	}
-	firstyear->total = firstyear->ZRP + firstyear->Pru + firstyear->cash ;
+	firstyear->total = firstyear->ZRP + firstyear->Zurich + firstyear->Pru + firstyear->cash ;
 	firstyear->cashIncome = (firstyear->cashReturn * 0.01) * firstyear->cash;
 
 	if ((firstyear->FerrantiIncome < 1.0) && (firstyear->year == FerrantiYear))
@@ -488,7 +490,7 @@ char	**argv ;
 	{
 		for (loop=0;loop<nextYear-1;loop++)
 		{
-			printf ("%d, ZRP %d, Pru %d, Cash %d Total %d Tax %d Spend %d\n", years[loop].year, (int) years[loop].ZRP,
+			printf ("%d, ZRP %d, Zurich %d, Pru %d, Cash %d Total %d Tax %d Spend %d\n", years[loop].year, (int) years[loop].ZRP, (int) years[loop].Zurich,
 														(int) years[loop].Pru, (int) years[loop].cash, (int) years[loop].total,
 															(int) years[loop].tax, (int) years[loop].Spend) ;
 		}
@@ -499,12 +501,14 @@ char	**argv ;
 		printf ("<TR>\n") ;
 		printf ("<TD><center>year<center>\n") ;
 		printf ("<TD><center>ZRPTotal<center>\n") ;
+		printf ("<TD><center>ZurichTotal<center>\n") ;
 		printf ("<TD><center>PruTotal<center>\n") ;
 		printf ("<TD><center>investReturn<center>\n") ;
 		printf ("<TD><center>Cash<center>\n") ;
 		printf ("<TD><center>CashReturn<center>\n") ;
 		printf ("<TD><center>inflation<center>\n") ;
 		printf ("<TD><center>ZRPIncome<center>\n") ;
+		printf ("<TD><center>ZurichIncome<center>\n") ;
 		printf ("<TD><center>PruIncome<center>\n") ;
 		printf ("<TD><center>cashIncome<center>\n") ;
 		printf ("<TD><center>rentIncome<center>\n") ;
@@ -525,12 +529,14 @@ char	**argv ;
 			printf ("<TR>\n") ;
 			printf ("<TD><center>%d<center>\n", years[loop].year) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].ZRP) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].Zurich) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].Pru) ;
 			printf ("<TD><center>%.2f<center>\n", years[loop].investmentReturn) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].cash) ;
 			printf ("<TD><center>%.2f<center>\n", years[loop].cashReturn) ;
 			printf ("<TD><center>%.2f<center>\n", years[loop].inflation) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].ZRPIncome) ;
+			printf ("<TD><center>%d<center>\n", (int)years[loop].ZurichIncome) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].PruIncome) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].cashIncome) ;
 			printf ("<TD><center>%d<center>\n", (int)years[loop].rentIncome) ;
