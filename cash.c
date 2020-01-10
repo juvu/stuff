@@ -240,10 +240,8 @@ int calculateIncome (Year *year)
 	return 0 ;
 }
 
-double StandardDeviationsFromMean(double SD)
+double StandardDeviationsFromMean(int sdkey, int interval, double SD)
 {
-	int sdkey = random()%1000 ;
-	int interval = random()%50 ;
 	double adjust = interval / 100.0 ;
 	double amount = 0.0 ;
 
@@ -280,17 +278,25 @@ int setupReturns(Year *year)
 	//int InflationDiff = (InflationMax - InflationMin) * 10 ;
 	//int inflation = (InflationDiff > 0) ? random()%InflationDiff : 0;
 	//year->inflation = (inflation / 10.0) + InflationMin ;
-	year->inflation = InflationMean + StandardDeviationsFromMean(InflationSD) ;
+
+	int sdkey = 0 ;
+	int interval = 0 ;
+
+	sdkey = random()%1000 ;
+	interval = random()%50 ;
+	year->inflation = InflationMean + StandardDeviationsFromMean(sdkey, interval, InflationSD) ;
 
 	//int InvestDiff = (InvestMax - InvestMin) * 10 ;
 	//int invest = (InvestDiff > 0) ? random()%InvestDiff : 0;
 	//year->investmentReturn = (invest / 10.0) + InvestMin ;
-	year->investmentReturn = InvestMean + StandardDeviationsFromMean(InvestSD) ;
+	sdkey = random()%1000 ;
+	interval = random()%50 ;
+	year->investmentReturn = InvestMean + StandardDeviationsFromMean(sdkey, interval, InvestSD) ;
 
 	//int CashDiff = (CashMax - CashMin) * 10 ;
 	//int cash = (CashDiff > 0) ? random()%CashDiff : 0;
 	//year->cashReturn = (cash / 10.0) + CashMin ;
-	year->cashReturn = CashMean + StandardDeviationsFromMean(CashSD) ;
+	year->cashReturn = CashMean + StandardDeviationsFromMean(sdkey, interval, CashSD) ;
 }
 
 int processYear (Year *year, Year *lastyear)
