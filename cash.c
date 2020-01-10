@@ -36,6 +36,7 @@ typedef struct
 	double S2 ;
 	double Spend ;
 	double SpendFactor ;
+	double BaseSpending ;
 	double inflationFactor ;
 	double TaxAllowance ;
 	double total ;
@@ -82,8 +83,9 @@ calculateNewIncomes(Year *year, Year *lastyear)
 	year->Spend = lastyear->Spend * ((100.0 - SpendDecrease)/100.0) ;
 	year->Spend = (1.0 + (lastyear->inflation * 0.01)) * year->Spend ;
 	year->SpendFactor = lastyear->SpendFactor;
+	year->BaseSpending = (1.0 + (lastyear->inflation * 0.01)) * lastyear->BaseSpending ;
 	if (year->SpendFactor > 0.0)
-		year->Spend = year->total * year->SpendFactor;
+		year->Spend = year->BaseSpending + (year->total * year->SpendFactor);
 	year->inheritance = (1.0 + (lastyear->inflation * 0.01)) * lastyear->inheritance ;
 	year->inflationFactor = (1.0 + (lastyear->inflation * 0.01)) * lastyear->inflationFactor ;
 	year->S1 = 1.07 * lastyear->S1 ;
@@ -389,7 +391,7 @@ char	**argv ;
 	int loop = 0 ;
 	Year *firstyear = NULL ;
 
-	if (argc != 31)
+	if (argc != 32)
 	{
 		printf ("Usage: %d cash <random seed> <rent> <inherit> <inheritYear> <spend> <ZurichYear> <Zurich25> <PruYear> <Pru25> <FerrantiYear> <SimonYear>\n", argc);
 		printf ("                                   <InflationMean> <InflationSD> <InvestMean> <InvestSD> <CashMean> <CashSD> <SpendDecrease>\n");
@@ -428,7 +430,6 @@ char	**argv ;
 
 	int iteration = 0 ;
 	char resultsShow [100] ;
-	double RTSpend = 0.0 ;
 
 	for (iteration=0;iteration<NUM_ITERATIONS;iteration++)
 	{
@@ -442,6 +443,7 @@ char	**argv ;
 		firstyear->inheritance = atof(argv[3]) * 1000;
 		firstyear->Spend = atof(argv[5]) ;
 		firstyear->SpendFactor = atof(argv[30]) * 0.01 ;
+		firstyear->BaseSpending = atof(argv[31]) ;
 		firstyear->inflationFactor = 1.0 ;
 		ZurichYear = atoi (argv[6]) ;
 		Zurich25 = atoi (argv[7]) ;
@@ -463,7 +465,6 @@ char	**argv ;
 		firstyear->stateIncome = atof (argv[26]) ;
 		firstyear->TaxAllowance = atof (argv[27]) ;
 		realTerms = atoi (argv[28]) ;
-		RTSpend = firstyear->Spend ;
 		strcpy (resultsShow, argv[29]) ;
 /*
 		int rentOrSell = random()%2 ;
@@ -509,7 +510,7 @@ char	**argv ;
 		}
 	
 		if (firstyear->SpendFactor > 0.0)
-			firstyear->Spend = firstyear->total * firstyear->SpendFactor;
+			firstyear->Spend = firstyear->BaseSpending + (firstyear->total * firstyear->SpendFactor);
 
 		calculateAnnuityInflation(firstyear);
 		calculateIncome(firstyear);
@@ -641,17 +642,19 @@ char	**argv ;
 		printf ("<TD><center>inheritance<center>\n") ;
 		printf ("<TD><center>income<center>\n") ;
 		printf ("<TD><center>Ratio<center>\n") ;
-		printf ("<TD><center>RTSpend<center>\n") ;
 		printf ("<TR>\n") ;
 
 		for (loop=0;loop<nextYear-1;loop++)
 		{
 			double inflationFactor = 1.0 ;
 
-			if (!(loop%5))
+			if (years[rs][loop].year == 2044)
+			{
+				printf ("<TR bgcolor=red>\n") ;
+			}
+			else if (!(loop%5))
 			{
 				printf ("<TR bgcolor=yellow>\n") ;
-				//printf ("<TR>\n") ;
 			}
 			else
 				printf ("<TR>\n") ;
@@ -684,10 +687,7 @@ char	**argv ;
 			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].total * inflationFactor)) ;
 			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].inheritance * inflationFactor)) ;
 			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].income * inflationFactor)) ;
-			printf ("<TD><center>%.1f<center>\n", (years[rs][loop].total * years[rs][loop].Spend)) ;
-			if (loop)
-				RTSpend *= (1.0 - (SpendDecrease * 0.01)) ;
-			printf ("<TD><center>%d<center>\n", (int)(RTSpend)) ;
+			printf ("<TD><center>%.1f<center>\n", (years[rs][loop].total / years[rs][loop].Spend)) ;
 			printf ("</TR>\n") ;
 		}
 		printf ("</TABLE>\n") ;
