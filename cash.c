@@ -35,6 +35,7 @@ typedef struct
 	double S1 ;
 	double S2 ;
 	double Spend ;
+	double SpendFactor ;
 	double inflationFactor ;
 	double TaxAllowance ;
 	double total ;
@@ -80,6 +81,9 @@ calculateNewIncomes(Year *year, Year *lastyear)
 	year->TaxAllowance = (1.0 + (lastyear->inflation * 0.01)) * lastyear->TaxAllowance ;
 	year->Spend = lastyear->Spend * ((100.0 - SpendDecrease)/100.0) ;
 	year->Spend = (1.0 + (lastyear->inflation * 0.01)) * year->Spend ;
+	year->SpendFactor = lastyear->SpendFactor;
+	if (year->SpendFactor > 0.0)
+		year->Spend = year->total * year->SpendFactor;
 	year->inheritance = (1.0 + (lastyear->inflation * 0.01)) * lastyear->inheritance ;
 	year->inflationFactor = (1.0 + (lastyear->inflation * 0.01)) * lastyear->inflationFactor ;
 	year->S1 = 1.07 * lastyear->S1 ;
@@ -385,7 +389,7 @@ char	**argv ;
 	int loop = 0 ;
 	Year *firstyear = NULL ;
 
-	if (argc != 30)
+	if (argc != 31)
 	{
 		printf ("Usage: %d cash <random seed> <rent> <inherit> <inheritYear> <spend> <ZurichYear> <Zurich25> <PruYear> <Pru25> <FerrantiYear> <SimonYear>\n", argc);
 		printf ("                                   <InflationMean> <InflationSD> <InvestMean> <InvestSD> <CashMean> <CashSD> <SpendDecrease>\n");
@@ -437,6 +441,7 @@ char	**argv ;
 		firstyear->rentIncome = atof(argv[2]) ;
 		firstyear->inheritance = atof(argv[3]) * 1000;
 		firstyear->Spend = atof(argv[5]) ;
+		firstyear->SpendFactor = atof(argv[30]) * 0.01 ;
 		firstyear->inflationFactor = 1.0 ;
 		ZurichYear = atoi (argv[6]) ;
 		Zurich25 = atoi (argv[7]) ;
@@ -503,6 +508,9 @@ char	**argv ;
 			firstyear->SimonIncome = reductionFactor * (firstyear->S1 + firstyear->S2) ;
 		}
 	
+		if (firstyear->SpendFactor > 0.0)
+			firstyear->Spend = firstyear->total * firstyear->SpendFactor;
+
 		calculateAnnuityInflation(firstyear);
 		calculateIncome(firstyear);
 	
