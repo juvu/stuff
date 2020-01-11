@@ -224,6 +224,7 @@ int calculateIncome (Year *year)
 
 	if (required > 0)
 	{
+		required *= 1.25 ;
 		if (year->year >= ZurichYear && year->year < PruYear)
 		{
 			year->ZurichIncome += (year->Zurich / (year->Zurich + year->ZRP + year->cash)) * required ;
@@ -396,8 +397,9 @@ char	**argv ;
 	int html = 1 ;
 	int loop = 0 ;
 	Year *firstyear = NULL ;
+	int indexit = 0 ;
 
-	if (argc != 32)
+	if (argc != 33)
 	{
 		printf ("Usage: %d cash <random seed> <rent> <inherit> <inheritYear> <spend> <ZurichYear> <Zurich25> <PruYear> <Pru25> <FerrantiYear> <SimonYear>\n", argc);
 		printf ("                                   <InflationMean> <InflationSD> <InvestMean> <InvestSD> <CashMean> <CashSD> <SpendDecrease>\n");
@@ -472,6 +474,7 @@ char	**argv ;
 		firstyear->TaxAllowance = atof (argv[27]) ;
 		realTerms = atoi (argv[28]) ;
 		strcpy (resultsShow, argv[29]) ;
+		indexit = atoi (argv[32]) ;
 /*
 		int rentOrSell = random()%2 ;
 		if (rentOrSell)
@@ -609,6 +612,9 @@ char	**argv ;
 	else if (!strcmp (resultsShow,"year90"))
 		rs = Year90 ;
 
+	if (indexit)
+		rs = indexit ;
+
 	/* print out the results */
 
 	if (!html)
@@ -622,6 +628,7 @@ char	**argv ;
 	}
 	else
 	{
+		printf ("Index %d \n", rs) ;
 		printf ("<center><TABLE COLS=10\n border=3>") ;
 		//printf ("<TR bgcolor=green> \n") ;
 		printf ("<TR> \n") ;
@@ -648,7 +655,10 @@ char	**argv ;
 		printf ("<TD><center>inheritance<center>\n") ;
 		printf ("<TD><center>income<center>\n") ;
 		printf ("<TD><center>Ratio<center>\n") ;
+		printf ("<TD><center>Running Total<center>\n") ;
 		printf ("<TR>\n") ;
+
+		int runningTotal = 0 ;
 
 		for (loop=0;loop<nextYear-1;loop++)
 		{
@@ -694,6 +704,8 @@ char	**argv ;
 			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].inheritance * inflationFactor)) ;
 			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].income * inflationFactor)) ;
 			printf ("<TD><center>%.1f<center>\n", (years[rs][loop].total / years[rs][loop].Spend)) ;
+			runningTotal +=  (int)(years[rs][loop].Spend * inflationFactor) ;
+			printf ("<TD><center>%d<center>\n", runningTotal) ;
 			printf ("</TR>\n") ;
 		}
 		printf ("</TABLE>\n") ;

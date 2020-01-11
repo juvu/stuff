@@ -34,7 +34,8 @@
 	$Perf = $_POST["Perf"] ;
 	$YearPercent = $_POST["YearSpendFactor"] ;
 	$BaseSpending = $_POST["BaseSpending"] ;
-	$str = "./cash $randomSeed $rent $inherit $inheritYear $YearSpend $ZurichYear $Zurich25 $PruYear $Pru25 $FerrantiYear $SimonYear $InflationMean $InflationSD $InvestMean $InvestSD $CashMean $CashSD $SpendDecrease $FirstYear $ZRP $Zurich $Pru $cash $FerrantiAmount $SimonAmount $StatePension $TaxAllowance $RealTerms $Perf $YearPercent $BaseSpending" ;
+	$Index = $_POST["Index"] ;
+	$str = "./cash $randomSeed $rent $inherit $inheritYear $YearSpend $ZurichYear $Zurich25 $PruYear $Pru25 $FerrantiYear $SimonYear $InflationMean $InflationSD $InvestMean $InvestSD $CashMean $CashSD $SpendDecrease $FirstYear $ZRP $Zurich $Pru $cash $FerrantiAmount $SimonAmount $StatePension $TaxAllowance $RealTerms $Perf $YearPercent $BaseSpending $Index" ;
 	//echo $str;
 	$handle = popen($str, 'r');
 	while ($read = fread($handle, 1024))
