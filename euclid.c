@@ -63,13 +63,29 @@ main (int argc, char **argv)
     }
 
     int found = 0 ;
+    int cpos, epos, gpos;
+
     while (found == 0)
     {
-	    int cpos = rand()%16 ;
-	    int epos = rand()%16;
-	    int gpos = rand()%16;
+	    cpos = rand()%16 ;
+	    epos = rand()%16;
+	    gpos = rand()%16;
 
 	    found = calculateTotals(cpos, epos, gpos) ;
     }
+
+    for (cpos=0;cpos<16;cpos++)
+    {
+	    for (epos=0;epos<16;epos++)
+	    {
+		    for (gpos=0;gpos<16;gpos+=2)
+		    {
+	    		found = calculateTotals(cpos, epos, gpos) ;
+		    }
+	    }
+    }
+
+
+
 
 }
