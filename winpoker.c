@@ -2,35 +2,361 @@
 #include <math.h>
 #include <Windows.h>
 
-#define WIDTH 54
-#define HEIGHT 73
-#define INPLAYWIDTH 20
-#define INPLAYHEIGHT 20
+#define WIDTH 30
+#define HEIGHT 30
+#define INPLAYWIDTH 10
+#define INPLAYHEIGHT 10
 
-double values[52] = { 18177952911.0, 7682500513.0, 10325406097.0, 9203852322.0, 9276333579.0, 13672230557.0, 7758037321.0, 17347243922.0,
-            16141506534.0, 17271333463.0, 8963267466.0, 7365181911.0, 7357748331.0, 18697157637.0, 8695077024.0, 8229043733.0,
-            11040881984.0, 11987325471.0, 8233211157.0, 17213388308.0, 18060426607.0, 8244844988.0, 8141452273.0,
-            15013588852.0, 7564702930.0, 7968657029.0, 7615171758.0, 7916204114.0, 8334624420.0, 13037692225.0, 10245089350.0,
-            7737046004.0, 7853678602.0, 7616439579.0, 7773297054.0, 14295559056.0, 10460547667.0, 7652278402.0, 20078406445.0,
-            10064001225.0, 18955054218.0, 9594074001.0, 14858617746.0, 11712393432.0, 9298060231.0, 8246249071.0, 14101256129.0,
-		7597957718.0, 9566392462.0, 8581101308.0, 7123659395.0, 10036282747.0 };
+double values[52] = { 897746968.0, 750926950.0, 1976990186.0, 2553233420.0, 2353596976.0, 613585518.0, 1331756022.0,
+                        857226225.0, 844377893.0, 727538994.0, 772877715.0, 674470871.0, 1875345240.0, 2293524207.0,
+                        973789104.0, 638939048.0, 956819214.0, 700234899.0, 843210913.0, 1590449751.0, 982966914.0,
+                        1805218029.0, 607157800.0, 545311932.0, 1633531410.0, 735631533.0, 530488959.0, 984403670.0,
+                        1707690606.0, 982208346.0, 982414370.0, 1358563916.0, 638323686.0, 591676449.0, 727078443.0,
+                        634458482.0, 1887615836.0, 1926101014.0, 1337768365.0, 2119165880.0, 812055240.0, 2023111333.0,
+                        632665488.0, 2001932559.0, 1247593702.0, 2142697414.0, 980973630.0, 2080419489.0, 788839444.0,
+                        735599406.0, 1488472188.0, 716635732.0 };
 
-char *card[52] = { "KH", "6S", "AS", "9C", "TS", "9D", "7S", "QC", "JC", "KS", "8H", "5S", "2S", "QH", "8C", "8S", "5D", "7D", "7C", "KC",
-            "QD", "3H", "6C", "TD", "4C", "3C", "4H", "5H", "7H", "8D", "3D", "3S", "5C", "2C", "AH", "JS", "4D", "2H", "KD", "TH", "JD",
-            "AD", "JH", "6D", "9H", "6H", "QS", "AC", "2D", "9S", "4S", "TC"};
+char *card[52] = { "5H", "4C", "5D", "QD", "TD", "5S", "KS",
+                        "3H", "6H", "AS", "AC", "5C", "4D", "KD",
+                        "8H", "3C", "9H", "9S", "2H", "QH", "TC",
+                        "KH", "2C", "7C", "QC", "4S", "7S", "4H",
+                        "7D", "JH", "AH", "KC", "3S", "2S", "8S",
+                        "6C", "3D", "2D", "QS", "JD", "JC", "9D",
+                        "6S", "AD", "TH", "6D", "TS", "8D", "8C",
+                        "7H", "JS", "9C" };
 
-double inPlay = 3252920674.0;
 
-int XOffsets[7] = {0, 65, -160, -89, -18, 53, 124} ;
-int YOffsets[7] = {0, 0, -198, -198, -198, -198, -198} ;
+double inPlay = 1374193481.0;
 
-int playerXOffset[5] = {-426, -426, 14, 369, 369} ;
-int playerYOffset[5] = {-55, -330, -403, -330, -55} ;
+int XPos[7] = {449, 516, 344, 413, 482, 551, 620} ;
+int YPos[7] = {486, 486, 276, 276, 276, 276, 276} ;
 
-int XBase = 0 ;
-int YBase = 0 ;
+int playerXPos[5] = {267, 194, 565, 937, 864} ;
+int playerYPos[5] = {492, 191, 112, 191, 492} ;
+
+int XBase = -1 ;
+int YBase = -1 ;
+
+char cardBuffersav[100] = "AHAS" ;
+int numInPlaySav = 1 ;
 
 static char cardBuffer[100] = "" ;
+
+
+#define INTERVAL 100
+#define LONGINTERVAL 500
+
+#define HEARTS 0
+#define CLUBS 1
+#define DIAMONDS 2
+#define SPADES 3
+
+#define CARD_OFFSET 33
+
+
+int cardsx[8] = {1,120,152,0,33,66,103,141} ;
+int cardsy[8] = {1,104,104,0,0,0,0,0} ;
+
+int playersaddx[6] = {1,1,-125,-177,-117,8} ;
+int playersaddy[6] = {1,1,80,-11,-96,-126} ;
+
+int playersdelx[6] = {1,1,-85,-140,-78,38} ;
+int playersdely[6] = {1,1,50,-39,-128,-156} ;
+
+int heartsx[14] = {1,-129,267,234,201,168,135,102,69,36,3,-30,-63,-96} ;
+int heartsy[14] = {1,231,231,231,231,231,231,231,231,231,231,231,231,231} ;
+int clubsx[14] = {1,-129,267,234,201,168,135,102,69,36,3,-30,-63,-96} ;
+int clubsy[14] = {1,321,321,321,321,321,321,321,321,321,321,321,321,321} ;
+int diamondsx[14] = {1,-129,267,234,201,168,135,102,69,36,3,-30,-63,-96} ;
+int diamondsy[14] = {1,275,275,275,275,275,275,275,275,275,275,275,275,275} ;
+int spadesx[14] = {1,-129,267,234,201,168,135,102,69,36,3,-30,-63,-96} ;
+int spadesy[14] = {1,363,363,363,363,363,363,363,363,363,363,363,363,363} ;
+
+int BaseX = 1429 ;
+int BaseY = 381 ;
+
+typedef struct
+{
+	unsigned long value ;
+	unsigned long suit ;
+} Card ;
+
+Card myCards[8] ;
+
+
+void setCursorPos(int x, int y) 
+{
+    POINT p;
+    COLORREF color;
+    HDC hDC;
+    BOOL b;
+ 
+    /* Get the device context for the screen */
+    hDC = GetDC(NULL);
+    if (hDC == NULL)
+        return;
+ 
+    p.x = x;
+    p.y = y;
+    b = SetCursorPos(x, y);
+    if (!b)
+        return;
+ 
+    //printf ("Pos is %d %d\n", p.x, p.y) ;
+
+    /* Release the device context again */
+    ReleaseDC(GetDesktopWindow(), hDC);
+}
+
+void DoMouseClick(int x, int y)
+{
+      mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, x, y, 0, 0);
+}
+
+void SetAndClick (int x, int y)
+{
+	setCursorPos(x,y) ;
+	DoMouseClick(x,y);
+	Sleep (INTERVAL);
+}
+
+void SetAndClickLong (int x, int y)
+{
+	setCursorPos(x,y) ;
+	DoMouseClick(x,y);
+	Sleep (LONGINTERVAL);
+}
+
+addCard (Card *cards, char *str, int *nextCard)
+{
+    cards[*nextCard].value = str[0] - 48;
+    if (str[0] == 't' || str[0] == 'T')
+        cards[*nextCard].value = 10 ;
+    else if (str[0] == 'j' || str[0] == 'J')
+        cards[*nextCard].value = 11 ;
+    else if (str[0] == 'q' || str[0] == 'Q')
+        cards[*nextCard].value = 12 ;
+    else if (str[0] == 'k' || str[0] == 'K')
+        cards[*nextCard].value = 13 ;
+    else if (str[0] == 'a' || str[0] == 'A')
+        cards[*nextCard].value = 1 ;
+
+    if (str[1] == 'h' || str[1] == 'H')
+        cards[*nextCard].suit = HEARTS ;
+    else if (str[1] == 'd' || str[1] == 'D')
+        cards[*nextCard].suit = DIAMONDS ;
+    else if (str[1] == 'c' || str[1] == 'C')
+        cards[*nextCard].suit = CLUBS ;
+    else if (str[1] == 's' || str[1] == 'S')
+        cards[*nextCard].suit = SPADES ;
+
+    (*nextCard)++;
+}
+
+int setupPlayers(int numOppos)
+{
+	int i = 0 ;
+
+	if (numOppos == numInPlaySav)
+		return 0 ;
+
+	for (i=5;i>numOppos;i--)
+	{
+		SetAndClick (BaseX + playersdelx[i], BaseY + playersdely[i]) ;
+
+	}
+	for (i=2;i<=numOppos;i++)
+	{
+		SetAndClick (BaseX + playersaddx[i], BaseY + playersaddy[i]) ;
+	}
+}
+
+int clearPlayers()
+{
+	int i = 0 ;
+
+	for (i=5;i>=2;i--)
+	{
+		SetAndClick (BaseX + playersdelx[i], BaseY + playersdely[i]) ;
+
+	}
+}
+
+int clearCards(int first, int last)
+{
+	int i = 0 ;
+
+	for (i=first;i>=5 && i>=last;i--)
+	{
+		SetAndClickLong (BaseX + cardsx[i], BaseY + cardsy[i]) ;
+	}
+
+	for (i=first;i>=1 && i>=last;i--)
+	{
+		SetAndClick (BaseX + cardsx[i], BaseY + cardsy[i]) ;
+
+	}
+}
+
+int addPlayers(int numOppos)
+{
+	int i = 0 ;
+
+	for (i=2;i<=numOppos;i++)
+	{
+		SetAndClick (BaseX + playersaddx[i], BaseY + playersaddy[i]) ;
+	}
+}
+
+int playCards(Card *cards, int first, int last)
+{
+	int i = 0 ;
+
+	for (i=first-1;i<last;i++)
+	{
+		printf ("Playing Card %d %d\n", cards[i].value, cards[i].suit) ;
+
+		if (i<4)
+		{
+			if (cards[i].suit == HEARTS)
+				SetAndClick (BaseX + heartsx[cards[i].value], BaseY + heartsy[cards[i].value]) ;
+			if (cards[i].suit == SPADES)
+				SetAndClick (BaseX + spadesx[cards[i].value], BaseY + spadesy[cards[i].value]) ;
+			if (cards[i].suit == CLUBS)
+				SetAndClick (BaseX + clubsx[cards[i].value], BaseY + clubsy[cards[i].value]) ;
+			if (cards[i].suit == DIAMONDS)
+				SetAndClick (BaseX + diamondsx[cards[i].value], BaseY + diamondsy[cards[i].value]) ;
+		}
+		else
+		{
+			if (cards[i].suit == HEARTS)
+				SetAndClickLong (BaseX + heartsx[cards[i].value], BaseY + heartsy[cards[i].value]) ;
+			if (cards[i].suit == SPADES)
+				SetAndClickLong (BaseX + spadesx[cards[i].value], BaseY + spadesy[cards[i].value]) ;
+			if (cards[i].suit == CLUBS)
+				SetAndClickLong (BaseX + clubsx[cards[i].value], BaseY + clubsy[cards[i].value]) ;
+			if (cards[i].suit == DIAMONDS)
+				SetAndClickLong (BaseX + diamondsx[cards[i].value], BaseY + diamondsy[cards[i].value]) ;
+		}
+	}
+}
+
+int doOdds(int numOppos, char *inputCards)
+{
+	int inputNumCards = strlen(inputCards) / 2 ;
+
+	int i = 0 ;
+	int nextCard = 0 ;
+
+	for (i=0;i<inputNumCards*2;i+=2)
+	{
+		char theCard[3];
+
+		theCard[0] = inputCards[i];
+		theCard[1] = inputCards[i+1];
+		theCard[2] = '\0';
+
+		addCard (myCards, theCard, &nextCard) ;
+	}
+
+
+	if (strlen(cardBuffersav) > strlen (cardBuffer))
+	{
+		int first = strlen(cardBuffersav) / 2 ;
+		clearCards(first, 1) ;
+	}
+
+	if (inputNumCards == 2)
+	{
+		setupPlayers(numOppos) ;
+		SetAndClick (BaseX + cardsx[1], BaseY + cardsy[1]) ;
+		playCards(myCards, 1, 1) ;
+		SetAndClick (BaseX + cardsx[2], BaseY + cardsy[2]) ;
+		playCards(myCards, 2, 2) ;
+	}
+	if (inputNumCards == 5)
+	{
+		setupPlayers(numOppos) ;
+		if (strlen(cardBuffersav) != strlen (cardBuffer))
+		{
+			SetAndClick (BaseX + cardsx[3], BaseY + cardsy[3]) ;
+			playCards(myCards, 3, inputNumCards) ;
+		}
+	}
+	else if (inputNumCards == 6)
+	{
+		setupPlayers(numOppos) ;
+		if (strlen(cardBuffersav) != strlen (cardBuffer))
+		{
+			SetAndClick (BaseX + cardsx[6], BaseY + cardsy[6]) ;
+			playCards(myCards, 6, inputNumCards) ;
+		}
+	}
+	else if (inputNumCards == 7)
+	{
+		setupPlayers(numOppos) ;
+		if (strlen(cardBuffersav) != strlen (cardBuffer))
+		{
+			SetAndClick (BaseX + cardsx[7], BaseY + cardsy[7]) ;
+			playCards(myCards, 7, inputNumCards) ;
+		}
+	}
+
+	if (inputNumCards >=5)
+	{
+		SetAndClickLong (BaseX + cardsx[3], BaseY + cardsy[3]) ;
+		playCards(myCards, 3, inputNumCards) ;
+	}
+
+
+   return 0;
+}
+
+
+double getTotal(int x, int y) 
+{
+	POINT p;
+	COLORREF color;
+	HDC hDC;
+	
+ 
+	/* Get the device context for the screen */
+	hDC = GetDC(NULL);
+	if (hDC == NULL)
+		return 0;
+ 
+
+	LPVOID lpvBits[INPLAYWIDTH*(INPLAYHEIGHT+1)];
+	HBITMAP bitmap = CreateBitmap (INPLAYWIDTH, INPLAYHEIGHT, 1, 32, lpvBits) ;
+
+	//HGDIOBJ bitobj = SelectObject (hDC, bitmap) ;
+
+	HDC hDC2 = CreateCompatibleDC(hDC);
+	SelectObject (hDC2, bitmap) ;
+
+	BitBlt (hDC2, 0, 0, INPLAYWIDTH, INPLAYHEIGHT, hDC, XBase + x, YBase + y, SRCCOPY) ;
+
+	int i = 0 ;
+	int j = 0;
+	double total = 0.0;
+
+	total = 0.0;
+	for (i=0;i<INPLAYHEIGHT;i++)
+	{
+		for (j=0;j<INPLAYWIDTH;j++)
+		{
+ 			color = GetPixel(hDC2, j, i);
+			total += color;
+		}
+	}
+		
+
+	/* Release the device context again */
+	ReleaseDC(GetDesktopWindow(), hDC);
+	ReleaseDC(GetDesktopWindow(), hDC2);
+
+	return total;
+}
 
 int getNumInPlay() 
 {
@@ -58,8 +384,8 @@ int getNumInPlay()
 
 	for (players=0; players<5; players++)
 	{
-		BitBlt (hDC2, 0, 0, INPLAYWIDTH, INPLAYHEIGHT, hDC, XBase + playerXOffset[players], 
-							YBase + playerYOffset[players], SRCCOPY) ;
+		BitBlt (hDC2, 0, 0, INPLAYWIDTH, INPLAYHEIGHT, hDC, XBase + playerXPos[players], 
+							YBase + playerYPos[players], SRCCOPY) ;
 
 		int i = 0 ;
 		int j = 0;
@@ -71,8 +397,7 @@ int getNumInPlay()
 			for (j=0;j<INPLAYWIDTH;j++)
 			{
  				color = GetPixel(hDC2, j, i);
-				if (color < 15000000)
-					total += color;
+				total += color;
 			}
 		}
 		
@@ -117,8 +442,8 @@ int getCards()
 
 	for (cards=0; cards<7; cards++)
 	{
-		BitBlt (hDC2, 0, 0, WIDTH, HEIGHT, hDC, XBase + XOffsets[cards], 
-							YBase + YOffsets[cards], SRCCOPY) ;
+		BitBlt (hDC2, 0, 0, WIDTH, HEIGHT, hDC, XBase + XPos[cards], 
+							YBase + YPos[cards], SRCCOPY) ;
 
 		int i = 0 ;
 		int j = 0;
@@ -148,10 +473,18 @@ int getCards()
 
 		if (!cardFound)
 		{
-			if (cards == 0)
-				return (0) ;
+			if (abs(total - 1488472188) < 1000000)
+			{
+				strcat (cardBuffer, "JS") ;
+				cardFound = 1;
+			}
+
 			//printf ("Card%d UNKNOWN: %f\n", cards+1, total);
 		}
+
+		// forget it if we don't have any cards
+		if (cards == 0 && !cardFound)
+			break ;
 	}
 
 	/* Release the device context again */
@@ -236,8 +569,10 @@ int doCalibration(void)
 	
 	if (minTotal == 0.0)
 	{
-		XBase = nearestX ;
-		YBase = nearestY ;
+	        printf ("Found card %s at %d %d\n", card[cardIndex], nearestX, nearestY) ;
+		XBase = nearestX - 449 ;
+		YBase = nearestY - 486 ;
+		printf ("Setting base to %d %d\n", XBase, YBase) ;
 	}
 
  
@@ -256,19 +591,13 @@ int main(int argc, char **argv)
 	char cmd[1000] = "" ;
 	char buffer[1025] = "" ;
 
-	if (argc !=7)
-	{
-		printf ("Usage: winpoker <user> <pass> <host> <2|6> <BigBlind> <SmallBlind>\n") ;
-		exit(0) ;
-	}
 
-	XBase = 0 ;
-	YBase = 0 ;
-	int mode = atoi (argv[4]) ;
-	int BigBlind = atoi (argv[5]) ;
-	int SmallBlind = atoi (argv[6]) ;
+	XBase = -1 ;
+	YBase = -1 ;
 
-	while (!XBase)
+	strcpy (cardBuffersav, "Start") ;
+
+	while (XBase < 0)
 	{
 		doCalibration() ;
 		Sleep (1000) ;
@@ -285,36 +614,36 @@ int main(int argc, char **argv)
 
 		getCards() ;
 
+		if (strlen (cardBuffer) > 1)
+			printf ("cardbuffer is %s\n", cardBuffer) ;
+
 		//strcpy (cardBuffer, "AHJC") ;
 
 		if (strlen (cardBuffer) >= 4)
 		{
+			POINT p ;
+			
+        		/* Get the current cursor position */
+        		GetCursorPos(&p);
+
 			int numInPlay = getNumInPlay() ;
 
-			if (mode !=6)
-			{
-				sprintf (cmd, "plink -pw %s %s@%s github/stuff/poker %d %d %s nohtml", 
-							argv[2], argv[1], argv[3], BigBlind, numInPlay, cardBuffer) ;
-			}
-			else
-			{
-				sprintf (cmd, "plink -pw %s %s@%s github/stuff/6poker %d %d %s nohtml", 
-							argv[2], argv[1], argv[3], BigBlind, numInPlay, cardBuffer) ;
-			}
-			printf ("%s\n", cmd) ;
+			//double total = getTotal (929,670) ;
 
+			//if ((total != 117486330.0) && (strcmp (cardBuffer, cardBuffersav) || (numInPlay != numInPlaySav)))
+			if (strcmp (cardBuffer, cardBuffersav) || (numInPlay != numInPlaySav))
+			{	
 
-			FILE *pp = popen (cmd, "r") ;
+				printf ("numInPlay is %d\n", numInPlay) ;
 
-			// now read the results
-			while (fgets (buffer, 1024, pp))
-			{
-				printf (buffer) ;
+				doOdds (numInPlay, cardBuffer) ;
+
+				strcpy (cardBuffersav, cardBuffer) ;
+				numInPlaySav = numInPlay ;
+				setCursorPos (p.x, p.y) ;
 			}
-	
-			pclose (pp) ;
 		}
-		Sleep (1000) ;
+		Sleep (2000) ;
 	}
 
 	return 0;
