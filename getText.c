@@ -156,6 +156,21 @@ int getText(void)
 	SelectObject (hDC2, bitmap) ;
 	BitBlt (hDC2, 0, 0, WIDTH, HEIGHT, hDC, p.x, p.y, SRCCOPY) ;
 
+	int col = 0 ;
+	int row = 0 ;
+        for( col = 0; col < WIDTH; col++ )
+        {
+                for( int row = 0; row < HEIGHT; row++ )
+                {
+			COLORREF colour = GetPixel( hDC2, col, row );
+			printf ("Colour is %x\n", colour) ;
+                        if( colour > 0x500000 )
+                                SetPixel( hDC2, col, row, 0x000000 );
+                        else
+                                SetPixel( hDC2, col, row, 0xffffff );
+                }
+        }
+
 	HWND hwnd = GetDesktopWindow() ;
 	PBITMAPINFO pbi = CreateBitmapInfoStruct(hwnd, bitmap);
 	WriteBmpTofile("shot.bmp", pbi, bitmap, hDC);
