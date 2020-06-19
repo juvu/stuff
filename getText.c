@@ -2,13 +2,6 @@
 #include <math.h>
 #include <Windows.h>
 
-#define HEIGHT 27 
-#define WIDTH 80 
-
-
-#define BITS_PER_PIXEL 32
-#define BYTES_PER_PIXEL (BITS_PER_PIXEL / 8)
-
 
 PBITMAPINFO CreateBitmapInfoStruct(HWND hwnd, HBITMAP hBmp)
 {
@@ -132,7 +125,7 @@ WriteBmpTofile(LPSTR pszFile, PBITMAPINFO pbi, HBITMAP hBmp, HDC hDC)
     GlobalFree((HGLOBAL)lpBits);
 }
 
-int getText(void) 
+int getText(char *file, int x, int y, int width, int height, int reverse) 
 {
 	POINT p;
 	COLORREF color;
@@ -144,36 +137,44 @@ int getText(void)
 	if (hDC == NULL)
 		return 0;
  
-	/* Get the current cursor position */
-	b = GetCursorPos(&p);
-	if (!b)
-		return 0;
-
-	LPVOID lpvBits[WIDTH*(HEIGHT+1)];
-	HBITMAP bitmap = CreateBitmap (WIDTH, HEIGHT, 1, 32, lpvBits) ;
+	LPVOID lpvBits[width*(height+1)];
+	HBITMAP bitmap = CreateBitmap (width, height, 1, 32, lpvBits) ;
 
 	HDC hDC2 = CreateCompatibleDC(hDC);
 	SelectObject (hDC2, bitmap) ;
-	BitBlt (hDC2, 0, 0, WIDTH, HEIGHT, hDC, p.x, p.y, SRCCOPY) ;
+	BitBlt (hDC2, 0, 0, width, height, hDC, x, y, SRCCOPY) ;
 
 	int col = 0 ;
 	int row = 0 ;
-        for( col = 0; col < WIDTH; col++ )
+        for( col = 0; col < width; col++ )
         {
-                for( int row = 0; row < HEIGHT; row++ )
+                for( int row = 0; row < height; row++ )
                 {
 			COLORREF colour = GetPixel( hDC2, col, row );
-			printf ("Colour is %x\n", colour) ;
-                        if( colour > 0x500000 )
-                                SetPixel( hDC2, col, row, 0x000000 );
-                        else
-                                SetPixel( hDC2, col, row, 0xffffff );
+			//printf ("Colour is %x\n", colour) ;
+			if (reverse)
+			{
+                        	if( colour > 0xc00000 )
+                               		SetPixel( hDC2, col, row, 0x000000 );
+                        	else
+                                	SetPixel( hDC2, col, row, 0xffffff );
+			}
+			else
+			{
+                        	if( colour < 0xbfffff )
+                               		SetPixel( hDC2, col, row, 0x000000 );
+                        	else
+                                	SetPixel( hDC2, col, row, 0xffffff );
+			}
                 }
         }
 
 	HWND hwnd = GetDesktopWindow() ;
 	PBITMAPINFO pbi = CreateBitmapInfoStruct(hwnd, bitmap);
-	WriteBmpTofile("shot.bmp", pbi, bitmap, hDC);
+
+	char buffer[1000] = "";
+	sprintf (buffer, "%s.bmp", file) ;
+	WriteBmpTofile(buffer, pbi, bitmap, hDC);
 
 	/* Release the device context again */
 	ReleaseDC(GetDesktopWindow(), hDC);
@@ -183,13 +184,14 @@ int getText(void)
 }
 
 
-int main()
+int main(int argc, char *argv[])
 {
-	int x = 0 ;
-	for (x=0;x<10;x++)
-	{
-		getText() ;
-		Sleep (2000);
-	}
+	int x = atoi (argv[2]) ;
+	int y = atoi (argv[3]) ;
+	int width = atoi (argv[4]) ;
+	int height = atoi (argv[5]) ;
+	int reverse = atoi (argv[6]) ;
+	getText(argv[1], x,y, width, height, reverse) ;
+	printf ("Done\n") ;
    return 0;
 }

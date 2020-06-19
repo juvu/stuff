@@ -31,6 +31,16 @@ double inPlay = 1374193481.0;
 int XPos[7] = {449, 516, 344, 413, 482, 551, 620} ;
 int YPos[7] = {486, 486, 276, 276, 276, 276, 276} ;
 
+int PotX = 473 ;
+int PotY = 240 ;
+int EquityX = 47 ;
+int EquityY = 274 ;
+
+#define POT_WIDTH 100
+#define POT_HEIGHT 25
+#define EQUITY_WIDTH 50
+#define EQUITY_HEIGHT 25
+
 int playerXPos[5] = {267, 194, 565, 937, 864} ;
 int playerYPos[5] = {492, 191, 112, 191, 492} ;
 
@@ -44,7 +54,7 @@ static char cardBuffer[100] = "" ;
 
 
 #define INTERVAL 100
-#define LONGINTERVAL 500
+#define LONGINTERVAL 100
 
 #define HEARTS 0
 #define CLUBS 1
@@ -53,27 +63,27 @@ static char cardBuffer[100] = "" ;
 
 #define CARD_OFFSET 33
 
+int cardsx[8] = {1,0,25,69,93,117,141,166} ;
+int cardsy[8] = {1,204,204,204,204,204,204,204} ;
 
-int cardsx[8] = {1,120,152,0,33,66,103,141} ;
-int cardsy[8] = {1,104,104,0,0,0,0,0} ;
+int playersaddx[6] = {1,1,72,72,72,72} ;
+int playersaddy[6] = {1,1,-87,-87,-87,-87} ;
 
-int playersaddx[6] = {1,1,-125,-177,-117,8} ;
-int playersaddy[6] = {1,1,80,-11,-96,-126} ;
+int playersdelx[6] = {1,1,72,72,72,72} ;
+int playersdely[6] = {1,1,-68,-68,-68,-68} ;
 
-int playersdelx[6] = {1,1,-85,-140,-78,38} ;
-int playersdely[6] = {1,1,50,-39,-128,-156} ;
+int heartsx[14] = {1,240,0,20,40,60,80,100,120,140,160,180,200,220} ;
+int heartsy[14] = {1,72,72,72,72,72,72,72,72,72,72,72,72,72} ;
+int clubsx[14] = {1,240,0,20,40,60,80,100,120,140,160,180,200,220} ;
+int clubsy[14] = {1,37,37,37,37,37,37,37,37,37,37,37,37,37} ;
+int diamondsx[14] = {1,240,0,20,40,60,80,100,120,140,160,180,200,220} ;
+int diamondsy[14] = {1,0,0,0,0,0,0,0,0,0,0,0,0,0} ;
+int spadesx[14] = {1,240,0,20,40,60,80,100,120,140,160,180,200,220} ;
+int spadesy[14] = {1,112,112,112,112,112,112,112,112,112,112,112,112,112} ;
 
-int heartsx[14] = {1,-129,267,234,201,168,135,102,69,36,3,-30,-63,-96} ;
-int heartsy[14] = {1,231,231,231,231,231,231,231,231,231,231,231,231,231} ;
-int clubsx[14] = {1,-129,267,234,201,168,135,102,69,36,3,-30,-63,-96} ;
-int clubsy[14] = {1,321,321,321,321,321,321,321,321,321,321,321,321,321} ;
-int diamondsx[14] = {1,-129,267,234,201,168,135,102,69,36,3,-30,-63,-96} ;
-int diamondsy[14] = {1,275,275,275,275,275,275,275,275,275,275,275,275,275} ;
-int spadesx[14] = {1,-129,267,234,201,168,135,102,69,36,3,-30,-63,-96} ;
-int spadesy[14] = {1,363,363,363,363,363,363,363,363,363,363,363,363,363} ;
 
-int BaseX = 1429 ;
-int BaseY = 381 ;
+int BaseX = -1 ;
+int BaseY = -1 ;
 
 typedef struct
 {
@@ -157,14 +167,13 @@ int setupPlayers(int numOppos)
 {
 	int i = 0 ;
 
-	if (numOppos == numInPlaySav)
-		return 0 ;
-
-	for (i=5;i>numOppos;i--)
+	for (i=2;i<5;i++)
 	{
 		SetAndClick (BaseX + playersdelx[i], BaseY + playersdely[i]) ;
 
 	}
+	SetAndClick (BaseX + playersdelx[3], BaseY + playersdely[3]) ;
+	SetAndClick (BaseX + playersdelx[3], BaseY + playersdely[3]) ;
 	for (i=2;i<=numOppos;i++)
 	{
 		SetAndClick (BaseX + playersaddx[i], BaseY + playersaddy[i]) ;
@@ -186,15 +195,9 @@ int clearCards(int first, int last)
 {
 	int i = 0 ;
 
-	for (i=first;i>=5 && i>=last;i--)
-	{
-		SetAndClickLong (BaseX + cardsx[i], BaseY + cardsy[i]) ;
-	}
-
-	for (i=first;i>=1 && i>=last;i--)
+	for (i=first;i>=last;i--)
 	{
 		SetAndClick (BaseX + cardsx[i], BaseY + cardsy[i]) ;
-
 	}
 }
 
@@ -259,7 +262,10 @@ int doOdds(int numOppos, char *inputCards)
 		addCard (myCards, theCard, &nextCard) ;
 	}
 
-
+	clearCards(7, 1) ;
+	setupPlayers(numOppos) ;
+	playCards(myCards, 1, inputNumCards) ;
+#if 0
 	if (strlen(cardBuffersav) > strlen (cardBuffer))
 	{
 		int first = strlen(cardBuffersav) / 2 ;
@@ -307,6 +313,7 @@ int doOdds(int numOppos, char *inputCards)
 		SetAndClickLong (BaseX + cardsx[3], BaseY + cardsy[3]) ;
 		playCards(myCards, 3, inputNumCards) ;
 	}
+#endif
 
 
    return 0;
@@ -494,6 +501,26 @@ int getCards()
 	return 0;
 }
 
+int doCalibrationHH(void) 
+{
+	POINT p;
+	COLORREF color;
+	HDC hDC;
+	BOOL b;
+ 
+	printf ("CALIBRATING HH.....\n") ;
+
+	/* Get the current cursor position */
+	b = GetCursorPos(&p);
+	if (!b)
+		return 0;
+
+	BaseX = p.x ;
+	BaseY = p.y ;
+
+	return 0 ;
+}
+
 int doCalibration(void) 
 {
 	POINT p;
@@ -583,7 +610,54 @@ int doCalibration(void)
 	return 0;
 }
 
+double getNumberAtLocation(char *file, int x, int y, int width, int height, int getText)
+{
+	char cmd[1024] = "" ;
+	char buffer[1024] = "" ;
 
+	double number = 0.0 ;
+
+	if (getText)
+		sprintf (cmd, "getText %s %d %d %d %d %d", file, x, y, width, height, getText) ;
+	else
+		sprintf (cmd, "nircmd savescreenshot %s.bmp %d %d %d %d", file, x, y, width, height, getText) ;
+
+	FILE *ppa = popen (cmd, "r") ;
+
+        // now read the results
+        while (fgets (buffer, 1024, ppa))
+        {
+        	//printf (buffer) ;
+	} 
+
+        pclose (ppa) ;
+
+	sprintf (cmd, "tesseract %s.bmp %s --psm 8 tess_config", file, file) ;
+	FILE *ppb = popen (cmd, "r") ;
+
+        // now read the results
+        while (fgets (buffer, 1024, ppb))
+        {
+        }
+
+        pclose (ppb) ;
+
+	sprintf (cmd, "%s.txt", file) ;
+      	FILE *fp = fopen (cmd, "r") ;
+	buffer[0] = '\0' ;
+       	fgets (buffer, 1024, fp);
+	if (strlen(buffer))
+	{
+		number = atof (buffer) ;
+	}
+
+	fclose (fp) ;
+
+	if (!strstr (buffer, "."))
+		number = number / 10.0 ;
+
+	return number ;
+}
 
 
 int main(int argc, char **argv)
@@ -591,12 +665,28 @@ int main(int argc, char **argv)
 	char cmd[1000] = "" ;
 	char buffer[1025] = "" ;
 
-
 	XBase = -1 ;
 	YBase = -1 ;
 
+	int BigBlind = atoi (argv[1]) ;
+
 	strcpy (cardBuffersav, "Start") ;
 
+	int i=0;
+	for (i=0;i<10;i++)
+	{
+		doCalibrationHH() ;
+		Sleep (1000) ;
+	}
+
+	clearCards(7,1) ;
+	setupPlayers(5) ;
+	doOdds (3, "2D3CJCQCKDADQD") ;
+	Sleep(2000);
+	double Equity = getNumberAtLocation ("Equity", BaseX + EquityX, BaseY + EquityY, EQUITY_WIDTH, EQUITY_HEIGHT, 0) ;
+	printf ("Equity is %f\n", Equity) ;
+
+	
 	while (XBase < 0)
 	{
 		doCalibration() ;
@@ -614,8 +704,10 @@ int main(int argc, char **argv)
 
 		getCards() ;
 
+		/*
 		if (strlen (cardBuffer) > 1)
 			printf ("cardbuffer is %s\n", cardBuffer) ;
+		*/
 
 		//strcpy (cardBuffer, "AHJC") ;
 
@@ -628,18 +720,42 @@ int main(int argc, char **argv)
 
 			int numInPlay = getNumInPlay() ;
 
-			//double total = getTotal (929,670) ;
-
-			//if ((total != 117486330.0) && (strcmp (cardBuffer, cardBuffersav) || (numInPlay != numInPlaySav)))
 			if (strcmp (cardBuffer, cardBuffersav) || (numInPlay != numInPlaySav))
 			{	
-
-				printf ("numInPlay is %d\n", numInPlay) ;
-
 				doOdds (numInPlay, cardBuffer) ;
+				
+				if (numInPlay)
+				{
+					double PotSize = getNumberAtLocation ("Pot", XBase + PotX, YBase +PotY, POT_WIDTH, POT_HEIGHT, 1) ;
 
-				strcpy (cardBuffersav, cardBuffer) ;
-				numInPlaySav = numInPlay ;
+					printf ("Pot Size is %f\n", PotSize) ;
+
+					double Equity = getNumberAtLocation ("Equity", BaseX + EquityX, BaseY + EquityY, EQUITY_WIDTH, EQUITY_HEIGHT, 0) ;
+
+					printf ("Equity is %f\n", Equity) ;
+
+					strcpy (cardBuffersav, cardBuffer) ;
+					numInPlaySav = numInPlay ;
+
+					/*
+
+	                        	sprintf (cmd, "plink -pw Media123! msgmedia@192.168.1.101 github/stuff/6poker %d %d %s nohtml",
+                                                        (int) PotSize, numInPlay, cardBuffer) ;
+                        		printf ("%s\n", cmd) ;
+
+			        	FILE *pp = popen (cmd, "r") ;
+
+                        		// now read the results
+                        		while (fgets (buffer, 1024, pp))
+                        		{
+                                		printf (buffer) ;
+                        		}
+		
+                        		pclose (pp) ;
+					*/
+	
+	
+				}
 				setCursorPos (p.x, p.y) ;
 			}
 		}
