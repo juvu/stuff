@@ -36,6 +36,18 @@ int PotY = 240 ;
 int EquityX = 47 ;
 int EquityY = 274 ;
 
+int NumTurnFolds = 0 ;
+int NumTurnFoldsSav = 0 ;
+int MaxInPlay = 0 ;
+int MaxInPlaySav = 0 ;
+int NumPocketFolds = 0 ;
+int NumPocketFoldsSav = 0 ;
+int NumFlopFolds = 0 ;
+int NumFlopFoldsSav = 0 ;
+int numInPlay = 0 ;
+int numInPlaySav = 0 ;
+
+
 #define POT_WIDTH 100
 #define POT_HEIGHT 25
 #define EQUITY_WIDTH 50
@@ -48,13 +60,12 @@ int XBase = -1 ;
 int YBase = -1 ;
 
 char cardBuffersav[100] = "AHAS" ;
-int numInPlaySav = 1 ;
 
 static char cardBuffer[100] = "" ;
 
 
-#define INTERVAL 100
-#define LONGINTERVAL 100
+#define INTERVAL 30
+#define LONGINTERVAL 30
 
 #define HEARTS 0
 #define CLUBS 1
@@ -66,11 +77,25 @@ static char cardBuffer[100] = "" ;
 int cardsx[8] = {1,0,25,69,93,117,141,166} ;
 int cardsy[8] = {1,204,204,204,204,204,204,204} ;
 
-int playersaddx[6] = {1,1,72,72,72,72} ;
-int playersaddy[6] = {1,1,-87,-87,-87,-87} ;
+int playersaddx = 72 ;
+int playersaddy = -87 ;
+int playersdelx = 72 ;
+int playersdely = -68;
 
-int playersdelx[6] = {1,1,72,72,72,72} ;
-int playersdely[6] = {1,1,-68,-68,-68,-68} ;
+int playersaddPocketx = 166 ;
+int playersaddPockety = -87 ;
+int playersdelPocketx = 166 ;
+int playersdelPockety = -68;
+
+int playersaddFlopx = 72 ;
+int playersaddFlopy = -50 ;
+int playersdelFlopx = 72 ;
+int playersdelFlopy = -31;
+
+int playersaddTurnx = 166 ;
+int playersaddTurny = -50 ;
+int playersdelTurnx = 166 ;
+int playersdelTurny = -31;
 
 int heartsx[14] = {1,240,0,20,40,60,80,100,120,140,160,180,200,220} ;
 int heartsy[14] = {1,72,72,72,72,72,72,72,72,72,72,72,72,72} ;
@@ -163,32 +188,57 @@ addCard (Card *cards, char *str, int *nextCard)
     (*nextCard)++;
 }
 
-int setupPlayers(int numOppos)
+int setupPlayers()
 {
 	int i = 0 ;
 
-	for (i=2;i<5;i++)
+	for (i=1;i<5;i++)
 	{
-		SetAndClick (BaseX + playersdelx[i], BaseY + playersdely[i]) ;
-
+		SetAndClick (BaseX + playersdelTurnx, BaseY + playersdelTurny) ;
 	}
-	SetAndClick (BaseX + playersdelx[3], BaseY + playersdely[3]) ;
-	SetAndClick (BaseX + playersdelx[3], BaseY + playersdely[3]) ;
-	for (i=2;i<=numOppos;i++)
+
+	for (i=1;i<5;i++)
 	{
-		SetAndClick (BaseX + playersaddx[i], BaseY + playersaddy[i]) ;
+		SetAndClick (BaseX + playersdelFlopx, BaseY + playersdelFlopy) ;
 	}
-}
 
-int clearPlayers()
-{
-	int i = 0 ;
-
-	for (i=5;i>=2;i--)
+	for (i=1;i<5;i++)
 	{
-		SetAndClick (BaseX + playersdelx[i], BaseY + playersdely[i]) ;
-
+		SetAndClick (BaseX + playersdelPocketx, BaseY + playersdelPockety) ;
 	}
+
+	for (i=1;i<5;i++)
+	{
+		SetAndClick (BaseX + playersdelx, BaseY + playersdely) ;
+	}
+
+
+	for (i=2;i<=MaxInPlay;i++)
+	{
+		SetAndClick (BaseX + playersaddx, BaseY + playersaddy) ;
+	}
+
+	for (i=1;i<=NumPocketFolds;i++)
+	{
+		SetAndClick (BaseX + playersaddPocketx, BaseY + playersaddPockety) ;
+	}
+
+	for (i=1;i<=NumFlopFolds;i++)
+	{
+		SetAndClick (BaseX + playersaddFlopx, BaseY + playersaddFlopy) ;
+	}
+
+	for (i=1;i<=NumTurnFolds;i++)
+	{
+		SetAndClick (BaseX + playersaddTurnx, BaseY + playersaddTurny) ;
+	}
+
+
+	NumTurnFoldsSav = NumTurnFolds ;
+	NumFlopFoldsSav = NumFlopFolds ;
+	NumPocketFoldsSav = NumPocketFolds ;
+	MaxInPlaySav = MaxInPlay ;
+
 }
 
 int clearCards(int first, int last)
@@ -198,16 +248,6 @@ int clearCards(int first, int last)
 	for (i=first;i>=last;i--)
 	{
 		SetAndClick (BaseX + cardsx[i], BaseY + cardsy[i]) ;
-	}
-}
-
-int addPlayers(int numOppos)
-{
-	int i = 0 ;
-
-	for (i=2;i<=numOppos;i++)
-	{
-		SetAndClick (BaseX + playersaddx[i], BaseY + playersaddy[i]) ;
 	}
 }
 
@@ -251,6 +291,9 @@ int doOdds(int numOppos, char *inputCards)
 	int i = 0 ;
 	int nextCard = 0 ;
 
+	printf ("In doOdds numInPlay is %d numInPlaySav is %d cards are %s\n", numInPlay, numInPlaySav, inputCards) ;
+	printf ("In doOdds maxInPlay is %d NumPocketFOlds is %d NumFlopFolds is %d NumTurnFolds is %d\n", 
+					MaxInPlay, NumPocketFolds, NumFlopFolds, NumTurnFolds) ;
 	for (i=0;i<inputNumCards*2;i+=2)
 	{
 		char theCard[3];
@@ -262,9 +305,15 @@ int doOdds(int numOppos, char *inputCards)
 		addCard (myCards, theCard, &nextCard) ;
 	}
 
-	clearCards(7, 1) ;
-	setupPlayers(numOppos) ;
-	playCards(myCards, 1, inputNumCards) ;
+	if (numInPlay != numInPlaySav)
+		setupPlayers() ;
+
+	if (strcmp (cardBuffer, cardBuffersav))
+	{
+		clearCards(7, 1) ;
+		playCards(myCards, 1, inputNumCards) ;
+	}
+
 #if 0
 	if (strlen(cardBuffersav) > strlen (cardBuffer))
 	{
@@ -679,13 +728,124 @@ int main(int argc, char **argv)
 		Sleep (1000) ;
 	}
 
+
+#if 0
 	clearCards(7,1) ;
 	setupPlayers(5) ;
 	doOdds (3, "2D3CJCQCKDADQD") ;
 	Sleep(2000);
 	double Equity = getNumberAtLocation ("Equity", BaseX + EquityX, BaseY + EquityY, EQUITY_WIDTH, EQUITY_HEIGHT, 0) ;
 	printf ("Equity is %f\n", Equity) ;
+#endif
 
+	// test
+	//
+#if 0	
+	numInPlay = 4 ;
+	numInPlaySav = 0 ;
+	MaxInPlay = 4 ;
+	NumPocketFolds = 0 ;
+	NumFlopFolds = 0 ;
+	NumTurnFolds = 0 ;
+	sprintf (cardBuffer, "TS9D") ;
+	doOdds(1,cardBuffer) ;
+	Sleep(3000);
+
+	numInPlay = 3 ;
+	numInPlaySav = 4 ;
+	MaxInPlay = 4 ;
+	NumPocketFolds = 1 ;
+	NumFlopFolds = 0 ;
+	NumTurnFolds = 0 ;
+	doOdds(1,cardBuffer) ;
+	Sleep(3000);
+
+	numInPlay = 2 ;
+	numInPlaySav = 3 ;
+	MaxInPlay = 4 ;
+	NumPocketFolds = 2 ;
+	NumFlopFolds = 0 ;
+	NumTurnFolds = 0 ;
+	doOdds(1,cardBuffer) ;
+	Sleep(3000);
+
+	numInPlay = 1 ;
+	numInPlaySav = 2 ;
+	MaxInPlay = 4 ;
+	NumPocketFolds = 3 ;
+	NumFlopFolds = 0 ;
+	NumTurnFolds = 0 ;
+	doOdds(1,cardBuffer) ;
+	Sleep(3000);
+	
+	numInPlay = 5 ;
+	numInPlaySav = 1 ;
+	sprintf (cardBuffer, "3HQC") ;
+	MaxInPlay = 5 ;
+	NumPocketFolds = 0 ;
+	NumFlopFolds = 0 ;
+	NumTurnFolds = 0 ;
+	doOdds(1,cardBuffer) ;
+	Sleep(3000);
+	
+	numInPlay = 4 ;
+	numInPlaySav = 5 ;
+	sprintf (cardBuffer, "3HQC") ;
+	MaxInPlay = 5 ;
+	NumPocketFolds = 1 ;
+	NumFlopFolds = 0 ;
+	NumTurnFolds = 0 ;
+	doOdds(1,cardBuffer) ;
+	Sleep(3000);
+	
+	numInPlay = 3 ;
+	numInPlaySav = 4 ;
+	MaxInPlay = 5 ;
+	sprintf (cardBuffer, "3HQCADTC2H") ;
+	NumPocketFolds = 1 ;
+	NumFlopFolds = 1 ;
+	NumTurnFolds = 0 ;
+	doOdds(1,cardBuffer) ;
+	Sleep(3000);
+
+	numInPlay = 2 ;
+	numInPlaySav = 3 ;
+	MaxInPlay = 5 ;
+	NumPocketFolds = 1 ;
+	NumFlopFolds = 2 ;
+	NumTurnFolds = 0 ;
+	doOdds(1,cardBuffer) ;
+	Sleep(3000);
+	
+	numInPlay = 1 ;
+	numInPlaySav = 2 ;
+	MaxInPlay = 5 ;
+	sprintf (cardBuffer, "3HQCADTC2H8s") ;
+	NumPocketFolds = 1 ;
+	NumFlopFolds = 2 ;
+	NumTurnFolds = 1 ;
+	doOdds(1,cardBuffer) ;
+	Sleep(3000);
+	
+	numInPlay = 4 ;
+	numInPlaySav = 0 ;
+	MaxInPlay = 4 ;
+	NumPocketFolds = 0 ;
+	NumFlopFolds = 0 ;
+	NumTurnFolds = 0 ;
+	sprintf (cardBuffer, "TS9D") ;
+	doOdds(1,cardBuffer) ;
+	Sleep(3000);
+
+	numInPlay = 3 ;
+	numInPlaySav = 4 ;
+	MaxInPlay = 4 ;
+	NumPocketFolds = 1 ;
+	NumFlopFolds = 0 ;
+	NumTurnFolds = 0 ;
+	doOdds(1,cardBuffer) ;
+	Sleep(3000);
+#endif
 	
 	while (XBase < 0)
 	{
@@ -703,11 +863,10 @@ int main(int argc, char **argv)
 		}
 
 		getCards() ;
+		int numCards = strlen (cardBuffer) / 2 ;
 
-		/*
 		if (strlen (cardBuffer) > 1)
 			printf ("cardbuffer is %s\n", cardBuffer) ;
-		*/
 
 		//strcpy (cardBuffer, "AHJC") ;
 
@@ -718,48 +877,37 @@ int main(int argc, char **argv)
         		/* Get the current cursor position */
         		GetCursorPos(&p);
 
-			int numInPlay = getNumInPlay() ;
+			numInPlay = getNumInPlay() ;
+			if (numInPlay > numInPlaySav)
+			{
+				MaxInPlay = numInPlay ;
+				NumPocketFolds = 0 ;
+				NumFlopFolds = 0 ;
+				NumTurnFolds = 0 ;
+			}
 
-			if (strcmp (cardBuffer, cardBuffersav) || (numInPlay != numInPlaySav))
-			{	
+			if (numCards == 2 && numInPlay < MaxInPlay)
+				NumPocketFolds = MaxInPlay - numInPlay ;
+
+			if (numCards == 5 && numInPlay < (MaxInPlay - NumPocketFolds))
+				NumFlopFolds = MaxInPlay - NumPocketFolds - numInPlay ;
+
+			if (numCards >= 6 && numInPlay < (MaxInPlay - NumPocketFolds - NumFlopFolds))
+				NumTurnFolds = MaxInPlay - NumPocketFolds - NumFlopFolds - numInPlay ;
+
+
+                        if (strcmp (cardBuffer, cardBuffersav) || (numInPlay != numInPlaySav))
+                        {
+
 				doOdds (numInPlay, cardBuffer) ;
 				
-				if (numInPlay)
-				{
-					double PotSize = getNumberAtLocation ("Pot", XBase + PotX, YBase +PotY, POT_WIDTH, POT_HEIGHT, 1) ;
-
-					printf ("Pot Size is %f\n", PotSize) ;
-
-					double Equity = getNumberAtLocation ("Equity", BaseX + EquityX, BaseY + EquityY, EQUITY_WIDTH, EQUITY_HEIGHT, 0) ;
-
-					printf ("Equity is %f\n", Equity) ;
-
-					strcpy (cardBuffersav, cardBuffer) ;
-					numInPlaySav = numInPlay ;
-
-					/*
-
-	                        	sprintf (cmd, "plink -pw Media123! msgmedia@192.168.1.101 github/stuff/6poker %d %d %s nohtml",
-                                                        (int) PotSize, numInPlay, cardBuffer) ;
-                        		printf ("%s\n", cmd) ;
-
-			        	FILE *pp = popen (cmd, "r") ;
-
-                        		// now read the results
-                        		while (fgets (buffer, 1024, pp))
-                        		{
-                                		printf (buffer) ;
-                        		}
-		
-                        		pclose (pp) ;
-					*/
-	
-	
-				}
-				setCursorPos (p.x, p.y) ;
+				strcpy (cardBuffersav, cardBuffer) ;
+				numInPlaySav = numInPlay ;
 			}
+
+			setCursorPos (p.x, p.y) ;
 		}
-		Sleep (2000) ;
+		Sleep (1000) ;
 	}
 
 	return 0;
