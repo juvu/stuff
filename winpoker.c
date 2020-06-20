@@ -649,6 +649,12 @@ int doCalibration(void)
 		XBase = nearestX - 449 ;
 		YBase = nearestY - 486 ;
 		printf ("Setting base to %d %d\n", XBase, YBase) ;
+
+		FILE *fp = fopen ("BaseXY.txt", "w") ;
+		char buf[1024]="";
+		sprintf (buf, "%d %d\n", XBase, YBase) ;
+		fputs (buf, fp) ;
+		fclose (fp) ;
 	}
 
  
