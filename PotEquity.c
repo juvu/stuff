@@ -11,7 +11,7 @@ int EquityY = 0 ;
 
 #define POT_WIDTH 100
 #define POT_HEIGHT 25
-#define HANDRANK_WIDTH 100
+#define HANDRANK_WIDTH 150
 #define HANDRANK_HEIGHT 25
 #define EQUITY_WIDTH 50
 #define EQUITY_HEIGHT 25
@@ -23,6 +23,7 @@ double getNumberAtLocation(char *file, int x, int y, int width, int height, int 
 
 	double number = 0.0 ;
 
+	number = 0.0 ;
 	if (getText)
 		sprintf (cmd, "getText %s %d %d %d %d %d", file, x, y, width, height, getText) ;
 	else
@@ -86,7 +87,7 @@ char *getStringAtLocation(char *file, int x, int y, int width, int height, int g
 
         pclose (ppa) ;
 
-	sprintf (cmd, "tesseract %s.bmp %s --psm 8 tess_config", file, file) ;
+	sprintf (cmd, "tesseract %s.bmp %s --psm 8 tess_configPR", file, file) ;
 	FILE *ppb = popen (cmd, "r") ;
 
         // now read the results
@@ -123,34 +124,12 @@ int doCalibrationHH(void)
 		printf ("Calibration Equity is %f\n", Equity) ;
 		EquityX = p.x ;
 		EquityY = p.y ;
+		HandRankX = EquityX - 57 ;
+		HandRankY = EquityY - 47 ;
 	}				
 
 	return 0 ;
 }
-
-int doCalibrationHandRank(void) 
-{
-	POINT p;
-	BOOL b;
-	char handRank[1024] = "";
- 
-	printf ("CALIBRATING HandRank.....\n") ;
-
-	/* Get the current cursor position */
-	b = GetCursorPos(&p);
-	if (!b)
-		return 0;
-
-	getStringAtLocation ("HandRank", p.x, p.y, EQUITY_WIDTH, EQUITY_HEIGHT, 0, handRank) ;
-	{
-		printf ("Calibration handRank is %s\n", handRank) ;
-		HandRankX = p.x ;
-		HandRankY = p.y ;
-	}				
-
-	return 0 ;
-}
-
 
 int doCalibrationPot(void) 
 {
@@ -184,13 +163,6 @@ int main(int argc, char **argv)
 		doCalibrationHH() ;
 		Sleep (1000) ;
 	}
-/*	
-	for (i=0;i<5;i++)
-	{
-		doCalibrationHandRank() ;
-		Sleep (1000) ;
-	}
-*/
 	for (i=0;i<5;i++)
 	{
 		doCalibrationPot() ;
@@ -207,8 +179,22 @@ int main(int argc, char **argv)
 		double Pot = getNumberAtLocation ("Pot", PotX, PotY, POT_WIDTH, POT_HEIGHT, 1) ;
 		printf ("Pot is %f\n", Pot) ;
 
-		//getStringAtLocation ("HandRank", HandRankX, HandRankY, HANDRANK_WIDTH, HANDRANK_HEIGHT, 0, handRank) ;
-		//printf ("HandRank is %s\n", handRank) ;
+		getStringAtLocation ("HandRank", HandRankX, HandRankY, HANDRANK_WIDTH, HANDRANK_HEIGHT, 0, handRank) ;
+		printf ("HandRank is %s\n", handRank) ;
+
+		double Rank = 1.0 ;
+		if (strstr (handRank,"PocketRank:"))
+		{
+			char *ptr = handRank + strlen("PocketRank:") ;
+			char *ptr2 = strstr (ptr, "/") ;
+			if (ptr2)
+			{
+				*ptr2++ = '\0' ;
+				double numerator = atof (ptr) ;
+				double denominator = atof (ptr2) ;
+				Rank = numerator / denominator ;
+			}
+		}
 
 		//double MaxBet = Pot / ((1.0 / (Equity * 0.01)) - 1.0);
 		//
@@ -226,7 +212,7 @@ int main(int argc, char **argv)
 
 			FILE *fp2 = fopen ("MaxBetEquity.txt", "w") ;
 			char buf2[1024]="";
-			sprintf (buf2, "%.2f\n%.2f\n", MaxBet, Equity) ;
+			sprintf (buf2, "%.2f\n%.2f\n%.2f\n%.2f\n", MaxBet, Equity, Pot, Rank) ;
 			fputs (buf2, fp2) ;
         		fclose (fp2) ;
 
