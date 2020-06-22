@@ -176,13 +176,20 @@ int main(int argc, char **argv)
 		double Equity = getNumberAtLocation ("Equity", EquityX, EquityY, EQUITY_WIDTH, EQUITY_HEIGHT, 0) ;
 		printf ("Equity is %f\n", Equity) ;
 
+		if (Equity == 0.0)
+		{
+			system ("rm MaxBetEquity.txt");
+			Sleep(500);
+			continue;
+		}
+
 		double Pot = getNumberAtLocation ("Pot", PotX, PotY, POT_WIDTH, POT_HEIGHT, 1) ;
 		printf ("Pot is %f\n", Pot) ;
 
 		getStringAtLocation ("HandRank", HandRankX, HandRankY, HANDRANK_WIDTH, HANDRANK_HEIGHT, 0, handRank) ;
 		printf ("HandRank is %s\n", handRank) ;
 
-		double Rank = 1.0 ;
+		double Rank = 2.0 ;
 		if (strstr (handRank,"PocketRank:"))
 		{
 			char *ptr = handRank + strlen("PocketRank:") ;

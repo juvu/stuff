@@ -5,9 +5,9 @@
 #define WIDTH 113
 #define HEIGHT 25
 #define CHECKCALLX 780
-#define CHECKCALLY 696
+#define CHECKCALLY 697
 #define RAISEX 893
-#define RAISEY 696
+#define RAISEY 697
 
 #define FOLD 0
 #define CHECKCALL 1
@@ -15,6 +15,9 @@
 #define RAISE50 3
 #define RAISE100 4
 #define ALLIN 5
+
+#define MAX_RANK 0.25
+#define BAD_RANK 0.6
 
 int select50X = 704 ;
 int select50Y = 622 ;
@@ -126,51 +129,73 @@ double getNumberAtLocation(char *file, int x, int y, int width, int height, int 
 	return number ;
 }
 
-int doAction (int act)
+int doAction (int act, double CheckCall)
 {
+	if (act == FOLD && CheckCall == 0.0)
+		act = CHECKCALL;
 	if (act == FOLD)
 	{
+		printf ("FOLDING\n");
 		SetAndClick (selectFoldX, selectFoldY) ;
-	}
-	else if (act == CHECKCALL)
-	{
-		// Need to click Fold after CheckCall in case of AllInSituation
-		SetAndClick (selectCheckCallX, selectCheckCallY) ;
-		SetAndClick (selectFoldX, selectFoldY) ;
-
 		// and get rid of the annoying popup if it appears
 		Sleep(1000);
 		SetAndClick (confirmCheckX, confirmCheckY) ;
 	}
+	else if (act == CHECKCALL)
+	{
+		printf ("CALLING\n");
+		SetAndClick (selectCheckCallX, selectCheckCallY) ;
+	}
 	else if (act == RAISE)
 	{
+		printf ("RAISING\n");
 		SetAndClick (selectRaiseX, selectRaiseY) ;
-		// some scenarios there is no Raise button
-		SetAndClick (selectCheckCallX, selectCheckCallY) ;
 	}
 	else if (act == RAISE50)
 	{
+		printf ("RAISING 50\n");
 		SetAndClick (select50X, select50Y) ;
 		SetAndClick (selectRaiseX, selectRaiseY) ;
-		// some scenarios there is no Raise button
-		SetAndClick (selectCheckCallX, selectCheckCallY) ;
 	}
 	else if (act == RAISE100)
 	{
+		printf ("RAISING 100\n");
 		SetAndClick (select100X, select100Y) ;
 		SetAndClick (selectRaiseX, selectRaiseY) ;
-		// some scenarios there is no Raise button
-		SetAndClick (selectCheckCallX, selectCheckCallY) ;
 	}
 	else if (act == ALLIN)
 	{
+		printf ("ALLIN\n");
 		SetAndClick (allInX, allInY) ;
 		SetAndClick (selectRaiseX, selectRaiseY) ;
-		// some scenarios there is no Raise button
-		SetAndClick (selectCheckCallX, selectCheckCallY) ;
 	}
 }
 
+int CheckItWorked (int Iaction, double CheckCall, double Raise) 
+{
+	Sleep (1000) ;
+	double newRaise = getNumberAtLocation ("Raise", BaseX + RAISEX, BaseY + RAISEY, WIDTH, HEIGHT, 1) ;
+	printf ("New Raise is %f\n", newRaise) ;
+	double newCheckCall = getNumberAtLocation ("CheckCall", BaseX + CHECKCALLX, BaseY + CHECKCALLY, WIDTH, HEIGHT, 1) ;
+	printf ("newCheckCall is %f\n", newCheckCall) ;
+
+	// Buttons are sometimes reversed in AllIn
+	//
+	if (newCheckCall > newRaise)
+	{
+		double tmp = newRaise ;
+		newCheckCall = newRaise;
+		newRaise = tmp;
+	}
+
+	if (newRaise == Raise && newCheckCall == CheckCall)
+	{
+		if (Iaction == ALLIN || Iaction == RAISE100 || Iaction == RAISE50 || Iaction == RAISE)
+			doAction (CHECKCALL, CheckCall) ;
+		else if (Iaction == CHECKCALL)
+			doAction (FOLD, CheckCall) ;
+	}
+}
 
 int main(int argc, char **argv)
 {
@@ -193,26 +218,29 @@ int main(int argc, char **argv)
 		Raise = getNumberAtLocation ("Raise", BaseX + RAISEX, BaseY + RAISEY, WIDTH, HEIGHT, 1) ;
 		printf ("Raise is %f\n", Raise) ;
 
-                if (Raise > 0.0)
-                {
-			CheckCall = getNumberAtLocation ("CheckCall", BaseX + CHECKCALLX, BaseY + CHECKCALLY, WIDTH, HEIGHT, 1) ;
-			printf ("CheckCall is %f\n", CheckCall) ;
+		CheckCall = getNumberAtLocation ("CheckCall", BaseX + CHECKCALLX, BaseY + CHECKCALLY, WIDTH, HEIGHT, 1) ;
+		printf ("CheckCall is %f\n", CheckCall) ;
 
+                if (Raise > 0.0 || CheckCall > 0.0)
+                {
 			double MaxBet = 0.0 ;
 			double Equity = 0.0 ;
 			double Pot = 0.0 ;
 			double Rank = 1.0 ;
 
-			int IAction = FOLD ;
+			int IAction = CHECKCALL ;
 			char Action[1024] = "" ;
 
 			// wait for everything to catch up
 			//
-			Sleep (3000);
+			Sleep (2500);
 
 			// Get MaxBet and Equity
 			//
 			FILE *fp3 = fopen ("MaxBetEquity.txt", "r") ;
+			if (!fp3)
+				continue;
+
 			char buff3[1024]="";
 			fgets (buff3, 1024, fp3) ;
 			MaxBet = atof (buff3) ;
@@ -226,48 +254,67 @@ int main(int argc, char **argv)
 			printf ("MaxBet is %f Equity is %f CheckCall is %f Pot is %f Rank is %f\n", 
 								MaxBet, Equity, CheckCall, Pot, Rank) ;
 
+			// Buttons are sometimes reversed in AllIn
+			//
+			if (CheckCall > Raise)
+			{
+				double tmp = Raise ;
+				CheckCall = Raise;
+				Raise = tmp;
+			}
+
+			// do not reraise if the bet is too big
+			int AllowRaise =1 ;
+			if (CheckCall > 0.25 * Pot)
+				AllowRaise = 0 ;
+
+			// allin checks
 			if (Equity >= 95.0)
 				IAction = ALLIN ;
-			else if (Raise > AbsMax && CheckCall < AbsMax)
-				IAction = CHECKCALL;
-			else if (CheckCall > AbsMax)
-				IAction = FOLD;
+			else if (CheckCall == 0.0 && (Raise > MaxBet || Raise > AbsMax))
+				IAction = FOLD ;
 			else if (Equity >= 75.0 && Equity < 95.0)
 			{
-				if (Pot <= AbsMax && Pot <= MaxBet)
+				if (AllowRaise && Pot <= AbsMax && Pot <= MaxBet)
 					IAction = RAISE100 ;
-				else if ((Pot * 0.5) <= AbsMax && (Pot * 0.5) <= MaxBet)
+				else if (AllowRaise && (Pot * 0.5) <= AbsMax && (Pot * 0.5) <= MaxBet)
 					IAction = RAISE50 ;
-				else if (Raise <= AbsMax && Raise <= MaxBet)
+				else if (AllowRaise && Raise <= AbsMax && Raise <= MaxBet)
 					IAction = RAISE ;
 				else if (CheckCall <= AbsMax && CheckCall <= MaxBet)
 					IAction = CHECKCALL;
-				else if (Rank <= 0.15)
+				else if (Rank <= MAX_RANK)
 					IAction = CHECKCALL;
+				else if (Rank >= BAD_RANK && Rank <=1.0)
+					IAction = FOLD;
 				else
 					IAction = FOLD;
 			}
 			else if (Equity >= 60.0 && Equity < 75.0)
 			{
-				if ((Pot * 0.5) <= AbsMax && (Pot * 0.5) <= MaxBet)
+				if (AllowRaise && (Pot * 0.5) <= AbsMax && (Pot * 0.5) <= MaxBet)
 					IAction = RAISE50 ;
-				else if (Raise <= AbsMax && Raise <= MaxBet)
+				else if (AllowRaise && Raise <= AbsMax && Raise <= MaxBet)
 					IAction = RAISE ;
 				else if (CheckCall <= AbsMax && CheckCall <= MaxBet)
 					IAction = CHECKCALL;
-				else if (Rank <= 0.15)
+				else if (Rank <= MAX_RANK)
 					IAction = CHECKCALL;
+				else if (Rank >= BAD_RANK && Rank <=1.0)
+					IAction = FOLD;
 				else
 					IAction = FOLD;
 			}
 			else if (Equity >= 50.0 && Equity < 60.0)
 			{
-				if (Raise <= AbsMax && Raise <= MaxBet)
+				if (AllowRaise && Raise <= AbsMax && Raise <= MaxBet)
 					IAction = RAISE ;
 				else if (CheckCall <= AbsMax && CheckCall <= MaxBet)
 					IAction = CHECKCALL;
-				else if (Rank <= 0.15)
+				else if (Rank <= MAX_RANK)
 					IAction = CHECKCALL;
+				else if (Rank >= BAD_RANK && Rank <=1.0)
+					IAction = FOLD;
 				else
 					IAction = FOLD;
 			}
@@ -276,8 +323,10 @@ int main(int argc, char **argv)
 				// Note we always at least check the top 15% of hands
 				if (CheckCall <= AbsMax && CheckCall <= MaxBet)
 					IAction = CHECKCALL;
-				else if (Rank <= 0.15)
+				else if (Rank <= MAX_RANK)
 					IAction = CHECKCALL;
+				else if (Rank >= BAD_RANK && Rank <=1.0)
+					IAction = FOLD;
 				else
 					IAction = FOLD;
 			}
@@ -295,7 +344,10 @@ int main(int argc, char **argv)
 			else if (IAction == ALLIN)
 				sprintf (Action, "All-in") ;
 
-			doAction (IAction) ;
+			doAction (IAction, CheckCall) ;
+			CheckItWorked (IAction, CheckCall, Raise) ;
+
+			system ("rm  MaxBetEquity.txt") ;
 
                         FILE *fp2 = fopen ("CheckRaise.html", "w") ;
                         char buff2[1024]="";
@@ -313,7 +365,7 @@ int main(int argc, char **argv)
                 }
 
 
-		Sleep (500) ;
+		Sleep (1000) ;
 	}
 
 	
