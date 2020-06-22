@@ -223,7 +223,8 @@ int main(int argc, char **argv)
 			fgets (buff3, 1024, fp3) ;
 			Rank = atof (buff3) ;
 			fclose (fp3) ;
-			printf ("MaxBet is %f Equity is %f CheckCall is %f Pot is %f\n", MaxBet, Equity, CheckCall, Pot) ;
+			printf ("MaxBet is %f Equity is %f CheckCall is %f Pot is %f Rank is %f\n", 
+								MaxBet, Equity, CheckCall, Pot, Rank) ;
 
 			if (Equity >= 95.0)
 				IAction = ALLIN ;
@@ -241,6 +242,8 @@ int main(int argc, char **argv)
 					IAction = RAISE ;
 				else if (CheckCall <= AbsMax && CheckCall <= MaxBet)
 					IAction = CHECKCALL;
+				else if (Rank <= 0.15)
+					IAction = CHECKCALL;
 				else
 					IAction = FOLD;
 			}
@@ -252,6 +255,8 @@ int main(int argc, char **argv)
 					IAction = RAISE ;
 				else if (CheckCall <= AbsMax && CheckCall <= MaxBet)
 					IAction = CHECKCALL;
+				else if (Rank <= 0.15)
+					IAction = CHECKCALL;
 				else
 					IAction = FOLD;
 			}
@@ -260,6 +265,8 @@ int main(int argc, char **argv)
 				if (Raise <= AbsMax && Raise <= MaxBet)
 					IAction = RAISE ;
 				else if (CheckCall <= AbsMax && CheckCall <= MaxBet)
+					IAction = CHECKCALL;
+				else if (Rank <= 0.15)
 					IAction = CHECKCALL;
 				else
 					IAction = FOLD;
