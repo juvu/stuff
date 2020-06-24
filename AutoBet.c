@@ -202,6 +202,7 @@ int main(int argc, char **argv)
 	int i=0;
 
 	double AbsMax = atof (argv[1]) ;
+	double BigBlind = atof (argv[2]) ;
 	double CheckCall = 0.0 ;
 	double Raise = 0.0 ;
 	
@@ -273,6 +274,9 @@ int main(int argc, char **argv)
 				IAction = ALLIN ;
 			else if (CheckCall == 0.0 && (Raise > MaxBet || Raise > AbsMax))
 				IAction = FOLD ;
+			else if (CheckCall == 0.0 && (Raise > 10.0 * BigBlind) && Equity < 70.0)
+				IAction = FOLD ;
+			// Possible raise checks
 			else if (Equity >= 75.0 && Equity < 95.0)
 			{
 				if (AllowRaise && Pot <= AbsMax && Pot <= MaxBet)
@@ -318,15 +322,16 @@ int main(int argc, char **argv)
 				else
 					IAction = FOLD;
 			}
+			// Non-raise situations
 			else 
 			{
 				// Note we always at least check the top 15% of hands
-				if (CheckCall <= AbsMax && CheckCall <= MaxBet)
-					IAction = CHECKCALL;
-				else if (Rank <= MAX_RANK)
+				if (Rank <= MAX_RANK)
 					IAction = CHECKCALL;
 				else if (Rank >= BAD_RANK && Rank <=1.0)
 					IAction = FOLD;
+				else if (CheckCall <= AbsMax && CheckCall <= MaxBet)
+					IAction = CHECKCALL;
 				else
 					IAction = FOLD;
 			}

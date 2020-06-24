@@ -203,6 +203,20 @@ int main(int argc, char **argv)
 			}
 		}
 
+		// get the Equity again after short pause. 
+		// If it is not the same we need to wait and try again
+		Sleep(500);
+
+		double confirmEquity = getNumberAtLocation ("Equity", EquityX, EquityY, EQUITY_WIDTH, EQUITY_HEIGHT, 0) ;
+		printf ("confirm Equity is %f\n", confirmEquity) ;
+
+		if (confirmEquity != Equity)
+		{
+			system ("rm MaxBetEquity.txt");
+			Sleep(500);
+			continue;
+		}
+
 		//double MaxBet = Pot / ((1.0 / (Equity * 0.01)) - 1.0);
 		//
 		double Efrac = Equity * 0.01 ;

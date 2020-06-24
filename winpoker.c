@@ -874,6 +874,12 @@ int main(int argc, char **argv)
 		if (strlen (cardBuffer) > 1)
 			printf ("cardbuffer is %s\n", cardBuffer) ;
 
+		FILE *fp = fopen ("numCards.txt", "w") ;
+                char buf[1024]="";
+                sprintf (buf, "%d</h1>", numCards) ;
+                fputs (buf, fp) ;
+                fclose (fp) ;
+
 		//strcpy (cardBuffer, "AHJC") ;
 
 		if (strlen (cardBuffer) >= 4)
