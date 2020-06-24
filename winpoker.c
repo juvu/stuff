@@ -874,11 +874,6 @@ int main(int argc, char **argv)
 		if (strlen (cardBuffer) > 1)
 			printf ("cardbuffer is %s\n", cardBuffer) ;
 
-		FILE *fp = fopen ("numCards.txt", "w") ;
-                char buf[1024]="";
-                sprintf (buf, "%d</h1>", numCards) ;
-                fputs (buf, fp) ;
-                fclose (fp) ;
 
 		//strcpy (cardBuffer, "AHJC") ;
 
@@ -907,6 +902,27 @@ int main(int argc, char **argv)
 			if (numCards >= 6 && numInPlay < (MaxInPlay - NumPocketFolds - NumFlopFolds))
 				NumTurnFolds = MaxInPlay - NumPocketFolds - NumFlopFolds - numInPlay ;
 
+
+			FILE *fp = fopen ("cardPlayerInfo.txt", "w") ;
+                	char buf[1024]="";
+                	sprintf (buf, "%d\n", numCards) ;
+                	fputs (buf, fp) ;
+                	snprintf (buf, 5, "%s", cardBuffer) ;
+                	fputs (buf, fp) ;
+                	fputs ("\n", fp) ;
+                	sprintf (buf, "--\n") ;
+			if (strlen(cardBuffer) > 4)
+                		sprintf (buf, "%s\n", &cardBuffer[4]) ;
+                	fputs (buf, fp) ;
+                	sprintf (buf, "%d\n", MaxInPlay) ;
+                	fputs (buf, fp) ;
+                	sprintf (buf, "%d\n", NumPocketFolds) ;
+                	fputs (buf, fp) ;
+                	sprintf (buf, "%d\n", NumFlopFolds) ;
+                	fputs (buf, fp) ;
+                	sprintf (buf, "%d\n", NumTurnFolds) ;
+                	fputs (buf, fp) ;
+                	fclose (fp) ;
 
                         if (strcmp (cardBuffer, cardBuffersav) || (numInPlay != numInPlaySav))
                         {
