@@ -13,13 +13,10 @@
 import matplotlib.pyplot as plt
 import MySQLdb
 
-town = input("Enter Town")
-
-z = town.split('.')
-
-print (z)
+town = input("Enter Town/County/COuntry")
 
 dates = []
+towns = []
 cases = []
 casesDiff = []
 casesAve = []
@@ -37,15 +34,31 @@ db = MySQLdb.connect(host='localhost',
 # prepare a cursor object using cursor() method
 cursor = db.cursor()
 
-if (len(z) > 1):
+sql = "select DISTINCT AREA from CASES WHERE AREA LIKE '%{0}%';".format(town)
+try:
+    # Execute the SQL command
+    cursor.execute(sql)
+    # Fetch all the rows in a list of lists.
+    results = cursor.fetchall()
+    for row in results:
+        towns.append(row[0])
+except:
+   print ("Error: unable to fetch data")
+
+if (len(towns) > 1):
+    for i in range(len(towns)):
+        print ("{0} - {1}".format(i,towns[i]))
+    index = input("Enter Town Index")
+    town = towns[int(index)]
     sql = "SELECT DISTINCT * FROM CASES \
-       WHERE AREA = '{0}' ORDER BY DATE".format(z[0])
-    town = z[0]
+       WHERE AREA = '{0}' ORDER BY DATE".format(town)
 else:
     sql = "SELECT DISTINCT * FROM CASES \
        WHERE AREA LIKE '%{0}%' ORDER BY DATE".format(town)
 
+
 print (sql)
+
 try:
     # Execute the SQL command
     cursor.execute(sql)
@@ -83,7 +96,7 @@ for i in range (len(casesDiff)):
     sql = "INSERT INTO DAILY(AREA, DATE, DAILY) \
             VALUES ('%s', '%s', '%s' )" % \
                 (town, dates[i], casesDiff[i])
-    print (sql)
+    #print (sql)
     cursor.execute(sql)
 
 #find missing dates
@@ -97,7 +110,7 @@ for i in missing:
     sql = "INSERT INTO DAILY(AREA, DATE, DAILY) \
             VALUES ('%s', '%s', '0' )" % \
                 (town, i)
-    print (sql)
+    #print (sql)
     cursor.execute(sql)
 
 # Commit your changes in the database
@@ -107,7 +120,7 @@ db.commit()
 
 sql = "SELECT DISTINCT * FROM DAILY ORDER BY DATE;"
 
-print (sql)
+#print (sql)
 try:
     # Execute the SQL command
     cursor.execute(sql)
@@ -121,11 +134,11 @@ except:
 
 # now plot it
 
-print (dates)
-print (newdates)
-print (cases)
-print (casesDiff)
-print (newcasesDiff)
+#print (dates)
+#print (newdates)
+#print (cases)
+#print (casesDiff)
+#print (newcasesDiff)
 
 # now use the really complicated sql to get the 7 day average
 
@@ -155,7 +168,7 @@ days = mdates.DayLocator()  # every day
 months_fmt = mdates.DateFormatter('%B')
 
 
-fig, (ax1, ax2) = plt.subplots(1, 2)
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15,5))
 
 fig.suptitle(title)
 ax1.plot(dates, cases)
