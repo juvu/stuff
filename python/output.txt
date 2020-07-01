@@ -1,0 +1,58 @@
+def find_edges(self)
+
+a
+
+cv2.Canny(im grey, 80, 40, apertureSize-3)
+Cen ret eure ae ee eC Cee Sueur eC eeu)
+coe en Oe Re U BLU]
+edge = TableEdge(self.im hsv, x1, yl, x2, y2)
+if edge.is_edge()
+all_edges..append(edge)
+
+   
+
+Ee gee
+Se Ce eG eg ae a
+Pee ees Cheer eae eee gre ite ean
+Se ee (ce ee vee ee gre te at
+Des le ee oa Ce SSE eee eat ea
+
+   
+ 
+
+ 
+
+Sea
+Caney
+
+eg See ee eager)
+are nee eae ren ar)
+fedges['top"] = self.merge_edges(top_edges)
+ee greet ee ee ere)
+
+  
+
+ 
+
+ets a
+
+def merge_edges(self, edges)
+Pos)
+coe eon
+points. append([edge.x1, edge.y1])
+Peter der ec ae nap)
+
+Pee ee ae Cues ae aD)
+RAG e etn Gt ar ee ie ca a eT)
+re aac ED)
+righty = int(((self.im.shape[1]-x)*vy/vx)+y)
+cv2.line(self.im, (self.im.shape[1]-1, righty), (@, lefty), (@, @, 255),] 2)
+keen
+
+def refine _edges(self, edges)
+
+on es ae ae ec er)
+ee
+
+ 
+
