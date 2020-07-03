@@ -1,0 +1,68 @@
+<MyGrid>
+
+    red:red
+    yellow:yellow
+    blue:blue
+    black:black
+    win:win
+    score:score
+    draw:draw
+
+    GridLayout:
+        cols:1
+        size: root.width, root.height
+
+        GridLayout:
+            cols:2
+            Label:
+                text: "Red"
+
+            Spinner:
+                id: red
+                text: '1'
+                values: '1', '2', '3', '4', '5', '6', '1 Back', '2 Back', '3 Back', '4 Back', 'Penult', 'Rover', 'Peg', 'Box'
+                on_text: root.spinnerRed(red.text)
+
+            Label:
+                text: "Yellow"
+
+            Spinner:
+                id: yellow
+                text: '1'
+                values: '1', '2', '3', '4', '5', '6', '1 Back', '2 Back', '3 Back', '4 Back', 'Penult', 'Rover', 'Peg', 'Box'
+                on_text: root.spinnerYellow(yellow.text)
+
+            Label:
+                text: "Blue"
+
+            Spinner:
+                id: blue
+                text: '1'
+                values: '1', '2', '3', '4', '5', '6', '1 Back', '2 Back', '3 Back', '4 Back', 'Penult', 'Rover', 'Peg', 'Box'
+                on_text: root.spinnerBlue(blue.text)
+
+
+            Label:
+                text: "Black"
+
+            Spinner:
+                id: black
+                text: '1'
+                values: '1', '2', '3', '4', '5', '6', '1 Back', '2 Back', '3 Back', '4 Back', 'Penult', 'Rover', 'Peg', 'Box'
+                on_text: root.spinnerBlack(black.text)
+
+        TextInput:
+            id:score
+            multiline: False
+
+        TextInput:
+            id:win
+            multiline: True
+
+        TextInput:
+            id: draw
+            multiline: True
+
+        Button:
+            text:"Calculate"
+            on_press: root.btn()
