@@ -4,7 +4,7 @@
 #include <string.h>
 #include <math.h>
 
-#define BET_TAX     0.1					   /* 10% */
+#define BET_TAX     0.02					   /* 2% */
 
 static char buffer [100] = { (char) 0 } ;
 
@@ -29,7 +29,7 @@ double getOdds (char *str)
 	}
 	else
 	{
-		value = (double) atoi (str) ;
+		value = (double) atof (str) ;
 	}
 
 	return (value) ;
@@ -51,6 +51,9 @@ char          **argv;
 	/* read in the odds, and work out the value of all the odds + 1 multiplied
 	   together */
 
+	// Note the +1 is for odds like 2 to 1, 3 to 1 etc. Now use decimal format
+	// so don't need the + 1
+	
 	if (argc < 3)
 	{
 		printf ("Usage: win <totalToBet> <odds1> <odds2> <odds3> ... \n") ;
@@ -61,14 +64,16 @@ char          **argv;
 	for (loop = 2, total = 1.0; loop < argc; loop++)
 	{
 		odds[loop] = getOdds(argv[loop]);
-		total *= (odds[loop] + 1.0);
+		//total *= (odds[loop] + 1.0);
+		total *= (odds[loop]);
 	}
 
 	/* calculate each bet and add up the total bet */
 
 	for (loop = 2, totsum = 0; loop < argc; loop++)
 	{
-		bet[loop] = total / (odds[loop] + 1.0);
+		//bet[loop] = total / (odds[loop] + 1.0);
+		bet[loop] = total / (odds[loop] );
 		totsum += bet[loop];
 	}
 
@@ -84,7 +89,8 @@ char          **argv;
 
 	/* calculate profit by taking horse 1 wins as an example */
 
-	profit = bet[2] * odds[2] - totalBet + bet[2] ;
+	//profit = bet[2] * odds[2] - totalBet + bet[2] ;
+	profit = bet[2] * odds[2] - totalBet ;
 
 	printf("\n\nProfit       %f\n", profit);
 	printf("Profit Post  %f\n", profit * (1.0 - BET_TAX));
