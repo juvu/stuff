@@ -22,8 +22,8 @@ from statistics import mean, median
 REAL_OR_NO_REAL = 'https://demo-api.ig.com/gateway/deal'
 
 API_ENDPOINT = "https://demo-api.ig.com/gateway/deal/session"
-API_KEY = '174129bf69a41954afd0dc8669dc96f2b0c560e2'
-data = {"identifier":"friedPotatoes","password": "friedPotatoes1"}
+API_KEY = '*****'
+data = {"identifier":"*****","password": "*****"}
 
 # FOR REAL....
 # API_ENDPOINT = "https://api.ig.com/gateway/deal/session"
