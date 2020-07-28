@@ -22,8 +22,8 @@ from statistics import mean, median
 REAL_OR_NO_REAL = 'https://demo-api.ig.com/gateway/deal'
 
 API_ENDPOINT = "https://demo-api.ig.com/gateway/deal/session"
-API_KEY = '*****'
-data = {"identifier":"*****","password": "*****"}
+API_KEY = '*****************'
+data = {"identifier":"***********","password": "************"}
 
 # FOR REAL....
 # API_ENDPOINT = "https://api.ig.com/gateway/deal/session"
@@ -84,13 +84,13 @@ epic_id = []
 
 epic_id.append("CS.D.USCGC.TODAY.IP") #Gold - OK, Not Great
 #epic_id.append("CS.D.USCSI.TODAY.IP") #Silver - NOT RECOMMENDED
-epic_id.append("IX.D.FTSE.DAILY.IP") #FTSE 100 - Within Hours only, Profitable
+#epic_id.append("IX.D.FTSE.DAILY.IP") #FTSE 100 - Within Hours only, Profitable
 epic_id.append("IX.D.DOW.DAILY.IP") #Wall St - Definately Profitable between half 6 and half 8 GMT
 epic_id.append("CS.D.GBPUSD.TODAY.IP") # - Very Profitable
 epic_id.append("CS.D.EURUSD.TODAY.IP")
 epic_id.append("CS.D.GBPEUR.TODAY.IP")
 epic_id.append("CS.D.USDCAD.TODAY.IP")
-epic_id.append("IX.D.DAX.DAILY.IP") # Germany 30
+#epic_id.append("IX.D.DAX.DAILY.IP") # Germany 30
 #epic_id.append("CC.D.CL.USS.IP") # US Crude Oil
 #epic_id.append("UA.D.AAPL.DAILY.IP") # Apple
 
@@ -171,16 +171,32 @@ def printOpenPositions():
 # Parameters:
 #      id: The epic_id of the market to check
 # Returns:
-#      True or False
+#      None: If there are no open positions
+#      BUY: If there is a buy order
+#      SELL: If there is sell order
+#      BUYSELL: If there is both a buy and sell order
 def checkForPosition (id):
     try:
+        buy = 0
+        sell = 0
         base_url = REAL_OR_NO_REAL + '/positions'
         auth_r = requests.get(base_url, headers=authenticated_headers)
         d = json.loads(auth_r.text)
         for x in d['positions']:
+            #print (x['position']['direction'])
             if (x['market']['epic'] == id):
-                return True
-        return False
+                if (x['position']['direction'] == "BUY"):
+                    buy = 1
+                elif (x['position']['direction'] == "SELL"):
+                    sell = 1
+        if (buy == 1 and sell == 1):
+            return "BUYSELL"
+        elif (buy == 1):
+            return "BUY"
+        elif (sell == 1):
+            return "SELL"
+        else:
+            return "None"
 
     except Exception as e:
         print (e)
@@ -196,7 +212,7 @@ def performTrade (id,direction,value):
 			'CST':CST_token,
 			'X-SECURITY-TOKEN':x_sec_token}
 
-    stopDistance_value = getMinStopLoss(x) * 3.0
+    stopDistance_value = getMinStopLoss(x) * 2.0
     ldStr = "{}".format(limitDistance_value)
     sdStr = "{}".format(stopDistance_value)
 
@@ -225,9 +241,10 @@ while True:
     for x in epic_id:
     # Don't go mad
         systime.sleep(5)
-        # Only possibly create a position if we don't already have one
-        if (checkForPosition(x) == False):
-            d = loadPriceData(x,"MINUTE_2",6)
+        # Only possibly create a position if we don't already have both a BUY and a SELL
+        pos = checkForPosition(x)
+        if (pos != "BUYSELL"):
+            d = loadPriceData(x,"MINUTE_2",7)
             if (d == False):
                 continue;
 
@@ -263,7 +280,7 @@ while True:
             #print ("Trade Volume : " + str(End_Trading_Volume))
             #print ("-----------------")
 
-            if avg_Volume < End_Trading_Volume and avg_price > lastValue:
+            if avg_Volume < End_Trading_Volume and avg_price > lastValue and pos != "SELL":
             #if Start_Trading_Volume < End_Trading_Volume and firstValue > lastValue:
             #if firstValue > lastValue:
                 performTrade (x,"SELL",1)
@@ -272,7 +289,7 @@ while True:
                 print ("Lower Price")
                 print ("DIRECTION IS DOWN (SHORT)")
 
-            elif avg_Volume <= End_Trading_Volume and avg_price < lastValue:
+            elif avg_Volume <= End_Trading_Volume and avg_price < lastValue and pos != "BUY":
             #elif Start_Trading_Volume <= End_Trading_Volume and firstValue < lastValue:
             #elif firstValue <= lastValue:
                 performTrade (x,"BUY",1)
