@@ -22,8 +22,7 @@ from alpha_vantage.techindicators import TechIndicators
 #REAL_OR_NO_REAL = 'https://api.ig.com/gateway/deal'
 REAL_OR_NO_REAL = 'https://demo-api.ig.com/gateway/deal'
 
-#ALPHA_VANTAGE_API_KEY = ''
-ALPHA_VANTAGE_API_KEY = 'demo'
+ALPHA_VANTAGE_API_KEY = ''
 alpha_vantage_url = 'https://www.alphavantage.co/query'
 
 API_ENDPOINT = "https://demo-api.ig.com/gateway/deal/session"
