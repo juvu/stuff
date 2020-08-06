@@ -17,12 +17,14 @@ import time as systime
 from statistics import mean, median
 from alpha_vantage.techindicators import TechIndicators
 
+# how much are we prepared to lose on a single trade
+MAXSTOP = 15.0
 
 #Joke here
 #REAL_OR_NO_REAL = 'https://api.ig.com/gateway/deal'
 REAL_OR_NO_REAL = 'https://demo-api.ig.com/gateway/deal'
 
-ALPHA_VANTAGE_API_KEY = ''
+ALPHA_VANTAGE_API_KEY = ['','']
 alpha_vantage_url = 'https://www.alphavantage.co/query'
 
 API_ENDPOINT = "https://demo-api.ig.com/gateway/deal/session"
@@ -113,16 +115,20 @@ symbol_id.append("EURCHF")
 #      the price data or False
 def loadMACD(symb,ival):
     try:
-        ti = TechIndicators(key='ALPHA_VANTAGE_API_KEY', output_format='json')
+        apikey=random.randint(0,1)
+        #print ("Key is {} ie {}".format(apikey,ALPHA_VANTAGE_API_KEY[apikey]))
+        ti = TechIndicators(key='ALPHA_VANTAGE_API_KEY[apikey]', output_format='json')
         data, meta_data = ti.get_macd(symbol=symb, interval=ival, series_type='close', fastperiod=12, slowperiod=26, signalperiod=9)
+        systime.sleep(15)
         return data
 
     except Exception as e:
         print (e)
+        systime.sleep(15)
         return False
 
-# Function: loadMACD
-# Purpose: loads the MACD technical analysis data for a particular market
+# Function: loadRSI
+# Purpose: loads the RSI technical analysis data for a particular market
 # Parameters:
 #      symb: The symbol of the market to look at eg USDEUR
 #      ival: One of 1min, 5min, 15min, 30min, 60min, daily, weekly, monthly
@@ -130,12 +136,16 @@ def loadMACD(symb,ival):
 #      the price data or False
 def loadRSI(symb,ival):
     try:
-        ti = TechIndicators(key='ALPHA_VANTAGE_API_KEY', output_format='json')
+        apikey=random.randint(0,1)
+        #print ("Key is {} ie {}".format(apikey,ALPHA_VANTAGE_API_KEY[apikey]))
+        ti = TechIndicators(key='ALPHA_VANTAGE_API_KEY[apikey]', output_format='json')
         data, meta_data = ti.get_rsi(symbol=symb, interval=ival)
+        systime.sleep(15)
         return data
 
     except Exception as e:
         print (e)
+        systime.sleep(15)
         return False
 
 # Function: loadPriceData
@@ -255,10 +265,17 @@ def performTrade (id,direction,value):
 			'CST':CST_token,
 			'X-SECURITY-TOKEN':x_sec_token}
 
-    stopDistance_value = getMinStopLoss(id)
-    limitDistance_value = getMinStopLoss(id)
+    stopDistance_value = getMinStopLoss(id) * 3.0
+    limitDistance_value = stopDistance_value
+    #if (limitDistance_value > MAXSTOP):
+        #limitDistance_value = MAXSTOP
+    #if (stopDistance_value < MAXSTOP):
+        #stopDistance_value = stopDistance_value * 3.0
+        #if (stopDistance_value > MAXSTOP):
+            #stopDistance_value = MAXSTOP
+
     ldStr = "{}".format(limitDistance_value)
-    sdStr = "{}".format(stopDistance_value * 3.0)
+    sdStr = "{}".format(stopDistance_value)
 
     data = {"direction":direction,"epic": id, "limitDistance": ldStr, "orderType": "MARKET", "size":value,"expiry":"DFB","guaranteedStop":"False","currencyCode":"GBP","forceOpen":"True","stopDistance": sdStr}
 
@@ -294,6 +311,106 @@ def getEpicId(symbol):
     asdf = "CS.D.{}.TODAY.IP".format(symbol)
     return (asdf)
 
+# Function: strategy3
+# Purpose: bet with the market if hist > 0.0003 and RSI shows moderate/strong activity
+#          or if hist < -0.0003 and RSI shows lack of interest
+# Parameters:
+#      macd_data: The macd data
+#      rsi_data: The rsi data
+#      x: The symbol id
+# Returns:
+#      action: BUY, SELL or None
+def strategy3(macd_data, rsi_data, x):
+    hist = 0.0
+    rsi = 50.0
+    for macdate in macd_data:
+        hist = float(macd_data[macdate]['MACD_Hist'])
+        break;
+    for rsidate in rsi_data:
+        rsi = float(rsi_data[rsidate]['RSI'])
+        break;
+
+    # japan currency histogram values are 100 times bigger for some reason
+    if (x == 'USDJPY' or x == 'EURJPY'):
+        hist = hist * 0.01
+
+    action = "None"
+    if (hist <= -0.0003 and rsi < 40.0 and rsi > 30.0):
+        action = "SELL"
+    elif (hist >= 0.0003 and rsi > 60.0 and rsi < 70.0):
+        action = "BUY"
+
+    asdf = "Strategy3: Symbol {} hist is {} rsi is {} action is {}".format(x,hist,rsi,action)
+    print (asdf)
+
+    return (action)
+
+# Function: strategy2
+# Purpose: Reversal stragegy MACD histogram goes negative to positive (or vice versa)
+# Parameters:
+#      macd_data: The macd data
+#      rsi_data: The rsi data
+#      x: The symbol id
+# Returns:
+#      action: BUY, SELL or None
+def strategy2(macd_data, rsi_data, x):
+    hist = [0.0,0.0]
+    count = 0
+
+    for macdate in macd_data:
+        hist[count] = float(macd_data[macdate]['MACD_Hist'])
+        count = count + 1
+        if (count >= 2):
+            break;
+
+    action = "None"
+    if (hist[1] == 0.0 and hist[0] == 0.0):
+        action = "None"
+    elif (hist[1] <= 0.0 and hist[0] >= 0.0):
+        action = "BUY"
+    elif (hist[1] >= 0.0 and hist[0] <= 0.0):
+        action = "SELL"
+
+    asdf = "Strategy2: Symbol {} hist[0] is {} hist[1] is {} action is {}".format(x,hist[0],hist[1],action)
+    print (asdf)
+
+    return (action)
+
+# Function: strategy1
+# Purpose: Reversal stragegy MACD histogram negative and RSI > 50
+#          or MACD histogram positive and RSI < 50
+#          Also bet with the market if hist > 0.0003 and RSI shows moderate/strong activity
+# Parameters:
+#      macd_data: The macd data
+#      rsi_data: The rsi data
+#      x: The symbol id
+# Returns:
+#      action: BUY, SELL or None
+def strategy1(macd_data, rsi_data, x):
+    hist = 0.0
+    rsi = 50.0
+    for macdate in macd_data:
+        hist = float(macd_data[macdate]['MACD_Hist'])
+        break;
+    for rsidate in rsi_data:
+        rsi = float(rsi_data[rsidate]['RSI'])
+        break;
+
+    # japan currency histogram values are 100 times bigger for some reason
+    if (x == 'USDJPY' or x == 'EURJPY'):
+        hist = hist * 0.01
+
+    action = "None"
+    if (hist > 0.0 and rsi < 50.0):
+        action = "BUY"
+    elif (hist < 0.0 and rsi > 50.0):
+        action = "SELL"
+
+    asdf = "Strategy1: Symbol {} hist is {} rsi is {} action is {}".format(x,hist,rsi,action)
+    print (asdf)
+
+    return (action)
+
 while True:
     # We are going to try and create positions for every epic in our list
     for x in symbol_id:
@@ -303,31 +420,18 @@ while True:
 
         if (pos != "BUYSELL"):
             macd_data = loadMACD(x, '15min')
-            systime.sleep(15)
+            if (macd_data == False):
+                continue;
+
             rsi_data = loadRSI(x, '15min')
-            systime.sleep(15)
-            hist = 0.0
-            rsi = 50.0
-            for macdate in macd_data:
-                hist = float(macd_data[macdate]['MACD_Hist'])
-                break;
-            for rsidate in rsi_data:
-                rsi = float(rsi_data[rsidate]['RSI'])
-                break;
+            if (rsi_data == False):
+                continue;
 
-            if (hist > 0.0 and rsi < 50.0):
-                action = "BUY"
-            elif (hist < 0.0 and rsi > 50.0):
-                action = "SELL"
-            elif (rsi < 30.0):
-                action = "BUY"
-            elif (rsi > 70.0):
-                action = "SELL"
-            else:
-                action = "None"
-
-            asdf = "Symbol {} hist is {} rsi is {} action is {}".format(x,hist,rsi,action)
-            print (asdf)
+            action = strategy1(macd_data, rsi_data, x)
+            if (action == "None"):
+                action = strategy2(macd_data, rsi_data, x)
+            if (action == "None"):
+                action = strategy3(macd_data, rsi_data, x)
 
             if (pos == "None"):
                 if (action == "BUY"):
@@ -341,8 +445,7 @@ while True:
                 if (action == "BUY"):
                     performTrade (epic_id, "BUY", 1)
 
-    # Don't go mad
-    systime.sleep(900)
+        systime.sleep(40)
 
 
 
