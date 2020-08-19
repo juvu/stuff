@@ -32,7 +32,7 @@ OANDA_API_KEY = ""
 
 API_ENDPOINT = "https://demo-api.ig.com/gateway/deal/session"
 API_KEY = ''
-data = {"identifier":"roastPotatoes","password": "roastPotatoes1"}
+data = {"identifier":"","password": ""}
 
 # FOR REAL....
 # API_ENDPOINT = "https://api.ig.com/gateway/deal/session"
@@ -638,11 +638,13 @@ def oldMethod():
 def autochartist():
     oanda = oandapy.API(environment="practice", access_token=OANDA_API_KEY)
 
+    recommended =[]
     response = oanda.get_autochartist(instruments="EUR_USD")
     signals = response.get("signals")
     for x in signals:
         inst = x.get("instrument")
         instrument = inst.replace('_','')
+        recommended.append(instrument)
         meta = x.get("meta")
         if (meta):
             #print (meta)
@@ -660,7 +662,8 @@ def autochartist():
                 #print (prediction)
                 pricelow = prediction.get("pricelow")
                 timefrom = prediction.get("timefrom")
-                print ("{} direction {} interval {} probability {} quality {} timefrom {}".format(instrument, direction, interval, probability, quality, timefrom))
+
+        print ("{} direction {} interval {} probability {} quality {} timefrom {}".format(instrument, direction, interval, probability, quality, timefrom))
 
         for y in symbol_id:
             if (y == instrument):
@@ -683,11 +686,77 @@ def autochartist():
                             if (direction == 1):
                                 performTrade (epic_id, "BUY", interval, 1)
 
+    return (recommended)
+
+def getOpenPositions ():
+    try:
+        base_url = REAL_OR_NO_REAL + '/positions'
+        auth_r = requests.get(base_url, headers=authenticated_headers)
+        d = json.loads(auth_r.text)
+        return (d['positions'])
+
+    except Exception as e:
+        print (e)
+        return False
+
+def closePosition(deal,direction,sized):
+    base_url = REAL_OR_NO_REAL + '/positions/otc'
+    data = {"dealId":deal,"direction":direction,"size":sized,"orderType":'MARKET'}
+    #authenticated_headers_delete IS HACKY AF WORK AROUND!! AS PER .... https://labs.ig.com/node/36
+    authenticated_headers_delete = {'Content-Type':'application/json; charset=utf-8',
+				'Accept':'application/json; charset=utf-8',
+				'X-IG-API-KEY':API_KEY,
+				'CST':CST_token,
+				'X-SECURITY-TOKEN':x_sec_token,
+				'_method':"DELETE"}
+
+    r = requests.post(base_url, data=json.dumps(data), headers=authenticated_headers_delete)
+    d = json.loads(r.text)
+    deal_ref = d['dealReference']
+    systime.sleep(5)
+    #CONFIRM MARKET ORDER
+    base_url = REAL_OR_NO_REAL + '/confirms/'+ deal_ref
+    auth_r = requests.get(base_url, headers=authenticated_headers)
+    d = json.loads(auth_r.text)
+    DEAL_ID = d['dealId']
+    print("DEAL ID : " + str(d['dealId']))
+    print(d['dealStatus'])
+    print(d['reason'])
+
+def closeUnrecommended(recommended):
+    #positions = getOpenPositions()
+    base_url = REAL_OR_NO_REAL + '/positions'
+    auth_r = requests.get(base_url, headers=authenticated_headers)
+    d = json.loads(auth_r.text)
+    for positions in d['positions']:
+        found = 0
+        pos_epic = positions['market']['epic']
+        deal = positions['position']['dealId']
+        dir = positions['position']['direction']
+        if (dir == "BUY"):
+            direction = "SELL"
+        else:
+            direction = "BUY"
+        #sized = positions['position']['size']
+
+        for y in recommended:
+            epic_id = getEpicId (y)
+            if (epic_id == pos_epic):
+                found = 1
+
+        if (found == 0):
+            systime.sleep(10)
+            print("Deleting order {} epic {}".format(deal,pos_epic))
+            closePosition(deal,direction,1)
 
 # Let's use the new method
 while True:
-    autochartist()
-    systime.sleep(900)
+    recommended = autochartist()
+    systime.sleep(15)
+    closeUnrecommended(recommended)
+    for count in range (15):
+        print ("Countdown {}".format(900 - (count*60)))
+        systime.sleep(60)
 
 
 
