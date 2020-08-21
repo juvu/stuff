@@ -6,6 +6,7 @@
 # -*- coding: utf-8 -*-
 import time
 import datetime
+from datetime import timezone
 import requests
 import json
 import logging
@@ -406,6 +407,38 @@ def performTrade (id,direction,interval,value):
     print(d['reason'])
     systime.sleep(15)
 
+def performTradeAbsolute (id,direction,stop,limit,value):
+    base_url = REAL_OR_NO_REAL + '/positions/otc'
+    authenticated_headers = {'Content-Type':'application/json; charset=utf-8',
+			'Accept':'application/json; charset=utf-8',
+			'X-IG-API-KEY':API_KEY,
+			'CST':CST_token,
+			'X-SECURITY-TOKEN':x_sec_token}
+
+    if (id.find("JPY") > 0):
+        stop = stop * 100.0
+        limit = limit * 100.0
+    else:
+        stop = stop * 10000.0
+        limit = limit * 10000.0
+
+    data = {"direction":direction,"epic": id, "limitLevel": limit, "orderType": "MARKET", "size":value,"expiry":"DFB","guaranteedStop":"False","currencyCode":"GBP","forceOpen":"True","stopLevel": stop}
+    print (data)
+    r = requests.post(base_url, data=json.dumps(data), headers=authenticated_headers)
+    # MAKE AN ORDER
+    d = json.loads(r.text)
+    deal_ref = d['dealReference']
+    systime.sleep(5)
+    #CONFIRM MARKET ORDER
+    base_url = REAL_OR_NO_REAL + '/confirms/'+ deal_ref
+    auth_r = requests.get(base_url, headers=authenticated_headers)
+    d = json.loads(auth_r.text)
+    DEAL_ID = d['dealId']
+    print("DEAL ID : " + str(d['dealId']))
+    print(d['dealStatus'])
+    print(d['reason'])
+    systime.sleep(15)
+
 #macd_data = loadMACD('USDEUR', '15min')
 #for macddate in macd_data:
     #asdf = "date {} MACD is {} MACD_Signal is {} MACD_Hist is {}".format(macddate, macd_data[macddate]['MACD'], macd_data[macddate]['MACD_Signal'], macd_data[macddate]['MACD_Hist'])
@@ -634,17 +667,41 @@ def oldMethod():
 
         systime.sleep(5)
 
+def getPrices():
+    oanda = oandapy.API(environment="practice", access_token=OANDA_API_KEY)
+
+    lsymbol_id = []
+
+    f = open("symbolsLong.txt","r")
+    for x in f:
+        sym = x.rstrip()
+        lsymbol_id.append(sym)
+
+    for x in lsymbol_id:
+        systime.sleep(1)
+        response = oanda.get_prices(instruments=x)
+        prices = response.get("prices")
+        asking_price = prices[0].get("ask")
+        print ("Symbol {} price {}".format(x, asking_price))
 
 def autochartist():
+
+    dt = datetime.datetime.now()
+    utc_time = dt.replace(tzinfo = timezone.utc)
+    utc_timestamp = int(utc_time.timestamp())
+
     oanda = oandapy.API(environment="practice", access_token=OANDA_API_KEY)
 
     recommended =[]
-    response = oanda.get_autochartist(instruments="EUR_USD")
+    response = oanda.get_autochartist()
     signals = response.get("signals")
     for x in signals:
         inst = x.get("instrument")
         instrument = inst.replace('_','')
         recommended.append(instrument)
+        pricelow = 0.0
+        pricehigh = 0.0
+        probability = 0.0
         meta = x.get("meta")
         if (meta):
             #print (meta)
@@ -661,31 +718,49 @@ def autochartist():
             if (prediction):
                 #print (prediction)
                 pricelow = prediction.get("pricelow")
+                pricehigh = prediction.get("pricehigh")
                 timefrom = prediction.get("timefrom")
 
-        print ("{} direction {} interval {} probability {} quality {} timefrom {}".format(instrument, direction, interval, probability, quality, timefrom))
+        print ("{} direction {} interval {} probability {} quality {} age {}".format(instrument, direction, interval, probability, quality, utc_timestamp - timefrom))
 
         for y in symbol_id:
             if (y == instrument):
-                if (probability > 65.0 and quality >= 6):
-                    epic_id = getEpicId (y)
-                    pos = "None"
-                    # we are not going to allow multiple trades
-                    pos = checkForPosition(epic_id)
+                #if (probability > 65.0 and quality >= 6):
+                if (probability > 75.0 or quality >= 6):
+                    response = oanda.get_prices(instruments=inst)
+                    prices = response.get("prices")
+                    asking_price = prices[0].get("ask")
+                    print ("Current price {}, pricelow {}, pricehigh{}".format(asking_price,pricelow,pricehigh))
 
-                    if (pos != "BUYSELL"):
-                        if (pos == "None"):
-                            if (direction == 1):
-                                performTrade (epic_id, "BUY", interval, 1)
-                            elif (direction == -1):
-                                performTrade (epic_id, "SELL", interval, 1)
-                        elif (pos == "BUY"):
-                            if (direction == -1):
-                                performTrade (epic_id, "SELL", interval, 1)
-                        elif (pos == "SELL"):
-                            if (direction == 1):
-                                performTrade (epic_id, "BUY", interval, 1)
+                    limit = 0
+                    stop = 0
+                    if (direction == 1 and pricelow > asking_price):
+                        limit = (pricehigh - pricelow)/2 + pricelow
+                        stop = asking_price - (pricehigh - asking_price)
+                    elif (direction == -1 and pricehigh < asking_price):
+                        limit = (pricehigh - pricelow)/2 + pricelow
+                        stop = asking_price + (asking_price - pricelow)
 
+                    if (limit > 0):
+                        epic_id = getEpicId (y)
+                        pos = "None"
+                        # we are not going to allow multiple trades
+                        pos = checkForPosition(epic_id)
+
+                        if (pos != "BUYSELL"):
+                            if (pos == "None"):
+                                if (direction == 1):
+                                    performTradeAbsolute (epic_id, "BUY", stop, limit, 1)
+                                elif (direction == -1):
+                                    performTradeAbsolute (epic_id, "SELL", stop, limit, 1)
+                            elif (pos == "BUY"):
+                                if (direction == -1):
+                                    performTradeAbsolute (epic_id, "SELL", stop, limit, 1)
+                            elif (pos == "SELL"):
+                                if (direction == 1):
+                                    performTradeAbsolute (epic_id, "BUY", stop, limit, 1)
+
+    print ("Current time is {}".format(utc_timestamp))
     return (recommended)
 
 def getOpenPositions ():
@@ -733,6 +808,7 @@ def closeUnrecommended(recommended):
         pos_epic = positions['market']['epic']
         deal = positions['position']['dealId']
         dir = positions['position']['direction']
+        print ("position dir is {}".format(dir))
         if (dir == "BUY"):
             direction = "SELL"
         else:
@@ -751,8 +827,9 @@ def closeUnrecommended(recommended):
 
 # Let's use the new method
 while True:
+    #getPrices()
     recommended = autochartist()
-    systime.sleep(15)
+    #systime.sleep(15)
     closeUnrecommended(recommended)
     for count in range (15):
         print ("Countdown {}".format(900 - (count*60)))
