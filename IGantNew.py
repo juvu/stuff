@@ -13,6 +13,8 @@ from time import time, sleep
 import random
 import time as systime
 import oandapy
+import oandapyV20
+import oandapyV20.endpoints.forexlabs as labs
 from statistics import mean, median
 
 #REAL_OR_NO_REAL = 'https://api.ig.com/gateway/deal'
@@ -34,9 +36,9 @@ r = requests.post(API_ENDPOINT, data=json.dumps(data), headers=headers)
 
 headers_json = dict(r.headers)
 CST_token = headers_json["CST"]
-print (R"CST : " + CST_token)
+print ("CST : " + CST_token)
 x_sec_token = headers_json["X-SECURITY-TOKEN"]
-print (R"X-SECURITY-TOKEN : " + x_sec_token)
+print ("X-SECURITY-TOKEN : " + x_sec_token)
 
 #GET ACCOUNTS
 base_url = REAL_OR_NO_REAL + '/accounts'
@@ -63,6 +65,7 @@ now = datetime.datetime.now()
 now_time = now.time()
 
 symbol_id = []
+blacklist = []
 
 f = open("symbols.txt","r")
 for x in f:
@@ -70,14 +73,27 @@ for x in f:
     symbol_id.append(sym)
 
 def performTradeAbsolute (id,direction,stop,limit,value):
+
+    # first check this epic is not blacklisted
+    try:
+        blacklisted = blacklist.index(id)
+    except:
+        blacklisted = -1
+
+    if (blacklisted != -1):
+        print ("Epic {} is blacklisted, returning".format(id))
+        return
+
+    # now we can add to the blacklist until next restart
+    blacklist.append(id)
+
+    # and now we can get on with placing the order
     base_url = REAL_OR_NO_REAL + '/positions/otc'
     authenticated_headers = {'Content-Type':'application/json; charset=utf-8',
 			'Accept':'application/json; charset=utf-8',
 			'X-IG-API-KEY':API_KEY,
 			'CST':CST_token,
 			'X-SECURITY-TOKEN':x_sec_token}
-
-    minStop = getMinStopLoss(id)
 
     if (id.find("JPY") > 0):
         stop = stop * 100.0
@@ -101,6 +117,7 @@ def performTradeAbsolute (id,direction,stop,limit,value):
     print("DEAL ID : " + str(d['dealId']))
     print(d['dealStatus'])
     print(d['reason'])
+
     systime.sleep(15)
 
 
@@ -132,9 +149,13 @@ def autochartist():
     utc_timestamp = int(utc_time.timestamp())
 
     oanda = oandapy.API(environment="practice", access_token=OANDA_API_KEY)
+    oandaV20 = oandapyV20.API(environment="practice", access_token=OANDA_API_KEY)
 
     recommended =[]
-    response = oanda.get_autochartist()
+    #response = oanda.get_autochartist()
+    r = labs.Autochartist()
+    oandaV20.request(r)
+    response = r.response
     signals = response.get("signals")
     for x in signals:
         inst = x.get("instrument")
@@ -331,15 +352,61 @@ def closeUnrecommended(recommended):
         if (found == 0):
             print("Deleting order {} epic {}".format(deal,pos_epic))
             closePosition(deal,direction,1)
+            # now we can remove this from the blacklist
+            try:
+                blacklist.remove(pos_epic)
+            except:
+                pass
+
+def sanitiseBlacklist(recommended):
+    for x in symbol_id:
+        found = 0
+        for y in recommended:
+            if (x == y):
+                found = 1
+
+        if (found == 0):
+            epic_id = getEpicId (x)
+
+            # now we can remove this from the blacklist
+            try:
+                blacklist.remove(epic_id)
+            except:
+                pass
+
+def writeBlacklist(blacklist):
+    try:
+        f = open("blacklisted.txt", "w")
+        for x in blacklist:
+            f.write (x)
+            f.write ("\n")
+    except:
+        print ("Cannot write the blacklist file")
+
+def readBlacklist():
+    blacklist = []
+    try:
+        f = open("blacklisted.txt", "r")
+        for x in f:
+            bl = x.rstrip()
+            blacklist.append (bl)
+    except:
+        print ("No blacklist file")
+
+    return (blacklist)
 
 # Let's use the new method
 while True:
+    blacklist = readBlacklist()
     recommended = autochartist()
     closeUnrecommended(recommended)
+    sanitiseBlacklist(recommended)
+    writeBlacklist(blacklist)
+
     # autochartist list updates every 15 mins
-    # but we may update the stop so run every 5 mins
-    for count in range (5):
-        print ("Countdown {}".format(300 - (count*60)))
+    # but we may update the stop so run every 2 mins
+    for count in range (2):
+        print ("Countdown {}".format(120 - (count*60)))
         systime.sleep(60)
 
 
