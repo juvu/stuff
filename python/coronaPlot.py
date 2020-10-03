@@ -12,8 +12,26 @@
 
 import matplotlib.pyplot as plt
 import MySQLdb
+import tkinter as tk
+import datetime
+from tkinter import simpledialog
 
-town = input("Enter Town/County/COuntry")
+#root = tk.Tk()
+#root.geometry("500x100+800+800")
+#root.withdraw()
+
+startdate = input("Enter start date for plot YYYY-MM-DD")
+if (startdate == ""):
+    startdate = "2020-03-01"
+town = input("Enter Town/County/Country")
+#town = simpledialog.askstring("Region", "Enter Town/County/Country")
+
+# ignore the last couple of days
+# as they tend to show 0 or low value which is subsequently updated
+a = datetime.datetime.today()
+enddatetime = a - datetime.timedelta(days = 2)
+enddate = enddatetime.strftime("%Y-%m-%d")
+print (enddate)
 
 dates = []
 towns = []
@@ -49,12 +67,13 @@ if (len(towns) > 1):
     for i in range(len(towns)):
         print ("{0} - {1}".format(i,towns[i]))
     index = input("Enter Town Index")
+    #index = simpledialog.askstring("Index", "Enter Town Index")
     town = towns[int(index)]
     sql = "SELECT DISTINCT * FROM CASES \
-       WHERE AREA = '{0}' ORDER BY DATE".format(town)
+       WHERE AREA = '{0}' AND DATE > '{1}' AND DATE < '{2}' ORDER BY DATE".format(town,startdate, enddate)
 else:
     sql = "SELECT DISTINCT * FROM CASES \
-       WHERE AREA LIKE '%{0}%' ORDER BY DATE".format(town)
+       WHERE AREA LIKE '%{0}%' AND DATE > '{1}' AND DATE < '{2}' ORDER BY DATE".format(town,startdate, enddate)
 
 
 print (sql)
@@ -71,7 +90,10 @@ try:
         title = "{0}".format(row[0])
         dates.append(row[1])
         cases.append(row[2])
-        casesDiff.append(row[2] - lastcases)
+        if (lastcases > 0):
+            casesDiff.append(row[2] - lastcases)
+        else:
+            casesDiff.append(0)
         lastcases = row[2]
 except:
    print ("Error: unable to fetch data")
