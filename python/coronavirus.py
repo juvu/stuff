@@ -122,6 +122,7 @@ def get_paginated_dataset(filters: FiltersType, structure: StructureType,
         api_params["page"] = page_number
         print (page_number)
 
+
         response = get(endpoint, params=api_params, timeout=10)
 
         if response.status_code >= HTTPStatus.BAD_REQUEST:
@@ -334,24 +335,41 @@ query_filters = [
 ]
 
 a = datetime.datetime.today()
-numdays = int(input("Enter number of days data to collect"))
-dateList = []
-for x in range (0, numdays):
-    newdate = a - datetime.timedelta(days = x)
-    dateList.append(newdate.strftime("%Y-%m-%d"))
-print (dateList)
+try:
+    numdays = int(input("Enter number of days data to collect (0 = all data)"))
+except:
+    numdays = 0
 
-for x in dateList:
+if (numdays == 0):
     query_filters = [
-        "areaType=utla;date={}".format(x)
+        "areaType=utla"
+    ]
+    #UKCoronavirusAPI(db, cursor, query_filters)
+    query_filters = [
+        "areaType=ltla"
     ]
     UKCoronavirusAPI(db, cursor, query_filters)
 
-for x in dateList:
-    query_filters = [
-        "areaType=ltla;date={}".format(x)
-    ]
-    UKCoronavirusAPI(db, cursor, query_filters)
+else:
+    dateList = []
+    for x in range (0, numdays):
+        newdate = a - datetime.timedelta(days = x)
+        dateList.append(newdate.strftime("%Y-%m-%d"))
+    print (dateList)
+
+    for x in dateList:
+        query_filters = [
+            "areaType=utla;date={}".format(x)
+        ]
+        print (query_filters)
+        UKCoronavirusAPI(db, cursor, query_filters)
+
+    for x in dateList:
+        query_filters = [
+            "areaType=ltla;date={}".format(x)
+        ]
+        print (query_filters)
+        UKCoronavirusAPI(db, cursor, query_filters)
 
 
 # Global data from CSV

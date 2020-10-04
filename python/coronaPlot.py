@@ -20,9 +20,11 @@ from tkinter import simpledialog
 #root.geometry("500x100+800+800")
 #root.withdraw()
 
-startdate = input("Enter start date for plot YYYY-MM-DD")
-if (startdate == ""):
-    startdate = "2020-03-01"
+try:
+    numdays = int(input("Plot starting how many days ago? (0 = from start)"))
+except:
+    numdays = 0
+
 town = input("Enter Town/County/Country")
 #town = simpledialog.askstring("Region", "Enter Town/County/Country")
 
@@ -31,7 +33,11 @@ town = input("Enter Town/County/Country")
 a = datetime.datetime.today()
 enddatetime = a - datetime.timedelta(days = 2)
 enddate = enddatetime.strftime("%Y-%m-%d")
-print (enddate)
+startdatetime = a - datetime.timedelta(days = numdays)
+startdate = startdatetime.strftime("%Y-%m-%d")
+if (numdays == 0):
+    startdate = "2020-03-01"
+print (startdate)
 
 dates = []
 towns = []
