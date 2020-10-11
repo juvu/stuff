@@ -39,13 +39,59 @@ numCards = 21
 numWho = 6
 numWhat = 12
 
+players = []
+
 nameCards = ["GREEN", "MUSTARD", "PEACOCK", "PLUM", "SCARLET", "WHITE",
                     "WRENCH", "CANDLESTICK", "DAGGER", "PISTOL", "LEAD_PIPE", "ROPE",
                     "BATHROOM", "STUDY", "DINING_ROOM", "GAMES_ROOM", "GARAGE", "BEDROOM", "LIVING_ROOM", "KITCHEN", "COURTYARD"]
 
+def getCard (data):
+    if (data == "GR"):
+        return (GREEN)
+    elif (data == "MU"):
+        return (MUSTARD)
+    elif (data == "PE"):
+        return (PEACOCK)
+    elif (data == "PL"):
+        return (PLUM)
+    elif (data == "SC"):
+        return (SCARLET)
+    elif (data == "WH"):
+        return (WHITE)
+    elif (data == "WR"):
+        return (WRENCH)
+    elif (data == "CA"):
+        return (CANDLESTICK)
+    elif (data == "DA"):
+        return (DAGGER)
+    elif (data == "PI"):
+        return (PISTOL)
+    elif (data == "LE"):
+        return (LEAD_PIPE)
+    elif (data == "RO"):
+        return (ROPE)
+    elif (data == "BA"):
+        return (BATHROOM)
+    elif (data == "ST"):
+        return (STUDY)
+    elif (data == "DI"):
+        return (DINING_ROOM)
+    elif (data == "GM"):
+        return (GAMES_ROOM)
+    elif (data == "GA"):
+        return (GARAGE)
+    elif (data == "BE"):
+        return (BEDROOM)
+    elif (data == "LI"):
+        return (LIVING_ROOM)
+    elif (data == "KI"):
+        return (KITCHEN)
+    elif (data == "CO"):
+        return (COURTYARD)
 
 class Player:
-    def __init__(self):
+    def __init__(self, num):
+        self.num = num
         # A set of cards that the player is known to have
         self.Cards = 0
         # A set of cards that the player is known not to have
@@ -59,10 +105,8 @@ class Player:
     def addCard (self, card):
         self.Cards = self.Cards | (1 << card)
 
-    def addNotCards (self, card1, card2, card3):
-        self.notCards = self.notCards | (1 << card1)
-        self.notCards = self.notCards | (1 << card2)
-        self.notCards = self.notCards | (1 << card3)
+    def addNotCard (self, card):
+        self.notCards = self.notCards | (1 << card)
         # if we have (numCards - numPlayerCards) of notCards
         # then the remaining cards must all be ours
         numFound = 0
@@ -73,7 +117,7 @@ class Player:
             for y in range (numCards):
                 if ((self.notCards & (1 << y)) == 0):
                     self.Cards = self.Cards | (1 << y)
-        # having added notCards we should rationalize the possibilities
+        # we should rationalize the possibilities
         self.rationalizePossibilities()
 
 
@@ -124,12 +168,62 @@ def printCards (cards):
             print (nameCards[x])
 
 
+def report(players):
+    for x in players:
+        print ("\nPlayer {} CARDS -".format(x.num), end=" ")
+        for y in range (numCards):
+            if (x.Cards & (1 << y)):
+                print (nameCards[y], end=" ")
+        print ("\nPlayer {} NOT CARDS -".format(x.num), end=" ")
+        for y in range (numCards):
+            if (x.notCards & (1 << y)):
+                print (nameCards[y], end=" ")
+
+
+WhoMask = 63             # 000000000000000111111
+WhoClearMask = ~WhoMask
+
+WeaponMask = 4032        # 000000000111111000000
+WeaponClearMask = ~WeaponMask
+
+WhereMask = 2093056      # 111111111000000000000
+WhereClearMask = ~WhereMask
+
 def solution(players):
     solutionCards = 0
     for x in players:
         solutionCards = solutionCards | x.Cards
     # Cards that may be in the solution are ones that we haven't found in any player hand
     solutionCards = ~solutionCards
+
+    # We also have to take account of notCards
+    # if no player has a particular card then the solution has this card
+
+    notCombined = players[0].notCards
+    for y in players:
+        notCombined &= y.notCards
+
+    notWho = notCombined & WhoMask
+    if (notWho):
+        # clear out everything we may currently have for Who
+        solutionCards &= WhoClearMask
+        # and insert the card that is not in any player hand
+        solutionCards |= notWho
+
+    notWeapon = notCombined & WeaponMask
+    if (notWeapon):
+        # clear out everything we may currently have for Weapon
+        solutionCards &= WeaponClearMask
+        # and insert the card that is not in any player hand
+        solutionCards |= notWeapon
+
+    notWhere = notCombined & WhereMask
+    if (notWhere):
+        # clear out everything we may currently have for Where
+        solutionCards &= WhereClearMask
+        # and insert the card that is not in any player hand
+        solutionCards |= notWhere
+
     print ("Solution")
     print ("WHO -", end=" ")
     for x in range (numWho):
@@ -145,33 +239,83 @@ def solution(players):
             print (nameCards[x], end=" ")
     print("\n")
 
+def addACard(player, data):
+    player = player - 1
+    card = getCard(data.upper())
+    players[player].addCard(card)
+    for y in range (0, numPlayers):
+        if (y != player):
+            players[y].addNotCard(card)
 
+def addANotCard(player, data):
+    player = player - 1
+    card = getCard(data.upper())
+    players[player].addNotCard(card)
+
+def addAPossibility (player, suspect, weapon, room):
+    player = player - 1
+    suspect = getCard(suspect.upper())
+    weapon = getCard(weapon.upper())
+    room = getCard(room.upper())
+    players[player].addPossibility(suspect, weapon, room)
+
+
+def RoomSelection():
+    suspect = input ("Enter Suspect. First 2 letters eg GR = GREEN")
+    weapon = input ("Enter Weapon. First 2 letters eg CA = CANDLESTICK")
+    room = input ("Enter Room. First 2 letters eg DI = DINING_ROOM. NOTE - Games Room is GM")
+    while (1):
+        data = input ("Enter operation. eg 3P = Possibility for player 3, 2N = NotCards for player 2, 3R = Player 3 has the room card, 2S is player 2 has the suspect. 0 to exit")
+        op = data.upper()
+        try:
+            player = int(op[0])
+        except:
+            break
+        if (player == 0):
+            break
+        if (op[1] == 'P'):
+            print ("Possibility for {}".format(player))
+            addAPossibility (player, suspect, weapon, room)
+        elif (op[1] == 'N'):
+            print ("NotCards for {}".format(player))
+            addANotCard (player, suspect)
+            addANotCard (player, weapon)
+            addANotCard (player, room)
+        elif (op[1] == 'S'):
+            print ("Suspect for {}".format(player))
+            addACard (player, suspect)
+        elif (op[1] == 'W'):
+            print ("Weapon for {}".format(player))
+            addACard (player, weapon)
+        elif (op[1] == 'R'):
+            print ("Room for {}".format(player))
+            addACard (player, room)
 
 def main():
-    players = []
+
 
     for x in range(numPlayers):
-        players.append(Player())
+        players.append(Player(x+1))
 
-    solution(players)
+    for x in range(numPlayerCards):
+        data = input ("Enter P1 Starting Hand Card {}. First 2 letters eg GR = GREEN or RO = ROPE. NOTE - Games Room is GM".format(x))
+        addACard (1, data)
 
-    for x in range(numPlayers):
-        players[x].addCard (x)
-        players[x].addCard (x+6)
-        players[x].addCard (x+12)
-        #print (players[x].Cards)
-        #printCards(players[x].Cards)
+    # player1 not cards are the complement of the cards
+    players[0].notCards = ~players[0].Cards
 
-    players[0].addPossibility(PEACOCK, PISTOL, GARAGE)
-    players[0].addPossibility(WHITE, ROPE, DINING_ROOM)
-    players[1].addPossibility(KITCHEN, ROPE, STUDY)
+    while (1):
+        data = input ("1 or return = play another round. 0 to exit")
+        try:
+            op = int(data)
+        except:
+            op = 1
+        if (op == 0):
+            break
 
-    #players[0].printPossibilities()
-    players[0].addNotCards(ROPE, DINING_ROOM, STUDY)
-    players[1].addNotCards(KITCHEN, COURTYARD, STUDY)
-    #printCards(players[0].Cards)
-
-    solution(players)
+        RoomSelection()
+        solution(players)
+        #report(players)
 
 if __name__ == '__main__':
     main()
