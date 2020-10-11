@@ -170,6 +170,8 @@ def printCards (cards):
 
 def report(players):
     for x in players:
+        if (x.num == 1):
+            continue
         print ("\nPlayer {} CARDS -".format(x.num), end=" ")
         for y in range (numCards):
             if (x.Cards & (1 << y)):
@@ -178,6 +180,7 @@ def report(players):
         for y in range (numCards):
             if (x.notCards & (1 << y)):
                 print (nameCards[y], end=" ")
+    print ("\n")
 
 
 WhoMask = 63             # 000000000000000111111
@@ -315,7 +318,7 @@ def main():
 
         RoomSelection()
         solution(players)
-        #report(players)
+        report(players)
 
 if __name__ == '__main__':
     main()
