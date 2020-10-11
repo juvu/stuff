@@ -88,6 +88,7 @@ def getCard (data):
         return (KITCHEN)
     elif (data == "CO"):
         return (COURTYARD)
+    return (-1)
 
 class Player:
     def __init__(self, num):
@@ -101,6 +102,11 @@ class Player:
         self.possibleCards = []
         # a copy of the possible cards
         self.newPossible = []
+        # The probability of having each card
+        self.cardProb = []
+        for x in range(numCards):
+            self.cardProb.append(0.0)
+
 
     def addCard (self, card):
         self.Cards = self.Cards | (1 << card)
@@ -152,6 +158,21 @@ class Player:
             if (numFound == 1):
                 self.Cards = self.Cards | x
 
+    def setupProbabilities(self):
+        numHaveCards = 0
+        numHaveNotCards = 0
+        for x in range(numCards):
+            if (self.Cards & (1 << x)):
+                numHaveCards += 1
+            elif (self.notCards & (1 << x)):
+                numHaveNotCards += 1
+        for x in range(numCards):
+            if (self.Cards & (1 << x)):
+                self.cardProb[x] = 1.0
+            elif (self.notCards & (1 << x)):
+                self.cardProb[x] = 0.0
+            else:
+                self.cardProb[x] = (numPlayerCards - numHaveCards) / (numCards - (numHaveCards + numHaveNotCards))
 
     def printPossibilities(self):
         print ("Possibilities")
@@ -192,8 +213,13 @@ WeaponClearMask = ~WeaponMask
 WhereMask = 2093056      # 111111111000000000000
 WhereClearMask = ~WhereMask
 
+AllMask = 2097151        # 111111111111111111111
+
 def solution(players):
     solutionCards = 0
+    for x in players:
+        x.setupProbabilities()
+
     for x in players:
         solutionCards = solutionCards | x.Cards
     # Cards that may be in the solution are ones that we haven't found in any player hand
@@ -227,24 +253,50 @@ def solution(players):
         # and insert the card that is not in any player hand
         solutionCards |= notWhere
 
+    solutionProb = []
+    for x in range(numCards):
+        solutionProb.append(1.0)
+
+    for x in range(numCards):
+        if (solutionCards & (1 << x)):
+            for y in players:
+                solutionProb[x] *= (1.0 - y.cardProb[x])
+
+    whoProbTotal = 0.0
+    whatProbTotal = 0.0
+    whereProbTotal = 0.0
+
+    for x in range (numWho):
+        if (solutionCards & (1 << x)):
+            whoProbTotal += solutionProb[x]
+    for x in range (numWho, numWhat):
+        if (solutionCards & (1 << x)):
+            whatProbTotal += solutionProb[x]
+    for x in range (numWhat, numCards):
+        if (solutionCards & (1 << x)):
+            whereProbTotal += solutionProb[x]
+
     print ("Solution")
     print ("WHO -", end=" ")
     for x in range (numWho):
         if (solutionCards & (1 << x)):
-            print (nameCards[x], end=" ")
+            print ("{} {:.1f}%".format(nameCards[x], (solutionProb[x] / whoProbTotal) * 100.0), end=" ")
     print ("\nWHAT -", end=" ")
     for x in range (numWho, numWhat):
         if (solutionCards & (1 << x)):
-            print (nameCards[x], end= " ")
+            print ("{} {:.1f}%".format(nameCards[x], (solutionProb[x] / whatProbTotal) * 100.0), end=" ")
     print ("\nWHERE -", end=" ")
     for x in range (numWhat, numCards):
         if (solutionCards & (1 << x)):
-            print (nameCards[x], end=" ")
+            print ("{} {:.1f}%".format(nameCards[x], (solutionProb[x] / whereProbTotal) * 100.0), end=" ")
     print("\n")
 
 def addACard(player, data):
     player = player - 1
     card = getCard(data.upper())
+    if (card == -1):
+        data = input ("{} Unrecognized - reenter".format(data))
+        card = getCard(data.upper())
     players[player].addCard(card)
     for y in range (0, numPlayers):
         if (y != player):
@@ -253,13 +305,25 @@ def addACard(player, data):
 def addANotCard(player, data):
     player = player - 1
     card = getCard(data.upper())
+    if (card == -1):
+        data = input ("{} Unrecognized - reenter".format(data))
+        card = getCard(data.upper())
     players[player].addNotCard(card)
 
 def addAPossibility (player, suspect, weapon, room):
     player = player - 1
     suspect = getCard(suspect.upper())
+    if (suspect == -1):
+        data = input ("{} Unrecognized - reenter".format(data))
+        suspect = getCard(data.upper())
     weapon = getCard(weapon.upper())
+    if (weapon == -1):
+        data = input ("{} Unrecognized - reenter".format(data))
+        weapon = getCard(data.upper())
     room = getCard(room.upper())
+    if (room == -1):
+        data = input ("{} Unrecognized - reenter".format(data))
+        room = getCard(data.upper())
     players[player].addPossibility(suspect, weapon, room)
 
 
@@ -294,18 +358,45 @@ def RoomSelection():
             print ("Room for {}".format(player))
             addACard (player, room)
 
+def loadGame(players):
+    curPlayer = 0
+    fp = open("cleudo.txt")
+    for line in fp:
+        cards, notCards, *rest = line.split(" ")
+        players[curPlayer].Cards = int(cards)
+        players[curPlayer].notCards = int(notCards)
+        for x in rest:
+            players[curPlayer].possibleCards.append(int(x))
+        players[curPlayer].rationalizePossibilities()
+        curPlayer = curPlayer + 1
+
+
+def saveGame(players):
+    f = open("cleudo.txt", "w")
+    for x in players:
+        f.write("{} {}".format(x.Cards, x.notCards))
+        for y in x.possibleCards:
+            f.write(" {}".format(y))
+        f.write ("\n")
+    f.close()
+
 def main():
-
-
     for x in range(numPlayers):
         players.append(Player(x+1))
 
-    for x in range(numPlayerCards):
-        data = input ("Enter P1 Starting Hand Card {}. First 2 letters eg GR = GREEN or RO = ROPE. NOTE - Games Room is GM".format(x))
-        addACard (1, data)
+    data = input ("Load game? Y/N")
+    if (data == "Y" or data == "y"):
+        loadGame(players)
+        solution(players)
+    else:
+        for x in range(numPlayerCards):
+            data = input ("Enter P1 Starting Hand Card {}. First 2 letters eg GR = GREEN or RO = ROPE. NOTE - Games Room is GM".format(x))
+            addACard (1, data)
 
     # player1 not cards are the complement of the cards
     players[0].notCards = ~players[0].Cards
+    # only use the least significant numCards bits
+    players[0].notCards &= AllMask
 
     while (1):
         data = input ("1 or return = play another round. 0 to exit")
@@ -318,7 +409,8 @@ def main():
 
         RoomSelection()
         solution(players)
-        report(players)
+        #report(players)
+        saveGame(players)
 
 if __name__ == '__main__':
     main()
