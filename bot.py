@@ -82,6 +82,7 @@ def HorseForm(SSOID,BestOrWorst,placeBets,SelIndex):
     else:
         FormRatingAvg = float(0)
     FormRatingList = []
+    FormRatingListSort = []
     FormRatingEndList = []
     FormList = []
     FormEndList = []
@@ -92,7 +93,7 @@ def HorseForm(SSOID,BestOrWorst,placeBets,SelIndex):
     countryCode= '["GB","IE"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
     marketTypeCode='["WIN"]' #Market Type
     MarketStartTime= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ') #Event Start and End times
-    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(hours=12))
+    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(hours=24))
     MarketEndTime = MarketEndTime.strftime('%Y-%m-%dT%H:%M:%SZ')
     maxResults = str(1000)
     sortType = 'FIRST_TO_START' #Sorts the Output
@@ -195,23 +196,17 @@ def HorseForm(SSOID,BestOrWorst,placeBets,SelIndex):
             rating = float(Rating)/float(Index)
             FormList.append(runnerform)
             FormRatingList.append(rating)
+            FormRatingListSort.append(rating)
 
-        for t in range(len(FormRatingList)):
-            if (BestOrWorst == "Best"):
-                if FormRatingList[t] < FormRatingAvg:
-                    FormRatingAvg = FormRatingList[t]
-                    horsename.append(marketCatelogue[x]['runners'][t]['runnerName'])
-                    selectionID.append(marketCatelogue[x]['runners'][t]['selectionId'])
-                    FormRatingEndList.append(FormRatingList[t])
-                    FormEndList.append(FormList[t])
-            else:
-                if FormRatingList[t] > FormRatingAvg:
-                    FormRatingAvg = FormRatingList[t]
+        FormRatingListSort.sort()
+
+        for zz in range(len(FormRatingListSort)):
+            for t in range(len(FormRatingList)):
+                if FormRatingList[t] == FormRatingListSort[zz]:
                     horsename.append(marketCatelogue[x]['runners'][t]['runnerName'])
                     selectionID.append(marketCatelogue[x]['runners'][t]['selectionId'])
                     FormRatingEndList.append(str(FormRatingList[t]))
                     FormEndList.append(FormList[t])
-
 
         try:
             price_req = '{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listRunnerBook", "params": {"locale":"en", \
@@ -219,11 +214,13 @@ def HorseForm(SSOID,BestOrWorst,placeBets,SelIndex):
                     "selectionId":"'+str(selectionID[SelIndex])+'",\
                     "priceProjection":{"priceData":'+priceProjection+'},"orderProjection":"ALL"},"id":1}'
 
+            #print (price_req)
             req = urllib.request.Request(bet_url, data=price_req.encode('utf-8'), headers=headers)
             price_response= urllib.request.urlopen(req)
             price_jsonResponse = price_response.read()
             price_pkg = price_jsonResponse.decode('utf-8')
             price_result = json.loads(price_pkg)
+            #print (price_result)
 
 
             #print (horsename)
@@ -250,11 +247,12 @@ def HorseForm(SSOID,BestOrWorst,placeBets,SelIndex):
         else:
             FormRatingAvg = float(0)
         FormRatingList.clear()
+        FormRatingListSort.clear()
         FormList.clear()
         FormRatingEndList.clear()
         FormEndList.clear()
         horsename.clear()
-        selectionID.clear
+        selectionID.clear()
 
     return Results
 
@@ -292,8 +290,7 @@ def getMarketCatelogue(SSOID):
 
     #print (marketCatelogue)
 
-SelIndex = int(input("index to retrieve (1 = worst, 2 = second worst etc)"))
-SelIndex = SelIndex * -1
+SelIndex = int(input("index to retrieve (-1 = worst, -2 = second worst etc, 0 = best, 1 = second best etc)"))
 placeBets = input ("Place Bets?")
 if (placeBets == "Y"):
     placeBets == "y"
