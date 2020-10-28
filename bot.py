@@ -190,7 +190,7 @@ def HorseForm(SSOID,BestOrWorst,placeBets,SelIndex):
                         Rating = float(Rating) + (float(Entry) * float(factor))
                     except:
                         Rating = float(Rating) + (float(5) * float(factor))
-                    Index = Index + 1
+                    Index = Index + factor
 
             rating = float(Rating)/float(Index)
             FormList.append(runnerform)
