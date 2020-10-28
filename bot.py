@@ -41,23 +41,27 @@ def CheckBet(SSOID,market):
     orders = result['result']['currentOrders']
     for x in range(len(orders)):
         if (orders[x]['marketId'] == market):
-            return 1
+            if (str(orders[x]['status']) == "EXECUTABLE"):
+                return ("Unmatched")
+            else:
+                return (str(orders[x]['averagePriceMatched']))
 
-    return 0
+
+    return ("No")
 
 
-def PlaceBet(SSOID,market,horse,betsize):
+def PlaceBet(SSOID,market,horse,price,betsize):
 
     headers = {'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
 
 
     user_req='{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/placeOrders", \
             "params": {"marketId":"'+market+'",\
-            "instructions":[{"selectionId":"'+horse+'","handicap":"0","side":"LAY","orderType":"LIMIT","limitOrder":{"size":"'+betsize+'","price":"10"}}]}, "id": 1}'
+            "instructions":[{"selectionId":"'+horse+'","handicap":"0","side":"LAY","orderType":"LIMIT","limitOrder":{"size":"'+betsize+'","price":"'+price+'"}}]}, "id": 1}'
 
     #print (user_req)
 
-    if (CheckBet(SSOID,market) == 0):
+    if (CheckBet(SSOID,market) == "No"):
         req = urllib.request.Request(bet_url, data=user_req.encode('utf-8'), headers=headers)
         response= urllib.request.urlopen(req)
         jsonResponse = response.read()
@@ -70,7 +74,7 @@ def PlaceBet(SSOID,market,horse,betsize):
 
 
 
-def HorseForm(SSOID,BestOrWorst,placeBets):
+def HorseForm(SSOID,BestOrWorst,placeBets,SelIndex):
     Rating = float(0)
     Index = float(0)
     if (BestOrWorst == "Best"):
@@ -78,6 +82,9 @@ def HorseForm(SSOID,BestOrWorst,placeBets):
     else:
         FormRatingAvg = float(0)
     FormRatingList = []
+    FormRatingEndList = []
+    FormList = []
+    FormEndList = []
     horsename = []
     selectionID=[]
 
@@ -122,62 +129,71 @@ def HorseForm(SSOID,BestOrWorst,placeBets):
             if runnerform is None:
                 runnerform = 'e'
 
-            runnerformList = list(runnerform)
+            runnerformrev =  runnerform[::-1]
 
+            runnerformList = list(runnerformrev)
+
+            Index = float(0)
+            Rating = float (0)
+            factor = 4
             for Entry in runnerformList:
+                if (factor > 1):
+                    factor = factor - 1
                 if Entry == 'R':#refusal to jump hurdle
-                    Rating = float(Rating) + float(5)
-                    Index = Index + 1
+                    Rating = float(Rating) + (float(5) * float(factor))
+                    Index = Index + factor
                 elif Entry == 'e':#First Race
-                    Rating = float(Rating) + float(10)
-                    Index = Index + 1
+                    Rating = float(Rating) + (float(10) * float(factor))
+                    Index = Index + factor
                 elif Entry == '0':#finished higher than 9th
-                    Rating = float(Rating) + float(10)
-                    Index = Index + 1
+                    Rating = float(Rating) + (float(10) * float(factor))
+                    Index = Index + factor
                 elif Entry == 'F':#fell
-                    Rating = float(Rating) + float(5)
-                    Index = Index + 1
+                    Rating = float(Rating) + (float(5) * float(factor))
+                    Index = Index + factor
                 elif Entry == 'U':#unseated rider
-                    Rating = float(Rating) + float(3)
-                    Index = Index + 1
+                    Rating = float(Rating) + (float(3) * float(factor))
+                    Index = Index + factor
                 elif Entry == 'x':#horse has not started in a race for 3 months or more
-                    Rating = float(Rating) + float(3)
-                    Index = Index + 1
+                    Rating = float(Rating) + (float(3) * float(factor))
+                    Index = Index + factor
                 elif Entry == 'C':#horse has won before at this same race distance and track.
-                    Rating = float(Rating) + float(.5)
-                    Index = Index + 1
+                    Rating = float(Rating) + (float(.5) * float(factor))
+                    Index = Index + factor
                 elif Entry == 'B':#horse started favorite at it's last start, but it did not win
-                    Rating = float(Rating) + float(3.5)
-                    Index = Index + 1
+                    Rating = float(Rating) + (float(3.5) * float(factor))
+                    Index = Index + factor
                 elif Entry == '/':#represents two seasons ago
-                    Rating = float(Rating) + float(8)
-                    Index = Index + 1
+                    #Rating = float(Rating) + (float(8) * float(factor))
+                    #Index = Index + factor
+                    Index = Index
                 elif Entry == '-':#represents one season ago
-                    Rating = float(Rating) + float(4)
-                    Index = Index + 1
+                    #Rating = float(Rating) + (float(4) * float(factor))
+                    Index = Index
                 elif Entry == 'P':#pulled up by jockey
-                    Rating = float(Rating) + float(4)
-                    Index = Index + 1
+                    Rating = float(Rating) + (float(4) * float(factor))
+                    Index = Index + factor
                 elif Entry == 'S':#horse slipped up
-                    Rating = float(Rating) + float(4)
-                    Index = Index + 1
+                    Rating = float(Rating) + (float(4) * float(factor))
+                    Index = Index + factor
                 elif Entry == 'C':#horse carried offcourse
-                    Rating = float(Rating) + float(4)
-                    Index = Index + 1
+                    Rating = float(Rating) + (float(4) * float(factor))
+                    Index = Index + factor
                 elif Entry == 'O':#horse ran offcourse
-                    Rating = float(Rating) + float(6)
-                    Index = Index + 1
+                    Rating = float(Rating) + (float(10) * float(factor))
+                    Index = Index + factor
                 elif Entry == 'D':#horse disqualified
-                    Rating = float(Rating) + float(7)
-                    Index = Index + 1
+                    Rating = float(Rating) + (float(7) * float(factor))
+                    Index = Index + factor
                 else:
                     try:
-                        Rating = float(Rating) + float(Entry)
+                        Rating = float(Rating) + (float(Entry) * float(factor))
                     except:
-                        Rating = float(Rating) + float(5)
+                        Rating = float(Rating) + (float(5) * float(factor))
                     Index = Index + 1
 
             rating = float(Rating)/float(Index)
+            FormList.append(runnerform)
             FormRatingList.append(rating)
 
         for t in range(len(FormRatingList)):
@@ -186,41 +202,43 @@ def HorseForm(SSOID,BestOrWorst,placeBets):
                     FormRatingAvg = FormRatingList[t]
                     horsename.append(marketCatelogue[x]['runners'][t]['runnerName'])
                     selectionID.append(marketCatelogue[x]['runners'][t]['selectionId'])
+                    FormRatingEndList.append(FormRatingList[t])
+                    FormEndList.append(FormList[t])
             else:
                 if FormRatingList[t] > FormRatingAvg:
                     FormRatingAvg = FormRatingList[t]
                     horsename.append(marketCatelogue[x]['runners'][t]['runnerName'])
                     selectionID.append(marketCatelogue[x]['runners'][t]['selectionId'])
-
-
-        price_req = '{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listRunnerBook", "params": {"locale":"en", \
-                    "marketId":"'+str(marketCatelogue[x]['marketId'])+'",\
-                    "selectionId":"'+str(selectionID[-1])+'",\
-                    "priceProjection":{"priceData":'+priceProjection+'},"orderProjection":"ALL"},"id":1}'
-
-        req = urllib.request.Request(bet_url, data=price_req.encode('utf-8'), headers=headers)
-        price_response= urllib.request.urlopen(req)
-        price_jsonResponse = price_response.read()
-        price_pkg = price_jsonResponse.decode('utf-8')
-        price_result = json.loads(price_pkg)
+                    FormRatingEndList.append(str(FormRatingList[t]))
+                    FormEndList.append(FormList[t])
 
 
         try:
+            price_req = '{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listRunnerBook", "params": {"locale":"en", \
+                    "marketId":"'+str(marketCatelogue[x]['marketId'])+'",\
+                    "selectionId":"'+str(selectionID[SelIndex])+'",\
+                    "priceProjection":{"priceData":'+priceProjection+'},"orderProjection":"ALL"},"id":1}'
+
+            req = urllib.request.Request(bet_url, data=price_req.encode('utf-8'), headers=headers)
+            price_response= urllib.request.urlopen(req)
+            price_jsonResponse = price_response.read()
+            price_pkg = price_jsonResponse.decode('utf-8')
+            price_result = json.loads(price_pkg)
+
+
             #print (horsename)
             start_time = marketCatelogue[x]['marketStartTime']
             my_datetime = datetime.datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S.000Z')
             StartTime = my_datetime.strftime('%H:%M')
             venue = marketCatelogue[x]['event']['venue']
-            price = float(price_result['result'][0]['runners'][0]['ex']['availableToBack'][0]['price'])
+            price = float(price_result['result'][0]['runners'][0]['ex']['availableToLay'][0]['price'])
             marketId = str(marketCatelogue[x]['marketId'])
-            horseId = str(selectionID[-1])
-            betPlaced = "No"
+            horseId = str(selectionID[SelIndex])
             if ((price < 10.0) and (placeBets == "y")):
-                PlaceBet (SSOID, marketId, horseId, "2")
-            if (CheckBet(SSOID,marketId) == 1):
-                betPlaced = "Yes"
+                PlaceBet (SSOID, marketId, horseId, str(price), "2")
+            betPlaced = CheckBet(SSOID,marketId)
 
-            Results = Results.append({'Horse Name':str(horsename[-1]), 'Horse Id':str(selectionID[-1]), 'Form':str(int(FormRatingAvg)), 'Race':str(marketCatelogue[x]['marketName']), 'Time':str(StartTime), 'Venue':str(venue), 'MarketId':str(marketCatelogue[x]['marketId']), 'Odds':str(price_result['result'][0]['runners'][0]['ex']['availableToBack'][0]['price']), 'Bet Placed':betPlaced }, ignore_index=True)
+            Results = Results.append({'Horse Name':str(horsename[SelIndex]), 'Horse Id':str(selectionID[SelIndex]), 'Form':str(FormEndList[SelIndex]), 'Race':str(marketCatelogue[x]['marketName']), 'Time':str(StartTime), 'Venue':str(venue), 'MarketId':str(marketCatelogue[x]['marketId']), 'Odds':str(price_result['result'][0]['runners'][0]['ex']['availableToLay'][0]['price']), 'Bet Placed':betPlaced }, ignore_index=True)
         except:
             pass
             #print ("Got an error")
@@ -232,6 +250,9 @@ def HorseForm(SSOID,BestOrWorst,placeBets):
         else:
             FormRatingAvg = float(0)
         FormRatingList.clear()
+        FormList.clear()
+        FormRatingEndList.clear()
+        FormEndList.clear()
         horsename.clear()
         selectionID.clear
 
@@ -271,13 +292,14 @@ def getMarketCatelogue(SSOID):
 
     #print (marketCatelogue)
 
+SelIndex = int(input("index to retrieve (1 = worst, 2 = second worst etc)"))
+SelIndex = SelIndex * -1
 placeBets = input ("Place Bets?")
 if (placeBets == "Y"):
     placeBets == "y"
 SSOID = getSSOID()
 print (SSOID)
-print ("\n\nWORST\n")
-results = HorseForm(SSOID,"Worst",placeBets)
+results = HorseForm(SSOID,"Worst",placeBets,SelIndex)
 print (results)
 
 
