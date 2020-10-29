@@ -72,7 +72,7 @@ def PlaceBet(SSOID,market,horse,price,betsize):
         #print (result)
     else:
         pass
-        print ("You already have a bet in that market")
+        print ("You already have a bet in that market\n")
 
 
 
@@ -97,6 +97,11 @@ def HorseForm(SSOID,placeBets,minOdds,maxOdds,minRate,maxRate):
     pd.set_option('expand_frame_repr', False)
     pd.set_option('display.max_rows', None)
     Results = pd.DataFrame(data=d)
+
+    horseList = []
+    marketList = []
+    priceList = []
+    forecastList = []
 
     headers = {'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
 
@@ -205,9 +210,13 @@ def HorseForm(SSOID,placeBets,minOdds,maxOdds,minRate,maxRate):
                         if (sID == horseid):
                             betHorse = hname
 
+                    horseList.append(selectionID)
+                    marketList.append(marketId)
+                    priceList.append(price)
+                    forecastList.append(forecast)
                     Results = Results.append({'Horse Name':str(horsename), 'Forecast':str(forecast), 'Form':str(runnerform), 'Race':str(marketCatelogue[x]['marketName']), 'Time':str(StartTime), 'Venue':str(venue), 'Rating':str(runnerRating), 'Odds':str(price), 'Bet Placed':betPlaced, 'Bet Horse':betHorse }, ignore_index=True)
 
-    return Results
+    return (Results,horseList,marketList,priceList,forecastList)
 
 def getEvents(SSOID):
     event_req = '{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listEventTypes", "params": {"filter":{ }}, "id": 1}'
@@ -243,21 +252,36 @@ def getMarketCatelogue(SSOID):
 
     #print (marketCatelogue)
 
-placeBets = input ("Place Bets?")
-maxOdds = 0
-minOdds = 0
-minRate = 0
-maxRate = 0
-if (placeBets == "Y"):
-    placeBets == "y"
-if (placeBets == "y"):
-    minOdds = float (input("what min odds?"))
-    maxOdds = float (input("Bet up to what max odds?"))
-    minRate = float (input("what min rating?"))
-    maxRate = float (input("what max rating?"))
 SSOID = getSSOID()
 #print (SSOID)
-results = HorseForm(SSOID,placeBets,minOdds,maxOdds,minRate,maxRate)
+results,horses,markets,prices,forecasts = HorseForm(SSOID,"no",0,0,0,0)
+print ("\n")
 print (results)
 
-
+finish = 0
+while (finish == 0):
+    print ("\n")
+    placeBets = input ("Place Bets (enter y for all or index for single?")
+    if (placeBets == "Y"):
+        placeBets == "y"
+    if (placeBets == "y"):
+        minOdds = float (input("what min odds?"))
+        maxOdds = float (input("Bet up to what max odds?"))
+        minRate = float (input("what min rating?"))
+        maxRate = float (input("what max rating?"))
+        results,horses,markets,prices,forecasts = HorseForm(SSOID,placeBets,minOdds,maxOdds,minRate,maxRate)
+        print (results)
+    else:
+        try:
+            row = int(placeBets)
+            horseID = horses[row]
+            marketID = markets[row]
+            price = prices[row]
+            forecast = forecasts[row]
+            betAmount = int((forecast / price) * 200.0)
+            fAmount = float(betAmount) / 100.0
+            PlaceBet (SSOID, str(marketID), str(horseID), str(price), str(fAmount))
+            results,horses,markets,prices,forecasts = HorseForm(SSOID,"no",0,0,0,0)
+            print (results)
+        except:
+            finish = 1
