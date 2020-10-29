@@ -41,13 +41,14 @@ def CheckBet(SSOID,market):
     orders = result['result']['currentOrders']
     for x in range(len(orders)):
         if (orders[x]['marketId'] == market):
+            horse = orders[x]['selectionId']
             if (str(orders[x]['status']) == "EXECUTABLE"):
-                return ("Unmatched")
+                return ("Unmatched",horse)
             else:
-                return (str(orders[x]['averagePriceMatched']))
+                return (str(orders[x]['averagePriceMatched']),horse)
 
 
-    return ("No")
+    return ("No","None")
 
 
 def PlaceBet(SSOID,market,horse,price,betsize):
@@ -61,7 +62,8 @@ def PlaceBet(SSOID,market,horse,price,betsize):
 
     #print (user_req)
 
-    if (CheckBet(SSOID,market) == "No"):
+    placed,horse = CheckBet(SSOID,market) 
+    if (placed == "No"):
         req = urllib.request.Request(bet_url, data=user_req.encode('utf-8'), headers=headers)
         response= urllib.request.urlopen(req)
         jsonResponse = response.read()
@@ -70,11 +72,11 @@ def PlaceBet(SSOID,market,horse,price,betsize):
         #print (result)
     else:
         pass
-        #print ("You already have a bet in that market")
+        print ("You already have a bet in that market")
 
 
 
-def HorseForm(SSOID,placeBets,minOdds,maxOdds):
+def HorseForm(SSOID,placeBets,minOdds,maxOdds,minRate,maxRate):
 
     eventTypeID = '["7"]' #ID for Horse Racing
     countryCode= '["GB","IE"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
@@ -89,10 +91,11 @@ def HorseForm(SSOID,placeBets,minOdds,maxOdds):
     priceProjection = '["EX_ALL_OFFERS"]'#Best odds
 
     #Create an empty dataframe
-    d = {'Horse Name': [], 'Forecast': [], 'Form':[], 'Race': [], 'Time': [], 'Venue': [], 'Rating': [], 'Odds':[], 'Bet Placed':[]}
+    d = {'Horse Name': [], 'Forecast': [], 'Form':[], 'Race': [], 'Time': [], 'Venue': [], 'Rating': [], 'Odds':[], 'Bet Placed':[], 'Bet Horse':[]}
     pd.set_option('display.max_columns', None)
     pd.set_option('display.max_colwidth', None)
     pd.set_option('expand_frame_repr', False)
+    pd.set_option('display.max_rows', None)
     Results = pd.DataFrame(data=d)
 
     headers = {'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
@@ -189,14 +192,20 @@ def HorseForm(SSOID,placeBets,minOdds,maxOdds):
 
                 if (price < forecast):
                     marketId = str(marketCatelogue[x]['marketId'])
-                    if ((price <= maxOdds) and (price > minOdds) and (placeBets == "y")):
+                    if ((price <= maxOdds) and (price > minOdds) and (runnerRating >= minRate) and (runnerRating <= maxRate) and (placeBets == "y")):
                         betAmount = int((forecast / price) * 200.0)
                         fAmount = float(betAmount) / 100.0
                         PlaceBet (SSOID, marketId, str(selectionID), str(price), str(fAmount))
 
-                    betPlaced = CheckBet(SSOID,marketId)
+                    betPlaced,horseid = CheckBet(SSOID,marketId)
+                    betHorse = "None"
+                    for ll in range(len(marketCatelogue[x]['runners'])):
+                        hname = marketCatelogue[x]['runners'][ll]['runnerName']
+                        sID = marketCatelogue[x]['runners'][ll]['selectionId']
+                        if (sID == horseid):
+                            betHorse = hname
 
-                    Results = Results.append({'Horse Name':str(horsename), 'Forecast':str(forecast), 'Form':str(runnerform), 'Race':str(marketCatelogue[x]['marketName']), 'Time':str(StartTime), 'Venue':str(venue), 'Rating':str(runnerRating), 'Odds':str(price), 'Bet Placed':betPlaced }, ignore_index=True)
+                    Results = Results.append({'Horse Name':str(horsename), 'Forecast':str(forecast), 'Form':str(runnerform), 'Race':str(marketCatelogue[x]['marketName']), 'Time':str(StartTime), 'Venue':str(venue), 'Rating':str(runnerRating), 'Odds':str(price), 'Bet Placed':betPlaced, 'Bet Horse':betHorse }, ignore_index=True)
 
     return Results
 
@@ -237,14 +246,18 @@ def getMarketCatelogue(SSOID):
 placeBets = input ("Place Bets?")
 maxOdds = 0
 minOdds = 0
+minRate = 0
+maxRate = 0
 if (placeBets == "Y"):
     placeBets == "y"
 if (placeBets == "y"):
     minOdds = float (input("what min odds?"))
     maxOdds = float (input("Bet up to what max odds?"))
+    minRate = float (input("what min rating?"))
+    maxRate = float (input("what max rating?"))
 SSOID = getSSOID()
-print (SSOID)
-results = HorseForm(SSOID,placeBets,minOdds,maxOdds)
+#print (SSOID)
+results = HorseForm(SSOID,placeBets,minOdds,maxOdds,minRate,maxRate)
 print (results)
 
 
