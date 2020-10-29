@@ -1,0 +1,250 @@
+import json
+import datetime
+import time
+import urllib
+import urllib.request
+import urllib.error
+import requests
+import pandas as pd
+
+my_app_key = ""
+bet_url="https://api.betfair.com/exchange/betting/json-rpc/v1"
+
+def getSSOID():
+    my_username = ""
+    my_password = ""
+
+    payload = 'username=' + my_username + '&password=' + my_password
+    headers = {'X-Application': my_app_key, 'Content-Type': 'application/x-www-form-urlencoded'}
+    resp = requests.post('https://identitysso-cert.betfair.com/api/certlogin',data=payload,cert=('client-2048.crt','client-2048.key'),headers=headers)
+    json_resp=resp.json()
+    SSOID = json_resp['sessionToken']
+    return SSOID
+
+
+
+def CheckBet(SSOID,market):
+
+    headers = {'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
+
+
+    user_req='{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listCurrentOrders"}'
+
+    #print (user_req)
+    req = urllib.request.Request(bet_url, data=user_req.encode('utf-8'), headers=headers)
+    response= urllib.request.urlopen(req)
+    jsonResponse = response.read()
+    pkg = jsonResponse.decode('utf-8')
+    result = json.loads(pkg)
+    #print (result)
+
+    orders = result['result']['currentOrders']
+    for x in range(len(orders)):
+        if (orders[x]['marketId'] == market):
+            if (str(orders[x]['status']) == "EXECUTABLE"):
+                return ("Unmatched")
+            else:
+                return (str(orders[x]['averagePriceMatched']))
+
+
+    return ("No")
+
+
+def PlaceBet(SSOID,market,horse,price,betsize):
+
+    headers = {'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
+
+
+    user_req='{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/placeOrders", \
+            "params": {"marketId":"'+market+'",\
+            "instructions":[{"selectionId":"'+horse+'","handicap":"0","side":"LAY","orderType":"LIMIT","limitOrder":{"size":"'+betsize+'","price":"'+price+'"}}]}, "id": 1}'
+
+    #print (user_req)
+
+    if (CheckBet(SSOID,market) == "No"):
+        req = urllib.request.Request(bet_url, data=user_req.encode('utf-8'), headers=headers)
+        response= urllib.request.urlopen(req)
+        jsonResponse = response.read()
+        pkg = jsonResponse.decode('utf-8')
+        result = json.loads(pkg)
+        #print (result)
+    else:
+        pass
+        #print ("You already have a bet in that market")
+
+
+
+def HorseForm(SSOID,placeBets,minOdds,maxOdds):
+
+    eventTypeID = '["7"]' #ID for Horse Racing
+    countryCode= '["GB","IE"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
+    marketTypeCode='["WIN"]' #Market Type
+    MarketStartTime= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ') #Event Start and End times
+    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(hours=24))
+    MarketEndTime = MarketEndTime.strftime('%Y-%m-%dT%H:%M:%SZ')
+    maxResults = str(1000)
+    sortType = 'FIRST_TO_START' #Sorts the Output
+    Metadata = 'RUNNER_METADATA' #Provides metadata
+    inplay = 'false' #still to run
+    priceProjection = '["EX_ALL_OFFERS"]'#Best odds
+
+    #Create an empty dataframe
+    d = {'Horse Name': [], 'Forecast': [], 'Form':[], 'Race': [], 'Time': [], 'Venue': [], 'Rating': [], 'Odds':[], 'Bet Placed':[]}
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.max_colwidth', None)
+    pd.set_option('expand_frame_repr', False)
+    Results = pd.DataFrame(data=d)
+
+    headers = {'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
+
+    user_req='{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listMarketCatalogue",\
+           "params": {"filter":{"eventTypeIds":'+eventTypeID+',"marketTypeCodes":'+marketTypeCode+',\
+           "inPlayOnly":'+inplay+', "marketCountries":'+countryCode+',\
+           "marketStartTime":{"from":"'+MarketStartTime+'", "to":"'+MarketEndTime+'"}},\
+           "sort":"'+sortType+'", "maxResults":"'+maxResults+'", "marketProjection":["'+Metadata+'","MARKET_START_TIME","EVENT"]}, "id": 1}'
+
+    #print (user_req)
+    req = urllib.request.Request(bet_url, data=user_req.encode('utf-8'), headers=headers)
+    response= urllib.request.urlopen(req)
+    jsonResponse = response.read()
+    pkg = jsonResponse.decode('utf-8')
+    result = json.loads(pkg)
+    marketCatelogue = result['result']
+
+    for x in range(len(marketCatelogue)):
+        ratingTotal = 0
+        runnersTotal = 0
+        ratingAverage = 0.0
+        ratingHigh = 0
+        for w in range(len(marketCatelogue[x]['runners'])):
+            try:
+                runnerRating = int (marketCatelogue[x]['runners'][w]['metadata']['OFFICIAL_RATING'])
+                if (runnerRating > ratingHigh):
+                    ratingHigh = runnerRating
+                ratingTotal = ratingTotal + runnerRating
+                runnersTotal = runnersTotal + 1
+            except:
+                pass
+
+        if (runnersTotal > 0):
+            ratingAverage = float(float(ratingTotal) / float(runnersTotal))
+
+
+        for w in range(len(marketCatelogue[x]['runners'])):
+            runnerform = marketCatelogue[x]['runners'][w]['metadata']['FORM']
+            try:
+                runnerRating = int (marketCatelogue[x]['runners'][w]['metadata']['OFFICIAL_RATING'])
+            except:
+                runnerRating = 1000
+            horsename = marketCatelogue[x]['runners'][w]['runnerName']
+            selectionID = marketCatelogue[x]['runners'][w]['selectionId']
+            numerator = float (marketCatelogue[x]['runners'][w]['metadata']['FORECASTPRICE_NUMERATOR'])
+            denominator = float (marketCatelogue[x]['runners'][w]['metadata']['FORECASTPRICE_DENOMINATOR'])
+            try:
+                forecast = numerator/denominator
+            except:
+                forecast = 0.0
+
+            #if (runnerRating > 0):
+            #    print (marketCatelogue[x]['runners'][w]['metadata'])
+
+            runnerWinner = 0
+
+            try:
+                runnerformList = list(runnerform)
+                if (runnerformList[-1] == "1"):
+                    runnerWinner = 1
+                if (runnerformList[-1] == "2"):
+                    runnerWinner = 1
+                runnerformList.clear()
+            except:
+                pass
+
+            #if (runnerWinner == 1 and float(runnerRating) <= ratingAverage):
+            #if (float(runnerRating) <= ratingAverage):
+            if (runnerWinner == 1):
+                price_req = '{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listRunnerBook", "params": {"locale":"en", \
+                        "marketId":"'+str(marketCatelogue[x]['marketId'])+'",\
+                        "selectionId":"'+str(selectionID)+'",\
+                        "priceProjection":{"priceData":'+priceProjection+'},"orderProjection":"ALL"},"id":1}'
+
+                #print (price_req)
+                req = urllib.request.Request(bet_url, data=price_req.encode('utf-8'), headers=headers)
+                price_response= urllib.request.urlopen(req)
+                price_jsonResponse = price_response.read()
+                price_pkg = price_jsonResponse.decode('utf-8')
+                price_result = json.loads(price_pkg)
+                #print (price_result)
+
+
+                #print (horsename)
+                start_time = marketCatelogue[x]['marketStartTime']
+                my_datetime = datetime.datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S.000Z')
+                StartTime = my_datetime.strftime('%H:%M')
+                venue = marketCatelogue[x]['event']['venue']
+                try:
+                    price = float(price_result['result'][0]['runners'][0]['ex']['availableToLay'][0]['price'])
+                except:
+                    price = 1234.0
+
+                if (price < forecast):
+                    marketId = str(marketCatelogue[x]['marketId'])
+                    if ((price <= maxOdds) and (price > minOdds) and (placeBets == "y")):
+                        betAmount = int((forecast / price) * 200.0)
+                        fAmount = float(betAmount) / 100.0
+                        PlaceBet (SSOID, marketId, str(selectionID), str(price), str(fAmount))
+
+                    betPlaced = CheckBet(SSOID,marketId)
+
+                    Results = Results.append({'Horse Name':str(horsename), 'Forecast':str(forecast), 'Form':str(runnerform), 'Race':str(marketCatelogue[x]['marketName']), 'Time':str(StartTime), 'Venue':str(venue), 'Rating':str(runnerRating), 'Odds':str(price), 'Bet Placed':betPlaced }, ignore_index=True)
+
+    return Results
+
+def getEvents(SSOID):
+    event_req = '{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listEventTypes", "params": {"filter":{ }}, "id": 1}'
+    headers = {'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
+    req = requests.post(bet_url, data=event_req.encode('utf-8'), headers=headers)
+    eventTypes = req.json()
+    #print (eventTypes)
+
+def getMarketCatelogue(SSOID):
+    eventTypeID = '["7"]' #ID for Horse Racing
+    countryCode= '["GB","IE"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
+    marketTypeCode='["WIN"]' #Market Type
+    MarketStartTime= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ') #Event Start and End times
+    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(hours=24))
+    MarketEndTime = MarketEndTime.strftime('%Y-%m-%dT%H:%M:%SZ')
+    maxResults = str(1000)
+    sortType = 'FIRST_TO_START' #Sorts the Output
+    Metadata = 'RUNNER_METADATA' #Provides metadata
+    inplay = 'false' #still to run
+
+    user_req='{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listMarketCatalogue",\
+           "params": {"filter":{"eventTypeIds":'+eventTypeID+',"marketTypeCodes":'+marketTypeCode+',\
+           "inPlayOnly":'+inplay+', "marketCountries":'+countryCode+',  \
+           "marketStartTime":{"from":"'+MarketStartTime+'", "to":"'+MarketEndTime+'"}},\
+           "sort":"'+sortType+'", "maxResults":"'+maxResults+'", "marketProjection":["'+Metadata+'"]}, "id": 1}'
+
+    req = urllib.request.Request(bet_url, data=user_req.encode('utf-8'), headers=headers)
+    response= urllib.request.urlopen(req)
+    jsonResponse = response.read()
+    pkg = jsonResponse.decode('utf-8')
+    result = json.loads(pkg)
+    marketCatelogue = result['result']
+
+    #print (marketCatelogue)
+
+placeBets = input ("Place Bets?")
+maxOdds = 0
+minOdds = 0
+if (placeBets == "Y"):
+    placeBets == "y"
+if (placeBets == "y"):
+    minOdds = float (input("what min odds?"))
+    maxOdds = float (input("Bet up to what max odds?"))
+SSOID = getSSOID()
+print (SSOID)
+results = HorseForm(SSOID,placeBets,minOdds,maxOdds)
+print (results)
+
+
