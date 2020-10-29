@@ -200,6 +200,8 @@ def HorseForm(SSOID,placeBets,minOdds,maxOdds,minRate,maxRate):
                     if ((price <= maxOdds) and (price > minOdds) and (runnerRating >= minRate) and (runnerRating <= maxRate) and (placeBets == "y")):
                         betAmount = int((forecast / price) * 200.0)
                         fAmount = float(betAmount) / 100.0
+                        if (fAmount > 4.0):
+                            fAmount = 4.0
                         PlaceBet (SSOID, marketId, str(selectionID), str(price), str(fAmount))
 
                     betPlaced,horseid = CheckBet(SSOID,marketId)
@@ -280,6 +282,8 @@ while (finish == 0):
             forecast = forecasts[row]
             betAmount = int((forecast / price) * 200.0)
             fAmount = float(betAmount) / 100.0
+            if (fAmount > 4.0):
+                fAmount = 4.0
             PlaceBet (SSOID, str(marketID), str(horseID), str(price), str(fAmount))
             results,horses,markets,prices,forecasts = HorseForm(SSOID,"no",0,0,0,0)
             print (results)
