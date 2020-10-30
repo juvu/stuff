@@ -45,7 +45,8 @@ def CheckBet(SSOID,market):
             if (str(orders[x]['status']) == "EXECUTABLE"):
                 return ("Unmatched",horse)
             else:
-                return (str(orders[x]['averagePriceMatched']),horse)
+                betPlaced = str("%.2f" % orders[x]['averagePriceMatched'])
+                return (str(betPlaced),horse)
 
 
     return ("No","None")
@@ -76,7 +77,7 @@ def PlaceBet(SSOID,market,horse,price,betsize):
 
 
 
-def HorseForm(SSOID,marketId):
+def HorseForm(SSOID,marketId,reduce):
 
     eventTypeID = '["7"]' #ID for Horse Racing
     countryCode= '["GB","IE"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
@@ -155,6 +156,13 @@ def HorseForm(SSOID,marketId):
             except:
                 forecast = 0.0
 
+            if (forecast > 1.0):
+                prob = 1.0 / forecast
+                prob = prob * (1.0 + (reduce * 0.01))
+                forecast = 1.0 / prob
+                aforecast = str("%.2f" % forecast)
+                forecast = float(aforecast)
+
             runnerWinner = 1
             if (runnerWinner == 1):
                 price_req = '{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listRunnerBook", "params": {"locale":"en", \
@@ -182,6 +190,7 @@ def HorseForm(SSOID,marketId):
                     price = 1234.0
 
                 if (price < forecast):
+                #if (runnerWinner == 1):
                     marketId = str(marketCatelogue[x]['marketId'])
                     betPlaced,horseid = CheckBet(SSOID,marketId)
                     betHorse = "None"
@@ -242,6 +251,8 @@ def getMarketCatelogue(SSOID):
     Results = pd.DataFrame(data=d)
 
     marketList = []
+    venueList = []
+    timeList = []
     for x in range(len(marketCatelogue)):
         start_time = marketCatelogue[x]['marketStartTime']
         my_datetime = datetime.datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S.000Z')
@@ -249,6 +260,8 @@ def getMarketCatelogue(SSOID):
         venue = marketCatelogue[x]['event']['venue']
         marketId = str(marketCatelogue[x]['marketId'])
         marketList.append(marketId)
+        venueList.append(venue)
+        timeList.append(StartTime)
 
         betPlaced,horseid = CheckBet(SSOID,marketId)
         betHorse = "None"
@@ -260,11 +273,11 @@ def getMarketCatelogue(SSOID):
 
         Results = Results.append({'Venue':str(venue), 'Start Time':str(StartTime), 'Horse':str(betHorse)}, ignore_index=True)
 
-    return (Results,marketList)
+    return (Results,marketList,venueList,timeList)
 
 SSOID = getSSOID()
 #print (SSOID)
-results,marketList = getMarketCatelogue(SSOID)
+results,marketList,venueList,timeList = getMarketCatelogue(SSOID)
 print ("\n")
 print (results)
 
@@ -282,8 +295,14 @@ while (finish == 0):
         try:
             row = int(selMarket)
             marketID = marketList[row]
-    
-            results,horses,markets,prices,forecasts = HorseForm(SSOID,str(marketID))
+            print ("{} {}".format(venueList[row], timeList[row]))
+            reduction = input("Enter non runner reduction factor ")
+            try:
+                reduce = float (reduction)
+            except:
+                reduce = 0.0
+
+            results,horses,markets,prices,forecasts = HorseForm(SSOID,str(marketID),reduce)
             print ("\n")
             print (results)
             state = 2
