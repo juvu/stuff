@@ -83,7 +83,7 @@ def HorseForm(SSOID,marketId,reduce):
     countryCode= '["GB","IE"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
     marketTypeCode='["WIN"]' #Market Type
     MarketStartTime= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ') #Event Start and End times
-    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(hours=24))
+    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(hours=12))
     MarketEndTime = MarketEndTime.strftime('%Y-%m-%dT%H:%M:%SZ')
     maxResults = str(1000)
     sortType = 'FIRST_TO_START' #Sorts the Output
@@ -152,7 +152,7 @@ def HorseForm(SSOID,marketId,reduce):
             numerator = float (marketCatelogue[x]['runners'][w]['metadata']['FORECASTPRICE_NUMERATOR'])
             denominator = float (marketCatelogue[x]['runners'][w]['metadata']['FORECASTPRICE_DENOMINATOR'])
             try:
-                forecast = numerator/denominator
+                forecast = (numerator/denominator) + 1.0
             except:
                 forecast = 0.0
 
@@ -220,7 +220,7 @@ def getMarketCatelogue(SSOID):
     countryCode= '["GB","IE"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
     marketTypeCode='["WIN"]' #Market Type
     MarketStartTime= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ') #Event Start and End times
-    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(hours=24))
+    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(hours=12))
     MarketEndTime = MarketEndTime.strftime('%Y-%m-%dT%H:%M:%SZ')
     maxResults = str(1000)
     sortType = 'FIRST_TO_START' #Sorts the Output
