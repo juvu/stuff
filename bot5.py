@@ -290,22 +290,34 @@ while (1):
         results,horses,markets,prices,forecasts = HorseForm(SSOID,str(x))
         print (results)
         print ("\n")
+        sys.stdout.flush()
+        BestFactor = 0.0
+        BestHorseID = "None"
+        BestMarketID = "None"
+        BestPrice = 0.0 
+        BestForecast = 0.0
         for row in range(len(horses)):
             horseID = horses[row]
             marketID = markets[row]
             price = prices[row]
             forecast = forecasts[row]
             try:
-                if (price < forecast and price < 7.0):
-                    betAmount = int((forecast / price) * 200.0)
-                    fAmount = float(betAmount) / 100.0
-                    if (fAmount > 4.0):
-                        fAmount = 4.0
-                    #print ("Placing bet {} {} {} {}\n".format(str(marketID), str(horseID), str(price), str(fAmount)))
-                    sys.stdout.flush()
-                    PlaceBet (SSOID, str(marketID), str(horseID), str(price), str(fAmount))
-                    break
+                if (price < forecast and price < 8.0):
+                    betFactor = forecast / price
+                    if (betFactor > BestFactor):
+                        BestHorseID = horseID
+                        BestMarketID = marketID
+                        BestPrice = price 
+                        BestForecast = forecast 
+                        BestFactor = betFactor
             except:
                 pass
+        if (BestHorseID != "None"):
+            betAmount = int((BestForecast / BestPrice) * 200.0)
+            fAmount = float(betAmount) / 100.0
+            if (fAmount > 4.0):
+                fAmount = 4.0
+            #print ("Placing bet {} {} {} {}\n".format(str(marketID), str(horseID), str(price), str(fAmount)))
+            PlaceBet (SSOID, str(BestMarketID), str(BestHorseID), str(BestPrice), str(fAmount))
 
     time.sleep(120)
