@@ -10,6 +10,7 @@ import pandas as pd
 
 my_app_key = ""
 bet_url="https://api.betfair.com/exchange/betting/json-rpc/v1"
+acceptStr = "application/json"
 
 def getSSOID():
     my_username = ""
@@ -22,6 +23,13 @@ def getSSOID():
     SSOID = json_resp['sessionToken']
     return SSOID
 
+
+def keepAlive(SSOID):
+    headers = {'Accept': acceptStr, 'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
+    resp = requests.post('https://identitysso-cert.betfair.com/api/keepAlive',headers=headers)
+    json_resp=resp.json()
+    print (json_resp['status'])
+    sys.stdout.flush()
 
 
 def CheckBet(SSOID,market):
@@ -283,6 +291,7 @@ def getMarketCatalogue(SSOID):
 SSOID = getSSOID()
 #print (SSOID)
 while (1):
+    keepAlive(SSOID)
     cresults,marketList,venueList,timeList = getMarketCatalogue(SSOID)
     print (cresults)
     print ("\n")
