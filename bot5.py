@@ -12,6 +12,10 @@ my_app_key = ""
 bet_url="https://api.betfair.com/exchange/betting/json-rpc/v1"
 acceptStr = "application/json"
 
+def myprint(x):
+    print(x)
+    sys.stdout.flush()
+
 def getSSOID():
     my_username = ""
     my_password = ""
@@ -28,8 +32,7 @@ def keepAlive(SSOID):
     headers = {'Accept': acceptStr, 'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
     resp = requests.post('https://identitysso-cert.betfair.com/api/keepAlive',headers=headers)
     json_resp=resp.json()
-    print (json_resp['status'])
-    sys.stdout.flush()
+    myprint (json_resp['status'])
 
 
 def CheckBet(SSOID,market):
@@ -39,13 +42,13 @@ def CheckBet(SSOID,market):
 
     user_req='{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listCurrentOrders"}'
 
-    #print (user_req)
+    #myprint (user_req)
     req = urllib.request.Request(bet_url, data=user_req.encode('utf-8'), headers=headers)
     response= urllib.request.urlopen(req)
     jsonResponse = response.read()
     pkg = jsonResponse.decode('utf-8')
     result = json.loads(pkg)
-    #print (result)
+    #myprint (result)
 
     orders = result['result']['currentOrders']
     for x in range(len(orders)):
@@ -70,7 +73,7 @@ def PlaceBet(SSOID,market,horse,price,betsize):
             "params": {"marketId":"'+market+'",\
             "instructions":[{"selectionId":"'+horse+'","handicap":"0","side":"LAY","orderType":"LIMIT","limitOrder":{"size":"'+betsize+'","price":"'+price+'"}}]}, "id": 1}'
 
-    #print (user_req)
+    #myprint (user_req)
 
     placed,horse = CheckBet(SSOID,market)
     if (placed == "No"):
@@ -79,10 +82,10 @@ def PlaceBet(SSOID,market,horse,price,betsize):
         jsonResponse = response.read()
         pkg = jsonResponse.decode('utf-8')
         result = json.loads(pkg)
-        #print (result)
+        #myprint (result)
     else:
         pass
-        print ("You already have a bet in that market\n")
+        myprint ("You already have a bet in that market\n")
 
 
 
@@ -130,7 +133,7 @@ def HorseForm(SSOID,marketId):
            "marketStartTime":{"from":"'+MarketStartTime+'", "to":"'+MarketEndTime+'"}},\
            "sort":"'+sortType+'", "maxResults":"'+maxResults+'", "marketProjection":["'+Metadata+'","MARKET_START_TIME","EVENT"]}, "id": 1}'
 
-    #print (user_req)
+    #myprint (user_req)
     req = urllib.request.Request(bet_url, data=user_req.encode('utf-8'), headers=headers)
     response= urllib.request.urlopen(req)
     jsonResponse = response.read()
@@ -163,15 +166,15 @@ def HorseForm(SSOID,marketId):
                         "selectionId":"'+str(selectionID)+'",\
                         "priceProjection":{"priceData":'+priceProjection+'},"orderProjection":"ALL"},"id":1}'
 
-            #print (price_req)
+            #myprint (price_req)
             req = urllib.request.Request(bet_url, data=price_req.encode('utf-8'), headers=headers)
             price_response= urllib.request.urlopen(req)
             price_jsonResponse = price_response.read()
             price_pkg = price_jsonResponse.decode('utf-8')
             price_result = json.loads(price_pkg)
-            #print (price_result)
+            #myprint (price_result)
 
-            #print (horsename)
+            #myprint (horsename)
             start_time = marketCatalogue[x]['marketStartTime']
             my_datetime = datetime.datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S.000Z')
             StartTime = my_datetime.strftime('%H:%M')
@@ -226,7 +229,7 @@ def getEvents(SSOID):
     headers = {'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
     req = requests.post(bet_url, data=event_req.encode('utf-8'), headers=headers)
     eventTypes = req.json()
-    #print (eventTypes)
+    #myprint (eventTypes)
 
 def getMarketCatalogue(SSOID):
     eventTypeID = '["7"]' #ID for Horse Racing
@@ -289,16 +292,18 @@ def getMarketCatalogue(SSOID):
     return (Results,marketList,venueList,timeList)
 
 SSOID = getSSOID()
-#print (SSOID)
+myprint (SSOID)
 while (1):
     keepAlive(SSOID)
+    timenow = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ') 
+    myprint (timenow)
     cresults,marketList,venueList,timeList = getMarketCatalogue(SSOID)
-    print (cresults)
-    print ("\n")
+    myprint (cresults)
+    myprint ("\n")
     for x in marketList:
         results,horses,markets,prices,forecasts = HorseForm(SSOID,str(x))
-        print (results)
-        print ("\n")
+        myprint (results)
+        myprint ("\n")
         sys.stdout.flush()
         BestFactor = 0.0
         BestHorseID = "None"
@@ -314,6 +319,7 @@ while (1):
                 if (price < forecast and price < 8.0):
                     betFactor = forecast / price
                     if (betFactor > BestFactor):
+                        BestRow =row 
                         BestHorseID = horseID
                         BestMarketID = marketID
                         BestPrice = price 
@@ -326,7 +332,18 @@ while (1):
             fAmount = float(betAmount) / 100.0
             if (fAmount > 4.0):
                 fAmount = 4.0
-            #print ("Placing bet {} {} {} {}\n".format(str(marketID), str(horseID), str(price), str(fAmount)))
+            myprint ("Placing bet {} {} {} {} {}\n".format(str(BestRow),str(BestMarketID), str(BestHorseID), str(BestPrice), str(fAmount)))
             PlaceBet (SSOID, str(BestMarketID), str(BestHorseID), str(BestPrice), str(fAmount))
+
+        del results
+        del markets
+        del horses 
+        del prices
+        del forecasts
+
+    del cresults
+    del marketList
+    del venueList
+    del timeList
 
     time.sleep(120)
