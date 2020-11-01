@@ -95,7 +95,7 @@ def HorseForm(SSOID,marketId):
     countryCode= '["GB","IE"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
     marketTypeCode='["WIN"]' #Market Type
     MarketStartTime= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ') #Event Start and End times
-    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(minutes=20))
+    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(minutes=12))
     MarketEndTime = MarketEndTime.strftime('%Y-%m-%dT%H:%M:%SZ')
     maxResults = str(1000)
     sortType = 'FIRST_TO_START' #Sorts the Output
@@ -236,7 +236,7 @@ def getMarketCatalogue(SSOID):
     countryCode= '["GB","IE"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
     marketTypeCode='["WIN"]' #Market Type
     MarketStartTime= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ') #Event Start and End times
-    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(minutes=20))
+    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(minutes=12))
     MarketEndTime = MarketEndTime.strftime('%Y-%m-%dT%H:%M:%SZ')
     maxResults = str(1000)
     sortType = 'FIRST_TO_START' #Sorts the Output
@@ -295,7 +295,7 @@ SSOID = getSSOID()
 myprint (SSOID)
 while (1):
     keepAlive(SSOID)
-    timenow = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ') 
+    timenow = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
     myprint (timenow)
     cresults,marketList,venueList,timeList = getMarketCatalogue(SSOID)
     myprint (cresults)
@@ -308,7 +308,7 @@ while (1):
         BestFactor = 0.0
         BestHorseID = "None"
         BestMarketID = "None"
-        BestPrice = 0.0 
+        BestPrice = 0.0
         BestForecast = 0.0
         for row in range(len(horses)):
             horseID = horses[row]
@@ -316,28 +316,33 @@ while (1):
             price = prices[row]
             forecast = forecasts[row]
             try:
-                if (price < forecast and price < 8.0):
+                if (price < forecast and price < 8.0 and price >= 2.0 and forecast < 100.0 and forecast >= 4.0):
                     betFactor = forecast / price
                     if (betFactor > BestFactor):
-                        BestRow =row 
+                        BestRow =row
                         BestHorseID = horseID
                         BestMarketID = marketID
-                        BestPrice = price 
-                        BestForecast = forecast 
+                        BestPrice = price
+                        BestForecast = forecast
                         BestFactor = betFactor
             except:
                 pass
         if (BestHorseID != "None"):
-            betAmount = int((BestForecast / BestPrice) * 200.0)
-            fAmount = float(betAmount) / 100.0
-            if (fAmount > 4.0):
-                fAmount = 4.0
+            # bet half the forecast price, capped at the current price
+            fAmount = BestForecast * 0.5
+            if (fAmount > BestPrice):
+                fAmount = BestPrice
+            fAmount = fAmount * 100.0
+            iAmount = int(fAmount)
+            fAmount = float(iAmount) / 100.0
+
+
             myprint ("Placing bet {} {} {} {} {}\n".format(str(BestRow),str(BestMarketID), str(BestHorseID), str(BestPrice), str(fAmount)))
             PlaceBet (SSOID, str(BestMarketID), str(BestHorseID), str(BestPrice), str(fAmount))
 
         del results
         del markets
-        del horses 
+        del horses
         del prices
         del forecasts
 
