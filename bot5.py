@@ -203,7 +203,6 @@ def HorseForm(SSOID,marketId):
             venueList.append(venue)
             timeList.append(StartTime)
             ratingList.append(runnerRating)
-            forecastList.append(forecast)
 
         for w in range(len(marketCatalogue[x]['runners'])):
             numerator = float (marketCatalogue[x]['runners'][w]['metadata']['FORECASTPRICE_NUMERATOR'])
@@ -219,6 +218,8 @@ def HorseForm(SSOID,marketId):
                 forecast = 1.0 / prob
                 aforecast = str("%.2f" % forecast)
                 forecast = float(aforecast)
+
+            forecastList.append(forecast)
 
             Results = Results.append({'Horse Name':str(horsenameList[w]), 'Forecast':str(forecast), 'Form':str(formList[w]), 'Race':str(raceList[w]), 'Time':str(timeList[w]), 'Venue':str(venueList[w]), 'Rating':str(ratingList[w]), 'Odds':str(priceList[w]), 'Bet Placed':betPlaced, 'Bet Horse':betHorse }, ignore_index=True)
 
