@@ -40,7 +40,8 @@ def connectDatabase():
          TIME  TIME,
          VENUE CHAR(60),
          RATING INT,
-         ODDS FLOAT,
+         BACK FLOAT,
+         LAY FLOAT,
          RESULT CHAR(20),
          PRIMARY KEY (MARKETID, SELECTIONID))"""
 
@@ -133,7 +134,7 @@ def HorseForm(SSOID,marketId):
     countryCode= '["GB","IE"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
     marketTypeCode='["WIN"]' #Market Type
     MarketStartTime= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ') #Event Start and End times
-    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(hours=24))
+    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(minutes=52))
     MarketEndTime = MarketEndTime.strftime('%Y-%m-%dT%H:%M:%SZ')
     maxResults = str(1000)
     sortType = 'FIRST_TO_START' #Sorts the Output
@@ -155,6 +156,7 @@ def HorseForm(SSOID,marketId):
     horseList = []
     marketList = []
     priceList = []
+    backList = []
     forecastList = []
     horsenameList = []
     formList = []
@@ -219,8 +221,10 @@ def HorseForm(SSOID,marketId):
             venue = marketCatalogue[x]['event']['venue']
             try:
                 price = float(price_result['result'][0]['runners'][0]['ex']['availableToLay'][0]['price'])
+                back = float(price_result['result'][0]['runners'][0]['ex']['availableToBack'][0]['price'])
             except:
                 price = "NR"
+                back = "NR"
                 reduce = reduce + (100.0 / forecast)
 
             marketId = str(marketCatalogue[x]['marketId'])
@@ -238,6 +242,7 @@ def HorseForm(SSOID,marketId):
             horseList.append(selectionID)
             marketList.append(marketId)
             priceList.append(price)
+            backList.append(back)
             venueList.append(venue)
             timeList.append(StartTime)
             ratingList.append(runnerRating)
@@ -261,7 +266,7 @@ def HorseForm(SSOID,marketId):
 
             Results = Results.append({'Horse Name':str(horsenameList[w]), 'Forecast':str(forecast), 'Form':str(formList[w]), 'Race':str(raceList[w]), 'Time':str(timeList[w]), 'Venue':str(venueList[w]), 'Rating':str(ratingList[w]), 'Odds':str(priceList[w]), 'Bet Placed':betPlaced, 'Bet Horse':betHorse }, ignore_index=True)
 
-    return (Results,horseList,marketList,priceList,forecastList,formList,horsenameList,raceList,ratingList)
+    return (Results,horseList,marketList,priceList,backList,forecastList,formList,horsenameList,raceList,ratingList)
 
 def getEvents(SSOID):
     event_req = '{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listEventTypes", "params": {"filter":{ }}, "id": 1}'
@@ -275,7 +280,7 @@ def getMarketCatalogue(SSOID):
     countryCode= '["GB","IE"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
     marketTypeCode='["WIN"]' #Market Type
     MarketStartTime= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ') #Event Start and End times
-    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(hours=24))
+    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(minutes=52))
     MarketEndTime = MarketEndTime.strftime('%Y-%m-%dT%H:%M:%SZ')
     maxResults = str(1000)
     sortType = 'FIRST_TO_START' #Sorts the Output
@@ -345,7 +350,7 @@ while (1):
     myprint (cresults)
     myprint ("\n")
     for x in range(len(marketList)):
-        results,horses,markets,prices,forecasts,forms,horsenames,races,ratings = HorseForm(SSOID,str(marketList[x]))
+        results,horses,markets,prices,backs,forecasts,forms,horsenames,races,ratings = HorseForm(SSOID,str(marketList[x]))
         myprint (results)
         myprint ("\n")
         sys.stdout.flush()
@@ -361,11 +366,12 @@ while (1):
             horseID = horses[row]
             marketID = markets[row]
             price = prices[row]
+            back = backs[row]
             forecast = forecasts[row]
             if (type(price) is float):
-                sql = "INSERT INTO RESULTS(MARKETID, SELECTIONID, FORECAST, ODDS, DATE, TIME, VENUE, NAME, FORM, RACE, RATING) \
-                VALUES ('%s', '%s', '%s', '%s' , '%s', '%s', '%s', '%s', '%s', '%s', '%s') ON DUPLICATE KEY UPDATE ODDS = '%s'" % \
-                    (str(marketID), str(horseID), str(forecast), str(price), str(thedate), str(thetime), str(venue), str(horsenames[row]), str(forms[row]), str(races[row]), str(ratings[row]), str(price))
+                sql = "INSERT INTO RESULTS(MARKETID, SELECTIONID, FORECAST, BACK, LAY, DATE, TIME, VENUE, NAME, FORM, RACE, RATING) \
+                VALUES ('%s', '%s', '%s', '%s', '%s' , '%s', '%s', '%s', '%s', '%s', '%s', '%s') ON DUPLICATE KEY UPDATE LAY = '%s', BACK = '%s'" % \
+                    (str(marketID), str(horseID), str(forecast), str(back), str(price), str(thedate), str(thetime), str(venue), str(horsenames[row]), str(forms[row]), str(races[row]), str(ratings[row]), str(price), str(back))
                 cursor.execute(sql)
             try:
                 if (price < forecast and price <= 5.5 and price >= 2.0 and forecast < 100.0 and forecast >= 4.0):
@@ -396,12 +402,18 @@ while (1):
             #PlaceBet (SSOID, str(BestMarketID), str(BestHorseID), str(BestPrice), str(fAmount))
 
 
+        results,horses,markets,prices,backs,forecasts,forms,horsenames,races,ratings = HorseForm(SSOID,str(marketList[x]))
 
         del results
-        del markets
         del horses
+        del markets
         del prices
+        del backs
         del forecasts
+        del forms
+        del horsenames
+        del races
+        del ratings
 
     del cresults
     del marketList

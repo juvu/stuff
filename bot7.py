@@ -8,6 +8,44 @@ import urllib.error
 import requests
 import pandas as pd
 
+import MySQLdb
+import re
+from typing import Iterable, Dict, Union, List
+
+def connectDatabase():
+    print("Connecting to database using MySQLdb")
+    db = MySQLdb.connect(host='localhost', db='betfair', user='msgmedia', passwd='Media123!')
+    print("Succesfully Connected to database using MySQLdb!")
+
+    # prepare a cursor object using cursor() method
+    cursor = db.cursor()
+
+    # Drop table if it already exist using execute() method.
+    #cursor.execute("DROP TABLE IF EXISTS CASES")
+    #db.commit()
+
+    # Create table as per requirement
+    sql = """CREATE TABLE RESULTS (
+         MARKETID  CHAR(20) NOT NULL,
+         SELECTIONID  CHAR(20) NOT NULL,
+         NAME CHAR (60),
+         FORECAST FLOAT,
+         FORM CHAR(20),
+         RACE CHAR(60),
+         DATE  DATE,
+         TIME  TIME,
+         VENUE CHAR(60),
+         RATING INT,
+         ODDS FLOAT,
+         RESULT CHAR(20),
+         PRIMARY KEY (MARKETID, SELECTIONID))"""
+
+    #cursor.execute(sql)
+    # Commit your changes in the database
+    #db.commit()
+
+    return (db, cursor)
+
 my_app_key = ""
 bet_url="https://api.betfair.com/exchange/betting/json-rpc/v1"
 acceptStr = "application/json"
@@ -231,7 +269,7 @@ def getEvents(SSOID):
     eventTypes = req.json()
     #myprint (eventTypes)
 
-def getMarketBook(SSOID):
+def getMarketBook(SSOID,db,cursor,getMarketIds):
     eventTypeID = '["7"]' #ID for Horse Racing
     countryCode= '["GB","IE"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
     marketTypeCode='["WIN"]' #Market Type
@@ -244,7 +282,8 @@ def getMarketBook(SSOID):
     Metadata = 'RUNNER_METADATA' #Provides metadata
     inplay = 'false' #still to run
 
-    getMarketIds = "1.174990191"
+    #getMarketIds = "1.174989821"
+    #getMarketIds = "1.173658994"
     headers = {'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
     user_req = '{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listMarketBook", "params": {"marketIds":["'+getMarketIds+'"]}, "id": 1}'
 
@@ -253,16 +292,30 @@ def getMarketBook(SSOID):
     jsonResponse = response.read()
     pkg = jsonResponse.decode('utf-8')
     result = json.loads(pkg)
-    #print (result)
+    #print (result) 
     marketBook = result['result']
-
 
     for x in range(len(marketBook)):
         marketId = str(marketBook[x]['marketId'])
         runners = marketBook[x]['runners']
-        print (runners)
+        for y in range(len(runners)):
+            sql = "UPDATE RESULTS set RESULT = '{}' where MARKETID = '{}' and SELECTIONID = '{}'".format(runners[y]['status'],marketId,runners[y]['selectionId'])
+            print (sql)
+            cursor.execute(sql)
+        db.commit()
 
 
 SSOID = getSSOID()
 myprint (SSOID)
-getMarketBook(SSOID)
+db,cursor = connectDatabase()
+
+date = input ("Which date?")
+sql = "SELECT DISTINCT MARKETID FROM RESULTS WHERE DATE >= '{}'".format(date)
+print (sql)
+# Execute the SQL command
+cursor.execute(sql)
+# Fetch all the rows in a list of lists.
+results = cursor.fetchall()
+for row in results:
+    getMarketBook(SSOID, db, cursor, row[0])
+
