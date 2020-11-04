@@ -46,62 +46,40 @@ def myprint(x):
     sys.stdout.flush()
 
 db,cursor = connectDatabase()
-sql = "SELECT MARKETID,SELECTIONID,BACK FROM RESULTS ORDER BY BACK"
-print (sql)
-# Execute the SQL command
+sql = "SELECT * FROM BACK ORDER BY BACK"
 cursor.execute(sql)
-# Fetch all the rows in a list of lists.
-results = cursor.fetchall()
-total = len(results)
-print (total)
+BackResults = cursor.fetchall()
+sql = "SELECT * FROM FORECAST ORDER BY FORECAST"
+cursor.execute(sql)
+ForecastResults = cursor.fetchall()
+sql = "SELECT * FROM FORM ORDER BY FORM"
+cursor.execute(sql)
+FormResults = cursor.fetchall()
+
+print (BackResults)
+print (ForecastResults)
+print (FormResults)
 
 back = float(input ("Enter back value to score"))
-count = 0.0
-for row in results:
-    if (back > row[2]):
-        count = count + 1.0
-    elif (back == row[2]):
-        count = count + 0.5
+count = 0
+lastback = 0.0
+lastbackscore = 0.0
+found = 0
+for row in BackResults:
+    if (back == row[0]):
+        print ("Back Score is {}".format(row[1]))
+        found = 1
+        break
+    elif (back > lastback and back < row[0]):
+        score = (row[1] + lastbackscore) / 2.0
+        print ("Back Score is {}".format(score))
+        found = 1
+        break
+    lastback = row[0]
+    lastbackscore = row[1]
 
-backscore = float(count) / float(total)
-print ("Back Score is {}".format(backscore))
-
-sql = "SELECT MARKETID,SELECTIONID,FORECAST FROM RESULTS ORDER BY FORECAST"
-print (sql)
-# Execute the SQL command
-cursor.execute(sql)
-# Fetch all the rows in a list of lists.
-results = cursor.fetchall()
-total = len(results)
-forecast = float(input ("Enter forecast value to score"))
-count = 0.0
-for row in results:
-    if (forecast > row[2]):
-        count = count + 1.0
-    elif (forecast == row[2]):
-        count = count + 0.5
-
-forecastscore = float(count) / float(total)
-print ("Forecast Score is {}".format(forecastscore))
-
-
-sql = "SELECT MARKETID,SELECTIONID,FORM FROM RESULTS ORDER BY FORM"
-print (sql)
-# Execute the SQL command
-cursor.execute(sql)
-# Fetch all the rows in a list of lists.
-results = cursor.fetchall()
-total = len(results)
-form = input ("Enter form string to score")
-count = 0.0
-for row in results:
-    if (form > row[2]):
-        count = count + 1.0
-    elif (form == row[2]):
-        count = count + 0.5
-
-formscore = float(count) / float(total)
-print ("Form Score is {}".format(formscore))
+if (found == 0):
+    print ("Back Score is 1.0")
 
 market = input ("Enter marketid")
 sql = "SELECT MARKETID,SELECTIONID,RATING FROM RESULTS WHERE MARKETID = {} ORDER BY RATING DESC".format(market)
