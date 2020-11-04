@@ -70,7 +70,7 @@ myprint (FormResults)
 
 #sql = "SELECT * FROM RESULTS WHERE RESULT = 'WINNER' ORDER BY RATING DESC"
 sql = "SELECT * FROM RESULTS ORDER BY RATING DESC"
-myprint (sql)
+#myprint (sql)
 cursor.execute(sql)
 results = cursor.fetchall()
 total = len(results)
@@ -92,7 +92,7 @@ for x in results:
         lastback = row[0]
         lastbackscore = row[1]
 
-    myprint ("Back score is {}".format(bscore))
+    #myprint ("Back score is {}".format(bscore))
 
     forecast = x[3]
     count = 0
@@ -110,14 +110,21 @@ for x in results:
         lastforecast = row[0]
         lastforecastscore = row[1]
 
-    myprint ("forecast score is {}".format(forecastscore))
+    #myprint ("forecast score is {}".format(forecastscore))
 
     form = x[4]
+
+    formrev =  form[::-1]
+    formrev = formrev.replace('0','9')
+    formrev = formrev.replace('-','')
+    formrev = formrev.replace('/','')
+    form = formrev
+
     count = 0
-    lastform = "1" 
-    lastformscore = 0.0
+    lastform = "" 
+    lastformscore = 1.0
     found = 0
-    formscore = 1.0
+    formscore = 0.0
     for row in FormResults:
         if (form == row[0]):
             formscore = row[1]
@@ -128,10 +135,10 @@ for x in results:
         lastform = row[0]
         lastformscore = row[1]
 
-    myprint ("form score is {}".format(formscore))
+    #myprint ("form score is {}".format(formscore))
 
     sql = "SELECT MARKETID,SELECTIONID,RATING FROM RESULTS WHERE MARKETID = {} ORDER BY RATING DESC".format(x[0])
-    myprint (sql)
+    #myprint (sql)
     cursor.execute(sql)
     RatingResults = cursor.fetchall()
     total = len(RatingResults)
@@ -144,10 +151,18 @@ for x in results:
             count = count + 0.5
 
     ratingscore = float(count) / float(total)
-    myprint ("Rating score is {}".format(ratingscore))
+    #myprint ("Rating score is {}".format(ratingscore))
 
-    score = bscore + ratingscore + forecastscore + formscore
-    myprint ("score is {}".format(score))
+    ratioscore = float(back) / float(forecast)
+    #myprint ("Ratio score is {}".format(ratioscore))
+
+    #score = bscore + ratingscore + forecastscore + formscore + ratioscore
+    #score = ratingscore + formscore + ratioscore
+    #score = ratioscore
+    #score = bscore + ratingscore + forecastscore + formscore + ratioscore
+    score = bscore + ratingscore + forecastscore + ratioscore
+    if (x[12] == "WINNER"):
+        myprint ("{} score is {} {} {} {} {} so {}".format(x[2], bscore, ratingscore, forecastscore, formscore, ratioscore, score))
 
     sql = "INSERT INTO SCORES(MARKETID, SELECTIONID, FORECAST, BACK, LAY, DATE, TIME, VENUE, NAME, FORM, RACE, RATING, RESULT, SCORE) \
                 VALUES ('%s', '%s', '%s', '%s', '%s' , '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s') " % \
