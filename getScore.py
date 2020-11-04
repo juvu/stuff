@@ -12,6 +12,10 @@ import MySQLdb
 import re
 from typing import Iterable, Dict, Union, List
 
+def myprint(x):
+    print(x)
+    sys.stdout.flush()
+
 def connectDatabase():
     print("Connecting to database using MySQLdb")
     db = MySQLdb.connect(host='localhost', db='test', user='msgmedia', passwd='Media123!')
@@ -21,82 +25,135 @@ def connectDatabase():
     cursor = db.cursor()
 
     # Drop table if it already exist using execute() method.
-    #cursor.execute("DROP TABLE IF EXISTS BACKSCORE")
-    #db.commit()
+    cursor.execute("DROP TABLE IF EXISTS SCORES")
+    db.commit()
 
     # Create table as per requirement
     sql = """CREATE TABLE SCORES (
          MARKETID  CHAR(20) NOT NULL,
          SELECTIONID  CHAR(20) NOT NULL,
-         BACK FLOAT,
-         BACKSCORE FLOAT,
+         NAME CHAR (60),
          FORECAST FLOAT,
-         FORECASTSCORE FLOAT,
+         FORM CHAR(20),
+         RACE CHAR(60),
+         DATE  DATE,
+         TIME  TIME,
+         VENUE CHAR(60),
+         RATING INT,
+         BACK FLOAT,
+         LAY FLOAT,
+         RESULT CHAR(20),
+         SCORE FLOAT,
          PRIMARY KEY (MARKETID, SELECTIONID))"""
 
-    #cursor.execute(sql)
+
+    cursor.execute(sql)
     # Commit your changes in the database
-    #db.commit()
+    db.commit()
 
     return (db, cursor)
 
-
-def myprint(x):
-    print(x)
-    sys.stdout.flush()
-
 db,cursor = connectDatabase()
-sql = "SELECT * FROM BACK ORDER BY BACK"
+sql = "SELECT * FROM BBACK ORDER BY BACK"
 cursor.execute(sql)
 BackResults = cursor.fetchall()
-sql = "SELECT * FROM FORECAST ORDER BY FORECAST"
+sql = "SELECT * FROM FFORECAST ORDER BY FORECAST"
 cursor.execute(sql)
 ForecastResults = cursor.fetchall()
-sql = "SELECT * FROM FORM ORDER BY FORM"
+sql = "SELECT * FROM FFORM ORDER BY FORM"
 cursor.execute(sql)
 FormResults = cursor.fetchall()
 
-print (BackResults)
-print (ForecastResults)
-print (FormResults)
+myprint (BackResults)
+myprint (ForecastResults)
+myprint (FormResults)
 
-back = float(input ("Enter back value to score"))
-count = 0
-lastback = 0.0
-lastbackscore = 0.0
-found = 0
-for row in BackResults:
-    if (back == row[0]):
-        print ("Back Score is {}".format(row[1]))
-        found = 1
-        break
-    elif (back > lastback and back < row[0]):
-        score = (row[1] + lastbackscore) / 2.0
-        print ("Back Score is {}".format(score))
-        found = 1
-        break
-    lastback = row[0]
-    lastbackscore = row[1]
-
-if (found == 0):
-    print ("Back Score is 1.0")
-
-market = input ("Enter marketid")
-sql = "SELECT MARKETID,SELECTIONID,RATING FROM RESULTS WHERE MARKETID = {} ORDER BY RATING DESC".format(market)
-print (sql)
-# Execute the SQL command
+#sql = "SELECT * FROM RESULTS WHERE RESULT = 'WINNER' ORDER BY RATING DESC"
+sql = "SELECT * FROM RESULTS ORDER BY RATING DESC"
+myprint (sql)
 cursor.execute(sql)
-# Fetch all the rows in a list of lists.
 results = cursor.fetchall()
 total = len(results)
-rating = float(input ("Enter rating to score"))
-count = 0.0
-for row in results:
-    if (rating > row[2]):
-        count = count + 1.0
-    elif (rating == row[2]):
-        count = count + 0.5
 
-ratingscore = float(count) / float(total)
-print ("Rating Score is {}".format(ratingscore))
+for x in results:
+    back = x[10]
+    count = 0
+    lastback = 0.0
+    lastbackscore = 0.0
+    found = 0
+    bscore = 1.0
+    for row in BackResults:
+        if (back == row[0]):
+            bscore = row[1]
+            break
+        elif (back > lastback and back < row[0]):
+            bscore = (row[1] + lastbackscore) / 2.0
+            break
+        lastback = row[0]
+        lastbackscore = row[1]
+
+    myprint ("Back score is {}".format(bscore))
+
+    forecast = x[3]
+    count = 0
+    lastforecast = 0.0
+    lastforecastscore = 0.0
+    found = 0
+    forecastscore = 1.0
+    for row in ForecastResults:
+        if (forecast == row[0]):
+            forecastscore = row[1]
+            break
+        elif (forecast > lastforecast and forecast < row[0]):
+            forecastscore = (row[1] + lastforecastscore) / 2.0
+            break
+        lastforecast = row[0]
+        lastforecastscore = row[1]
+
+    myprint ("forecast score is {}".format(forecastscore))
+
+    form = x[4]
+    count = 0
+    lastform = "1" 
+    lastformscore = 0.0
+    found = 0
+    formscore = 1.0
+    for row in FormResults:
+        if (form == row[0]):
+            formscore = row[1]
+            break
+        elif (form > lastform and form < row[0]):
+            formscore = (row[1] + lastformscore) / 2.0
+            break
+        lastform = row[0]
+        lastformscore = row[1]
+
+    myprint ("form score is {}".format(formscore))
+
+    sql = "SELECT MARKETID,SELECTIONID,RATING FROM RESULTS WHERE MARKETID = {} ORDER BY RATING DESC".format(x[0])
+    myprint (sql)
+    cursor.execute(sql)
+    RatingResults = cursor.fetchall()
+    total = len(RatingResults)
+    count = 0.0
+    rating = x[9]
+    for row in RatingResults:
+        if (rating > row[2]):
+            count = count + 1.0
+        elif (rating == row[2]):
+            count = count + 0.5
+
+    ratingscore = float(count) / float(total)
+    myprint ("Rating score is {}".format(ratingscore))
+
+    score = bscore + ratingscore + forecastscore + formscore
+    myprint ("score is {}".format(score))
+
+    sql = "INSERT INTO SCORES(MARKETID, SELECTIONID, FORECAST, BACK, LAY, DATE, TIME, VENUE, NAME, FORM, RACE, RATING, RESULT, SCORE) \
+                VALUES ('%s', '%s', '%s', '%s', '%s' , '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s') " % \
+                    (x[0], x[1], x[3], x[10], x[11], x[6], x[7], x[8], x[2], x[4], x[5], x[9], x[12], str(score))
+    cursor.execute(sql)
+
+db.commit()
+
 

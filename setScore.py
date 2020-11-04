@@ -104,8 +104,8 @@ for row in results:
     runnerform =  row[0]
     runnerformrev =  runnerform[::-1]
     runnerformrev = runnerformrev.replace('0','9')
-    runnerformrev = runnerformrev.replace('-','5')
-    runnerformrev = runnerformrev.replace('/','5')
+    runnerformrev = runnerformrev.replace('-','')
+    runnerformrev = runnerformrev.replace('/','')
     sql = "INSERT INTO FFORM(FORM, SCORE) VALUES ('%s', '0.0') " % \
                     (str(runnerformrev))
     cursor.execute(sql)
