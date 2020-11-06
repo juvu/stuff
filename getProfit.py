@@ -55,7 +55,7 @@ def connectDatabase():
     return (db, cursor)
 
 db,cursor = connectDatabase()
-sql = "SELECT * FROM SCORES"
+sql = "SELECT * FROM SCORES ORDER BY DATE,TIME"
 cursor.execute(sql)
 ScoreResults = cursor.fetchall()
 profit = 0.0
