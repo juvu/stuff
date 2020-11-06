@@ -64,12 +64,13 @@ sql = "SELECT * FROM FFORM ORDER BY FORM"
 cursor.execute(sql)
 FormResults = cursor.fetchall()
 
-myprint (BackResults)
-myprint (ForecastResults)
-myprint (FormResults)
+#myprint (BackResults)
+#myprint (ForecastResults)
+#myprint (FormResults)
 
 #sql = "SELECT * FROM RESULTS WHERE RESULT = 'WINNER' ORDER BY RATING DESC"
-sql = "SELECT * FROM RESULTS ORDER BY RATING DESC"
+#sql = "SELECT * FROM RESULTS ORDER BY RATING DESC"
+sql = "SELECT * FROM RESULTS"
 #myprint (sql)
 cursor.execute(sql)
 results = cursor.fetchall()
@@ -137,21 +138,27 @@ for x in results:
 
     #myprint ("form score is {}".format(formscore))
 
-    sql = "SELECT MARKETID,SELECTIONID,RATING FROM RESULTS WHERE MARKETID = {} ORDER BY RATING DESC".format(x[0])
+    sql = "SELECT MARKETID,SELECTIONID,RATING FROM RESULTS WHERE MARKETID = {} ORDER BY RATING".format(x[0])
     #myprint (sql)
     cursor.execute(sql)
     RatingResults = cursor.fetchall()
+    #myprint (RatingResults)
     total = len(RatingResults)
     count = 0.0
     rating = x[9]
+    sethalf = 0
     for row in RatingResults:
+        if (row[2] == 1000):
+            sethalf = 1
         if (rating > row[2]):
             count = count + 1.0
         elif (rating == row[2]):
             count = count + 0.5
 
-    ratingscore = float(count) / float(total)
-    #myprint ("Rating score is {}".format(ratingscore))
+    ratingscore = 1.0 - (float(count) / float(total))
+    if (sethalf):
+        ratingscore = 0.5
+    #myprint ("Rating score is {} rating is {}".format(ratingscore, rating))
 
     ratioscore = float(back) / float(forecast)
     #myprint ("Ratio score is {}".format(ratioscore))
@@ -160,7 +167,8 @@ for x in results:
     #score = ratingscore + formscore + ratioscore
     #score = ratioscore
     #score = bscore + ratingscore + forecastscore + formscore + ratioscore
-    score = bscore + ratingscore + forecastscore + ratioscore
+    #score = bscore + ratingscore + forecastscore + ratioscore
+    score = bscore + forecastscore + ratioscore 
     if (x[12] == "WINNER"):
         myprint ("{} score is {} {} {} {} {} so {}".format(x[2], bscore, ratingscore, forecastscore, formscore, ratioscore, score))
 
