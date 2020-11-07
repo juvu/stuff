@@ -49,7 +49,7 @@ def keepAlive(SSOID):
     myprint (json_resp['status'])
 
 
-def CheckBet(SSOID,market):
+def CheckBet(SSOID,market,selection):
 
     headers = {'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
 
@@ -68,11 +68,12 @@ def CheckBet(SSOID,market):
     for x in range(len(orders)):
         if (orders[x]['marketId'] == market):
             horse = orders[x]['selectionId']
-            if (str(orders[x]['status']) == "EXECUTABLE"):
-                return ("Unmatched",horse)
-            else:
-                betPlaced = str("%.2f" % orders[x]['averagePriceMatched'])
-                return (str(betPlaced),horse)
+            if (str(horse) == selection or selection == "AnyHorse"):
+                if (str(orders[x]['status']) == "EXECUTABLE"):
+                    return ("Unmatched",horse)
+                else:
+                    betPlaced = str("%.2f" % orders[x]['averagePriceMatched'])
+                    return (str(betPlaced),horse)
 
 
     return ("No","None")
@@ -89,17 +90,18 @@ def PlaceBet(SSOID,market,horse,price,betsize):
 
     #myprint (user_req)
 
-    placed,horse = CheckBet(SSOID,market)
+    placed,thehorse = CheckBet(SSOID,market,horse)
     if (placed == "No"):
         req = urllib.request.Request(bet_url, data=user_req.encode('utf-8'), headers=headers)
         response= urllib.request.urlopen(req)
         jsonResponse = response.read()
         pkg = jsonResponse.decode('utf-8')
         result = json.loads(pkg)
+        #myprint ("Placing bet on {}".format(horse))
         #myprint (result)
     else:
         pass
-        myprint ("You already have a bet in that market\n")
+        myprint ("You already have a bet on that horse\n")
 
 
 
@@ -134,6 +136,8 @@ def HorseForm(SSOID,marketId):
     backList = []
     forecastList = []
     horsenameList = []
+    betHorseList = []
+    betPlacedList = []
     formList = []
     raceList = []
     venueList = []
@@ -205,7 +209,7 @@ def HorseForm(SSOID,marketId):
                 back = "NR"
 
             marketId = str(marketCatalogue[x]['marketId'])
-            betPlaced,horseid = CheckBet(SSOID,marketId)
+            betPlaced,horseid = CheckBet(SSOID,marketId,str(selectionID))
             betHorse = "None"
             for ll in range(len(marketCatalogue[x]['runners'])):
                 hname = marketCatalogue[x]['runners'][ll]['runnerName']
@@ -213,6 +217,8 @@ def HorseForm(SSOID,marketId):
                 if (sID == horseid):
                     betHorse = hname
 
+            betHorseList.append(betHorse)
+            betPlacedList.append(betPlaced)
             horsenameList.append(horsename)
             formList.append(runnerform)
             raceList.append(marketCatalogue[x]['marketName'])
@@ -241,9 +247,9 @@ def HorseForm(SSOID,marketId):
 
             forecastList.append(forecast)
 
-            Results = Results.append({'Horse Name':str(horsenameList[w]), 'Forecast':str(forecast), 'Form':str(formList[w]), 'Race':str(raceList[w]), 'Time':str(timeList[w]), 'Venue':str(venueList[w]), 'Rating':str(ratingList[w]), 'Odds':str(priceList[w]), 'Bet Placed':betPlaced, 'Bet Horse':betHorse }, ignore_index=True)
+            Results = Results.append({'Horse Name':str(horsenameList[w]), 'Forecast':str(forecast), 'Form':str(formList[w]), 'Race':str(raceList[w]), 'Time':str(timeList[w]), 'Venue':str(venueList[w]), 'Rating':str(ratingList[w]), 'Odds':str(priceList[w]), 'Bet Placed':betPlacedList[w], 'Bet Horse':betHorseList[w] }, ignore_index=True)
 
-    return (Results,horseList,marketList,priceList,forecastList,ratingList,backList)
+    return (Results,horseList,marketList,priceList,forecastList,ratingList,backList,raceList)
 
 def getEvents(SSOID):
     event_req = '{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listEventTypes", "params": {"filter":{ }}, "id": 1}'
@@ -300,7 +306,7 @@ def getMarketCatalogue(SSOID):
         venueList.append(venue)
         timeList.append(StartTime)
 
-        betPlaced,horseid = CheckBet(SSOID,marketId)
+        betPlaced,horseid = CheckBet(SSOID,marketId,"AnyHorse")
         betHorse = "None"
         for ll in range(len(marketCatalogue[x]['runners'])):
             hname = marketCatalogue[x]['runners'][ll]['runnerName']
@@ -334,7 +340,7 @@ while (1):
     myprint (cresults)
     myprint ("\n")
     for x in marketList:
-        results,horses,markets,prices,forecasts,ratings,backs = HorseForm(SSOID,str(x))
+        results,horses,markets,prices,forecasts,ratings,backs,races = HorseForm(SSOID,str(x))
         myprint (results)
         myprint ("\n")
         for hrow in range(len(horses)):
@@ -396,9 +402,16 @@ while (1):
 
             score = bscore + ratingscore + forecastscore + ratioscore
             score = bscore + forecastscore + ratioscore
+
+            index = races[hrow].find("Hcap")
+            if (index < 0):
+                continue
+
             #myprint ("Score is {}".format(score))
-            if (score > 1.55 and prices[hrow] < 8.0):
-                fAmount = (score * 2.0) * 100.0
+            #if (score > 1.55 and score < 2.1 and prices[hrow] < 8.0):
+            if (score > 1.2 and prices[hrow] < forecast and prices[hrow] < 8.0):
+                #fAmount = (score * 2.0) * 100.0
+                fAmount = (score - 1.0) * 10.0 * 100.0
                 iAmount = int(fAmount)
                 fAmount = float(iAmount) / 100.0
                 price = prices[hrow] + 0.2
