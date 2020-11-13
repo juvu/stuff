@@ -2,6 +2,7 @@ import json
 import sys
 import datetime
 import time
+import os
 import urllib
 import urllib.request
 import urllib.error
@@ -249,7 +250,7 @@ def HorseForm(SSOID,marketId):
 
             Results = Results.append({'Horse Name':str(horsenameList[w]), 'Forecast':str(forecast), 'Form':str(formList[w]), 'Race':str(raceList[w]), 'Time':str(timeList[w]), 'Venue':str(venueList[w]), 'Rating':str(ratingList[w]), 'Odds':str(priceList[w]), 'Bet Placed':betPlacedList[w], 'Bet Horse':betHorseList[w] }, ignore_index=True)
 
-    return (Results,horseList,marketList,priceList,forecastList,ratingList,backList,raceList)
+    return (Results,horseList,marketList,priceList,forecastList,ratingList,backList,raceList,formList)
 
 def getEvents(SSOID):
     event_req = '{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listEventTypes", "params": {"filter":{ }}, "id": 1}'
@@ -319,6 +320,14 @@ def getMarketCatalogue(SSOID):
     return (Results,marketList,venueList,timeList)
 
 # main starts here
+
+pid = os.getpid()
+print (pid)
+
+f = open ("newBotPID.txt","w")
+f.write(str(pid))
+f.close()
+
 SSOID = getSSOID()
 myprint (SSOID)
 db,cursor = connectDatabase()
@@ -339,8 +348,10 @@ while (1):
     cresults,marketList,venueList,timeList = getMarketCatalogue(SSOID)
     myprint (cresults)
     myprint ("\n")
+    numMarkets = 0
     for x in marketList:
-        results,horses,markets,prices,forecasts,ratings,backs,races = HorseForm(SSOID,str(x))
+        numMarkets = numMarkets + 1
+        results,horses,markets,prices,forecasts,ratings,backs,races,forms = HorseForm(SSOID,str(x))
         myprint (results)
         myprint ("\n")
         for hrow in range(len(horses)):
@@ -403,24 +414,36 @@ while (1):
             score = bscore + ratingscore + forecastscore + ratioscore
             score = bscore + forecastscore + ratioscore
 
-            index = races[hrow].find("Hcap")
-            if (index < 0):
-                continue
+            #index = races[hrow].find("Hcap")
+            #if (index < 0):
+            #    continue
 
             #myprint ("Score is {}".format(score))
             #if (score > 1.55 and score < 2.1 and prices[hrow] < 8.0):
-            if (score > 1.2 and prices[hrow] < forecast and prices[hrow] < 8.0):
-                #fAmount = (score * 2.0) * 100.0
-                fAmount = (score - 1.0) * 10.0 * 100.0
-                iAmount = int(fAmount)
-                fAmount = float(iAmount) / 100.0
-                price = prices[hrow] + 0.2
-                price = price * 100.0
-                iprice = int(price)
-                price = float(iprice) / 100.0
-                myprint ("Placing bet {} {} {} {} {}\n".format(str(hrow), str(markets[hrow]), str(horses[hrow]), str(price), str(fAmount)))
-                PlaceBet (SSOID, str(markets[hrow]), str(horses[hrow]), str(prices[hrow]), str(fAmount))
 
+            form = forms[hrow]
+
+            #if (score > 1.2 and prices[hrow] < forecast and prices[hrow] < 8.0 and form[-1] != '2' and form[-1] != '1'):
+            try:
+                if (score > 1.2 and prices[hrow] < forecast and prices[hrow] < 8.0 and forecast > 8.0 and forecast < 50.0 and form[-1] != '2' and form[-1] != '1'):
+                    #fAmount = (score * 2.0) 
+                    #fAmount = (score - 1.0) * 10.0 
+                    fAmount = (forecast - prices[hrow]) + 2.0
+                    if (fAmount > 9.0):
+                        fAmount = 9.0
+                    fAmount = fAmount * 100.0
+                    iAmount = int(fAmount)
+                    fAmount = float(iAmount) / 100.0
+                    price = prices[hrow] + 0.2
+                    price = price * 100.0
+                    iprice = int(price)
+                    price = float(iprice) / 100.0
+                    myprint ("Placing bet {} {} {} {} {}\n".format(str(hrow), str(markets[hrow]), str(horses[hrow]), str(price), str(fAmount)))
+                    #PlaceBet (SSOID, str(markets[hrow]), str(horses[hrow]), str(prices[hrow]), str(fAmount))
+                    PlaceBet (SSOID, str(markets[hrow]), str(horses[hrow]), "7.8", str(fAmount))
+            except:
+                pass
+    
         del results
         del markets
         del horses
@@ -434,6 +457,6 @@ while (1):
     del venueList
     del timeList
 
-    time.sleep(120)
+    time.sleep(60)
 
 
