@@ -340,9 +340,15 @@ ForecastResults = cursor.fetchall()
 sql = "SELECT * FROM FFORM ORDER BY FORM"
 cursor.execute(sql)
 FormResults = cursor.fetchall()
-
-while (1):
+doit = 1
+while (doit == 1):
     keepAlive(SSOID)
+    curhour = int(datetime.datetime.now().strftime('%H'))
+    curmin = int(datetime.datetime.now().strftime('%M'))
+    if (curhour > 21 and curmin > 15):
+        doit = 0
+    if (curhour < 10 and curmin > 15):
+        doit = 0
     timenow = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
     myprint (timenow)
     cresults,marketList,venueList,timeList = getMarketCatalogue(SSOID)

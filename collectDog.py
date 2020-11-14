@@ -9,7 +9,7 @@ def myprint(x):
     sys.stdout.flush()
 
 pid = os.getpid()
-f = open ("watchdogPID.txt","w")
+f = open ("collectDogPID.txt","w")
 f.write(str(pid))
 f.close()
 
@@ -21,7 +21,7 @@ while(1):
     else:
         found = 0
         try:
-            f = open ("newBotPID.txt","r")
+            f = open ("collectBotPID.txt","r")
             pid = int(f.read())
             myprint (pid)
             f.close()
@@ -35,7 +35,7 @@ while(1):
             pass
     
         if (found == 0):
-            os.system('nohup python3 newBot.py')
+            os.system('nohup python3 collectBot.py > nohup2.out')
 
         time.sleep(60)
 
