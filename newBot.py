@@ -50,6 +50,27 @@ def keepAlive(SSOID):
     myprint (json_resp['status'])
 
 
+def getBetSize(SSOID):
+    account_url="https://api.betfair.com/exchange/account/json-rpc/v1"
+    headers = {'Accept': acceptStr, 'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
+    user_req='{"jsonrpc": "2.0", "method": "AccountAPING/v1.0/getAccountFunds"}'
+
+    headers = {'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
+    user_req = '{"jsonrpc": "2.0", "method": "AccountAPING/v1.0/getAccountFunds", "params": {"wallet":"UK"}, "id": 1}'
+    req = requests.post(account_url, data=user_req.encode('utf-8'), headers=headers)
+    accountInfo = req.json()
+    result = accountInfo["result"]
+    available = float(result['availableToBetBalance'])
+    exposure = float(result['exposure'])
+    total = available - exposure
+    betsize = total * 0.005
+    if (betsize < 2.0):
+        betsize = 2.0
+    if (betsize > 20.0):
+        betsize = 20.0
+    #myprint ("Betsize is {}".format(betsize))
+    return (betsize)
+
 def CheckBet(SSOID,market,selection):
 
     headers = {'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
@@ -104,6 +125,30 @@ def PlaceBet(SSOID,market,horse,price,betsize):
         pass
         myprint ("You already have a bet on that horse\n")
 
+def PlaceBackBet(SSOID,market,horse,price,betsize):
+
+    headers = {'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
+
+
+    user_req='{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/placeOrders", \
+            "params": {"marketId":"'+market+'",\
+            "instructions":[{"selectionId":"'+horse+'","handicap":"0","side":"BACK","orderType":"LIMIT","limitOrder":{"size":"'+betsize+'","price":"'+price+'"}}]}, "id": 1}'
+
+    #myprint (user_req)
+
+    placed,thehorse = CheckBet(SSOID,market,horse)
+    if (placed == "No"):
+        req = urllib.request.Request(bet_url, data=user_req.encode('utf-8'), headers=headers)
+        response= urllib.request.urlopen(req)
+        jsonResponse = response.read()
+        pkg = jsonResponse.decode('utf-8')
+        result = json.loads(pkg)
+        #myprint ("Placing bet on {}".format(horse))
+        #myprint (result)
+    else:
+        pass
+        myprint ("You already have a bet on that horse\n")
+
 
 
 def HorseForm(SSOID,marketId):
@@ -112,7 +157,7 @@ def HorseForm(SSOID,marketId):
     countryCode= '["GB","IE"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
     marketTypeCode='["WIN"]' #Market Type
     MarketStartTime= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ') #Event Start and End times
-    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(minutes=6))
+    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(minutes=3))
     MarketEndTime = MarketEndTime.strftime('%Y-%m-%dT%H:%M:%SZ')
     maxResults = str(1000)
     sortType = 'FIRST_TO_START' #Sorts the Output
@@ -264,7 +309,7 @@ def getMarketCatalogue(SSOID):
     countryCode= '["GB","IE"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
     marketTypeCode='["WIN"]' #Market Type
     MarketStartTime= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ') #Event Start and End times
-    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(minutes=6))
+    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(minutes=3))
     MarketEndTime = MarketEndTime.strftime('%Y-%m-%dT%H:%M:%SZ')
     maxResults = str(1000)
     sortType = 'FIRST_TO_START' #Sorts the Output
@@ -343,6 +388,7 @@ FormResults = cursor.fetchall()
 doit = 1
 while (doit == 1):
     keepAlive(SSOID)
+    TheBetSize = getBetSize(SSOID)
     curhour = int(datetime.datetime.now().strftime('%H'))
     curmin = int(datetime.datetime.now().strftime('%M'))
     if (curhour > 21 and curmin > 15):
@@ -360,6 +406,11 @@ while (doit == 1):
         results,horses,markets,prices,forecasts,ratings,backs,races,forms = HorseForm(SSOID,str(x))
         myprint (results)
         myprint ("\n")
+        runners = 0
+        for hrow in range(len(horses)):
+            if (prices[hrow] != "NR"):
+                runners = runners + 1
+
         for hrow in range(len(horses)):
             if (prices[hrow] == "NR"):
                 continue
@@ -431,12 +482,14 @@ while (doit == 1):
 
             #if (score > 1.2 and prices[hrow] < forecast and prices[hrow] < 8.0 and form[-1] != '2' and form[-1] != '1'):
             try:
-                if (score > 1.2 and prices[hrow] < forecast and prices[hrow] < 8.0 and forecast > 8.0 and forecast < 50.0 and form[-1] != '2' and form[-1] != '1'):
+                #if (score > 1.2 and prices[hrow] < forecast and prices[hrow] < 8.0 and forecast > 8.0 and forecast < 50.0 and form[-1] != '2' and form[-1] != '1'):
+                #if (prices[hrow] < 9.5 and forecast > 9.0):
+                #if (back >= 8.8 and back < 20.1 and forecast >= 5.8 and forecast <= 24.6 and runners >= 10 and runners <= 16):
+                if (back > 20.7 and back < 26.7 and forecast > 10.0 and forecast < 82.9):
                     #fAmount = (score * 2.0) 
                     #fAmount = (score - 1.0) * 10.0 
-                    fAmount = (forecast - prices[hrow]) + 2.0
-                    if (fAmount > 9.0):
-                        fAmount = 9.0
+                    #fAmount = (forecast - prices[hrow]) + 2.0
+                    fAmount = TheBetSize
                     fAmount = fAmount * 100.0
                     iAmount = int(fAmount)
                     fAmount = float(iAmount) / 100.0
@@ -446,7 +499,8 @@ while (doit == 1):
                     price = float(iprice) / 100.0
                     myprint ("Placing bet {} {} {} {} {}\n".format(str(hrow), str(markets[hrow]), str(horses[hrow]), str(price), str(fAmount)))
                     #PlaceBet (SSOID, str(markets[hrow]), str(horses[hrow]), str(prices[hrow]), str(fAmount))
-                    PlaceBet (SSOID, str(markets[hrow]), str(horses[hrow]), "7.8", str(fAmount))
+                    PlaceBet (SSOID, str(markets[hrow]), str(horses[hrow]), "30.0", str(fAmount))
+                    #PlaceBackBet (SSOID, str(markets[hrow]), str(horses[hrow]), "8.8", str(fAmount))
             except:
                 pass
     
