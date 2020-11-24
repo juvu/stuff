@@ -164,7 +164,7 @@ def PlaceBackBet(SSOID,market,horse,price,betsize):
         jsonResponse = response.read()
         pkg = jsonResponse.decode('utf-8')
         result = json.loads(pkg)
-        #myprint ("Placing bet on {}".format(horse))
+        myprint ("Placing bet on {}".format(horse))
         #myprint (result)
     else:
         pass
@@ -183,8 +183,9 @@ def getMarketCatalogue(SSOID):
     eventTypeID = '["7"]' #ID for Horse Racing
     countryCode= '["GB","IE"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
     marketTypeCode='["WIN"]' #Market Type
-    MarketStartTime= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ') #Event Start and End times
-    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(minutes=5))
+    MarketStartTime = (datetime.datetime.now() - datetime.timedelta(minutes=15))
+    MarketStartTime = MarketStartTime.strftime('%Y-%m-%dT%H:%M:%SZ')
+    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(minutes=3))
     MarketEndTime = MarketEndTime.strftime('%Y-%m-%dT%H:%M:%SZ')
     maxResults = str(1000)
     sortType = 'FIRST_TO_START' #Sorts the Output
@@ -207,42 +208,58 @@ def getMarketCatalogue(SSOID):
     result = json.loads(pkg)
     marketCatalogue = result['result']
 
+    return (marketCatalogue)
+
+def getMarketStatus(SSOID, market):
+    priceProjection = '["EX_ALL_OFFERS"]'#Best odds
+    marketId = str(market['marketId'])
     backList = []
+    backValueList = []
     marketList = []
     horseList = []
-    for x in range(len(marketCatalogue)):
-        marketId = str(marketCatalogue[x]['marketId'])
-        #myprint (marketId)
-        for w in range(len(marketCatalogue[x]['runners'])):
-            selectionID = marketCatalogue[x]['runners'][w]['selectionId']
-            betPlaced,horseid = CheckLayBet(SSOID,marketId,str(selectionID))
-            #myprint ("Horse {} betPlaced {}".format (betPlaced,horseid))
-            if (selectionID == horseid and betPlaced != "Unmatched"):
-                marketList.append(marketId)
-                horseList.append(selectionID)
+    horseBackList = []
+    sortedList = []
 
-                price_req = '{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listRunnerBook", "params": {"locale":"en", \
-                        "marketId":"'+str(marketCatalogue[x]['marketId'])+'",\
+    headers = {'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
+
+    #myprint (marketId)
+    for w in range(len(market['runners'])):
+        selectionID = market['runners'][w]['selectionId']
+        price_req = '{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listRunnerBook", "params": {"locale":"en", \
+                        "marketId":"'+str(market['marketId'])+'",\
                         "selectionId":"'+str(selectionID)+'",\
                         "priceProjection":{"priceData":'+priceProjection+'},"orderProjection":"ALL"},"id":1}'
 
-                #myprint (price_req)
-                req = urllib.request.Request(bet_url, data=price_req.encode('utf-8'), headers=headers)
-                price_response= urllib.request.urlopen(req)
-                price_jsonResponse = price_response.read()
-                price_pkg = price_jsonResponse.decode('utf-8')
-                price_result = json.loads(price_pkg)
-                #myprint (price_result)
-    
-                try:
-                    back = float(price_result['result'][0]['runners'][0]['ex']['availableToBack'][0]['price'])
-                except:
-                    back = 1000.0
+        #myprint (price_req)
+        req = urllib.request.Request(bet_url, data=price_req.encode('utf-8'), headers=headers)
+        price_response= urllib.request.urlopen(req)
+        price_jsonResponse = price_response.read()
+        price_pkg = price_jsonResponse.decode('utf-8')
+        price_result = json.loads(price_pkg)
+        #myprint (price_result)
+        try:
+            back = float(price_result['result'][0]['runners'][0]['ex']['availableToBack'][0]['price'])
+        except:
+            back = 1000.0
 
-                backList.append(back)
+        dictItem = {"selectionID":selectionID, "back" : back}
+        horseBackList.append(dictItem)
 
+    sortedList = sorted(horseBackList, key = lambda i: i['back'])
+    myprint (sortedList)
+    for w in range(len(market['runners'])):
+        selectionID = market['runners'][w]['selectionId']
+        betPlaced,horseid = CheckLayBet(SSOID,marketId,str(selectionID))
+        #myprint ("Horse {} betPlaced {}".format (betPlaced,horseid))
+        if (selectionID == horseid and betPlaced != "Unmatched"):
+            marketList.append(marketId)
+            horseList.append(selectionID)
+            for t in range(len(sortedList)):
+                if (sortedList[t]['selectionID'] == selectionID):
+                    backList.append(t)
+                    backValueList.append(sortedList[t]['back'])
 
-    return (marketList,backList,horseList)
+    return (backList,horseList,backValueList)
 
 # main starts here
 
@@ -268,12 +285,15 @@ while (doit == 1):
     timenow = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
     myprint (timenow)
 
-    marketList,backList,horseList = getMarketCatalogue(SSOID)
-    numBets = len(horseList)
-    for hrow in range(len(horseList)):
-        myprint ("Horse {} back {}".format(horseList[hrow], backList[hrow]))
-        if (backList[hrow] < 6.0):
-            PlaceBackBet(SSOID,str(marketList[hrow]),str(horseList[hrow]),"2.0",str(TheBetSize))
+    marketList = getMarketCatalogue(SSOID)
+    numBets = 0
+    for hrow in range(len(marketList)):
+        backList,horseList,backValueList = getMarketStatus(SSOID, marketList[hrow])
+        numBets = numBets + len(backList)
+        for trow in range(len(horseList)):
+            myprint ("Horse {} back {} backValue {}".format(horseList[trow], backList[trow], backValueList[trow]))
+            if (backList[trow] <= 2 and backValueList[trow] < 10.0):
+                PlaceBackBet(SSOID,str(marketList[hrow]['marketId']),str(horseList[trow]),"2.0",str(TheBetSize))
 
 
     del marketList
