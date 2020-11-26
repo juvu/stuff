@@ -93,7 +93,7 @@ for x in ScoreResults:
     #if (score > 1.2 and lay < forecast and lay < 9.0 and forecast > 9.0):
     #if (lay <= 9.5 and forecast >= (lay + 4.0)):
     #if (fav == 'N' and lay < 9.5 and forecast >= lay and form[-1] != '-' and form[-1] != '/' and form[-1] != '1' and form[-1] != '2'):
-    if (back > 20.7 and back < 26.7 and forecast > 15.0 and forecast < 82.9):
+    if (back > 20.7 and back < 26.7 and forecast > 10.0 and forecast < 82.9):
         #betsize = (2.0 * score)
         #betsize = 5.0
         #betsize = (score - 1.1) * 20.0
@@ -110,35 +110,6 @@ for x in ScoreResults:
             profit = profit + (betsize * 0.98)
         elif (result == "WINNER"):
             profit = profit - ((lay - 1.0) * betsize)
-        else:
-            continue
-
-        totalbet = totalbet + betsize
-        races = races + 1
-        #winrate = profit / float(races)
-        winrate = 1.0
-        try:
-            winrate = profit / totalbet
-            winrate = int (winrate * 100.0)
-        except:
-            pass
-
-        sql = "INSERT INTO PROFIT(MARKETID, SELECTIONID, FORECAST, BACK, LAY, DATE, TIME, VENUE, NAME, FORM, RACE, RATING, RESULT, SCORE, RUNNERS, PROFIT, WINRATE) \
-                VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s' , '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s') " % \
-                    (x[0], x[1], x[3], x[10], x[11], x[6], x[7], x[8], x[2], x[4], x[5], x[9], x[12], str(score), str(runners), str(profit), str(winrate))
-        #myprint (sql)
-        cursor.execute(sql)
-
-    if (back > 16.3 and back < 20.7 and forecast > 12.0 and forecast < 54.9):
-        betsize = profit * 0.005
-        if (betsize < 5.0):
-            betsize =  5.0
-        if (betsize > 20.0):
-            betsize =  20.0
-        if (result == "LOSER"):
-            profit = profit - (betsize * 0.98)
-        elif (result == "WINNER"):
-            profit = profit + ((back - 1.0) * betsize)
         else:
             continue
 
