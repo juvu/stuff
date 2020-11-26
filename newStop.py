@@ -106,6 +106,7 @@ def getLiability(SSOID,market,selection):
 
     total = 0.0
     original = 0.0
+    originalLay = 0.0
     orders = result['result']['currentOrders']
     for x in range(len(orders)):
         if (orders[x]['marketId'] == market):
@@ -125,10 +126,11 @@ def getLiability(SSOID,market,selection):
                     liability = size * (price - 1.0)
                     total = total + liability
                     original = original + liability
+                    originalLay = originalLay + size 
                     #myprint ("Side {} Size {} price {} liability {} total {}".format(side,size,price,liability,total))
 
 
-    return (total, original)
+    return (total, original, originalLay)
 
 def CheckBackBet(SSOID,market,selection):
 
@@ -190,9 +192,9 @@ def getMarketCatalogue(SSOID):
     eventTypeID = '["7"]' #ID for Horse Racing
     countryCode= '["GB","IE"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
     marketTypeCode='["WIN"]' #Market Type
-    MarketStartTime = (datetime.datetime.now() - datetime.timedelta(minutes=15))
+    MarketStartTime = (datetime.datetime.now() - datetime.timedelta(minutes=20))
     MarketStartTime = MarketStartTime.strftime('%Y-%m-%dT%H:%M:%SZ')
-    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(hours=2))
+    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(hours=1))
     MarketEndTime = MarketEndTime.strftime('%Y-%m-%dT%H:%M:%SZ')
     maxResults = str(1000)
     sortType = 'FIRST_TO_START' #Sorts the Output
@@ -252,7 +254,7 @@ def getMarketStatus(SSOID, market):
         horseBackList.append(dictItem)
 
     sortedList = sorted(horseBackList, key = lambda i: i['back'])
-    myprint (sortedList)
+    #myprint (sortedList)
     for w in range(len(market['runners'])):
         selectionID = market['runners'][w]['selectionId']
         betPlaced,horseid = CheckLayBet(SSOID,marketId,str(selectionID))
@@ -292,16 +294,28 @@ while (doit == 1):
     numBets = 0
     for hrow in range(len(marketList)):
         backList,horseList,backValueList = getMarketStatus(SSOID, marketList[hrow])
+        myprint (backList)
         numBets = numBets + len(backList)
         for trow in range(len(horseList)):
-            liability,original = getLiability(SSOID, str(marketList[hrow]['marketId']), str(horseList[trow]))
-            requiredLiability = backValueList[trow] * 0.1 * original
-            myprint ("Horse {} back {} backValue {} Liability {} original {} required {}".format(horseList[trow], backList[trow], backValueList[trow], liability,original,requiredLiability))
-            if (backValueList[trow] <= 9.0):
-                if (requiredLiability < liability):
-                    betReduction = (liability - requiredLiability) 
-                    betAmount = betReduction / (backValueList[trow] - 1.0)
-                    myprint ("required {} reduction {} betAmount {}".format(requiredLiability, betReduction, betAmount))
+            liability,original,originalLay = getLiability(SSOID, str(marketList[hrow]['marketId']), str(horseList[trow]))
+            origLayEquiv = (liability / originalLay) + 1
+            # following 4 lines for testing
+            #origLayEquiv = 25.0
+            #originalLay = 5.0
+            #liability = 120.0
+            #original = 120.0
+            cashout = (origLayEquiv / backValueList[trow]) * originalLay
+            if (backValueList[trow] < 10.0):
+                reqCOPercent = backValueList[trow] * 0.1
+                curCOPercent = liability / original
+                myprint ("reqCOPercent {} curCOPercent {} original {}".format(reqCOPercent, curCOPercent, original))
+                betAmount = (curCOPercent - reqCOPercent) * cashout
+                ibetAmount = int (betAmount * 100.0)
+                betAmount = float(ibetAmount) * 0.01
+                myprint ("Horse {} back {} backValue {} Liability {} originalLayEquiv {} cashout {} betAmount {}".format(horseList[trow], backList[trow], backValueList[trow], liability,origLayEquiv,cashout,betAmount))
+
+                if (betAmount > 2.0):
+                    myprint ("Betting now")
                     PlaceBackBet(SSOID,str(marketList[hrow]['marketId']),str(horseList[trow]),"1.1",str(betAmount))
 
 
