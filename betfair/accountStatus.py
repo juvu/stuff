@@ -21,7 +21,7 @@ account_url="https://api.betfair.com/exchange/account/json-rpc/v1"
 acceptStr = "application/json"
 
 
-antsBetfairBot = "1301270798:AAGq_F3zzwq_t5tkt9iHrmkgzJjNLapIf5A"
+antsBetfairBot = ""
 
 def myprint(x):
     print(x)
