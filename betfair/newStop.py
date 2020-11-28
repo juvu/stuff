@@ -197,7 +197,7 @@ def getMarketCatalogue(SSOID):
     eventTypeID = '["7"]' #ID for Horse Racing
     countryCode= '["GB","IE"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
     marketTypeCode='["WIN"]' #Market Type
-    MarketStartTime = (datetime.datetime.now() - datetime.timedelta(minutes=20))
+    MarketStartTime = (datetime.datetime.now() - datetime.timedelta(minutes=30))
     MarketStartTime = MarketStartTime.strftime('%Y-%m-%dT%H:%M:%SZ')
     MarketEndTime = (datetime.datetime.now() + datetime.timedelta(minutes=2))
     MarketEndTime = MarketEndTime.strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -227,8 +227,8 @@ def getMarketCatalogue(SSOID):
 def getMarketStatus(SSOID, market):
     priceProjection = '["EX_ALL_OFFERS"]'#Best odds
     marketId = str(market['marketId'])
-    backList = []
-    backValueList = []
+    layList = []
+    layValueList = []
     horseList = []
     horseBackList = []
     sortedList = []
@@ -251,14 +251,14 @@ def getMarketStatus(SSOID, market):
         price_result = json.loads(price_pkg)
         #myprint (price_result)
         try:
-            back = float(price_result['result'][0]['runners'][0]['ex']['availableToBack'][0]['price'])
+            lay = float(price_result['result'][0]['runners'][0]['ex']['availableToLay'][0]['price'])
         except:
-            back = 1000.0
+            lay = 1000.0
 
-        dictItem = {"selectionID":selectionID, "back" : back}
+        dictItem = {"selectionID":selectionID, "lay" : lay}
         horseBackList.append(dictItem)
 
-    sortedList = sorted(horseBackList, key = lambda i: i['back'])
+    sortedList = sorted(horseBackList, key = lambda i: i['lay'])
     #myprint (sortedList)
     for w in range(len(market['runners'])):
         selectionID = market['runners'][w]['selectionId']
@@ -268,10 +268,10 @@ def getMarketStatus(SSOID, market):
             horseList.append(selectionID)
             for t in range(len(sortedList)):
                 if (sortedList[t]['selectionID'] == selectionID):
-                    backList.append(t)
-                    backValueList.append(sortedList[t]['back'])
+                    layList.append(t)
+                    layValueList.append(sortedList[t]['lay'])
 
-    return (backList,horseList,backValueList)
+    return (layList,horseList,layValueList)
 
 # main starts here
 
@@ -298,9 +298,10 @@ while (doit == 1):
     marketList = getMarketCatalogue(SSOID)
     numBets = 0
     for hrow in range(len(marketList)):
-        backList,horseList,backValueList = getMarketStatus(SSOID, marketList[hrow])
-        myprint (backList)
-        numBets = numBets + len(backList)
+        layList,horseList,layValueList = getMarketStatus(SSOID, marketList[hrow])
+        myprint (layList)
+        myprint (layValueList)
+        numBets = numBets + len(layList)
         for trow in range(len(horseList)):
             liability,original,originalLay = getLiability(SSOID, str(marketList[hrow]['marketId']), str(horseList[trow]))
             try:
@@ -313,19 +314,26 @@ while (doit == 1):
             #originalLay = 5.0
             #liability = 120.0
             #original = 120.0
-            cashout = (origLayEquiv / backValueList[trow]) * originalLay
-            if (backValueList[trow] < 10.0):
-                reqCOPercent = backValueList[trow] * 0.1
+            cashout = (origLayEquiv / layValueList[trow]) * originalLay
+            if (layValueList[trow] < 10.0):
+                # Yes. I know. We are working out a back bet based on lay odds
+                # This is because in play the odds jump around a lot. We want to
+                # be sure that stopping out is a reasonable thing to do and this
+                # can be done better from the lay odds
+                reqCOPercent = layValueList[trow] * 0.1
                 curCOPercent = liability / original
                 myprint ("reqCOPercent {} curCOPercent {} original {}".format(reqCOPercent, curCOPercent, original))
                 betAmount = (curCOPercent - reqCOPercent) * cashout
                 ibetAmount = int (betAmount * 100.0)
                 betAmount = float(ibetAmount) * 0.01
-                myprint ("Horse {} back {} backValue {} Liability {} originalLayEquiv {} cashout {} betAmount {}".format(horseList[trow], backList[trow], backValueList[trow], liability,origLayEquiv,cashout,betAmount))
-
+                myprint ("Horse {} lay {} layValue {} Liability {} originalLayEquiv {} cashout {} betAmount {}".format(horseList[trow], layList[trow], layValueList[trow], liability,origLayEquiv,cashout,betAmount))
+                # Don't go overboard with stoploss betting - it can be counter productive
+                if (betAmount > (originalLay * 3.0)):
+                    betAmount = originalLay * 3.0
                 if (betAmount > 2.0):
                     myprint ("Betting now")
-                    PlaceBackBet(SSOID,str(marketList[hrow]['marketId']),str(horseList[trow]),"1.1",str(betAmount))
+                    # lowest odds worth taking are 2.0
+                    PlaceBackBet(SSOID,str(marketList[hrow]['marketId']),str(horseList[trow]),"2.0",str(betAmount))
 
 
     if (numBets == 0):

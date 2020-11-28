@@ -3,3 +3,4 @@
 python3 watchdog.py &
 python3 stopdog.py &
 python3 collectDog.py &
+python3 accountDog.py &
