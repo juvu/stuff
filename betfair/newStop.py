@@ -310,7 +310,7 @@ while (doit == 1):
             #liability = 120.0
             #original = 120.0
             cashout = (origLayEquiv / layValueList[trow]) * originalLay
-            if (layValueList[trow] < 10.0):
+            if (layValueList[trow] < 10.0 and originalLayEquiv > 0.0):
                 # Yes. I know. We are working out a back bet based on lay odds
                 # This is because in play the odds jump around a lot. We want to
                 # be sure that stopping out is a reasonable thing to do and this
