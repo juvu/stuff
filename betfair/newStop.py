@@ -113,17 +113,12 @@ def getLiability(SSOID,market,selection):
             side = str(orders[x]['side'])
             horse = orders[x]['selectionId']
             if (side == "BACK" and str(horse) == selection):
-                # Note - don't check to see if the order has matched
-                # This is an in play situation and we don't want to place lots of bets
-                # that may subsequently be matched
-                # So we have to assume that it has matched (or will match)
-                #if (str(orders[x]['status']) != "EXECUTABLE"):
-                # TBD - investigate canceling unmatched orders
-                size = orders[x]['priceSize']['size'] 
-                price = orders[x]['averagePriceMatched']
-                liability = size * (price - 1.0)
-                total = total - liability
-                #myprint ("Side {} Size {} price {} liability {} total {}".format(side,size,price,liability,total))
+                if (str(orders[x]['status']) != "EXECUTABLE"):
+                    size = orders[x]['priceSize']['size'] 
+                    price = orders[x]['averagePriceMatched']
+                    liability = size * (price - 1.0)
+                    total = total - liability
+                    #myprint ("Side {} Size {} price {} liability {} total {}".format(side,size,price,liability,total))
             if (side == "LAY" and str(horse) == selection):
                 if (str(orders[x]['status']) != "EXECUTABLE"):
                     size = orders[x]['priceSize']['size'] 
@@ -180,7 +175,7 @@ def PlaceBackBet(SSOID,market,horse,price,betsize):
 
     user_req='{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/placeOrders", \
             "params": {"marketId":"'+market+'",\
-            "instructions":[{"selectionId":"'+horse+'","handicap":"0","side":"BACK","orderType":"LIMIT","limitOrder":{"size":"'+betStrAmount+'","price":"'+price+'"}}]}, "id": 1}'
+            "instructions":[{"selectionId":"'+horse+'","handicap":"0","side":"BACK","orderType":"LIMIT","limitOrder":{"size":"'+betStrAmount+'","price":"'+price+'","timeInForce":"FILL_OR_KILL"}}]}, "id": 1}'
 
     #myprint (user_req)
 
