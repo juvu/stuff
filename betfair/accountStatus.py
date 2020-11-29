@@ -13,23 +13,19 @@ import MySQLdb
 import re
 from typing import Iterable, Dict, Union, List
 import telebot
+import readAccount
 
 #Note telebot installed with pip install pyTelegramBotAPI
 
-my_app_key = ""
 account_url="https://api.betfair.com/exchange/account/json-rpc/v1"
 acceptStr = "application/json"
 
-antsBetfairBot = ""
 
 def myprint(x):
     print(x)
     sys.stdout.flush()
 
 def getSSOID():
-    my_username = ""
-    my_password = ""
-
     payload = 'username=' + my_username + '&password=' + my_password
     headers = {'X-Application': my_app_key, 'Content-Type': 'application/x-www-form-urlencoded'}
     resp = requests.post('https://identitysso-cert.betfair.com/api/certlogin',data=payload,cert=('client-2048.crt','client-2048.key'),headers=headers)
@@ -60,6 +56,8 @@ def status(SSOID):
     return (resultStr)
 
 # main starts here
+
+my_app_key,my_username,my_password,antsBetfairBot = readAccount.readAccount()
 
 pid = os.getpid()
 print (pid)

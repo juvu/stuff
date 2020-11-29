@@ -8,12 +8,12 @@ import urllib.request
 import urllib.error
 import requests
 import pandas as pd
+import readAccount
 
 import MySQLdb
 import re
 from typing import Iterable, Dict, Union, List
 
-my_app_key = ""
 bet_url="https://api.betfair.com/exchange/betting/json-rpc/v1"
 acceptStr = "application/json"
 
@@ -22,9 +22,6 @@ def myprint(x):
     sys.stdout.flush()
 
 def getSSOID():
-    my_username = ""
-    my_password = ""
-
     payload = 'username=' + my_username + '&password=' + my_password
     headers = {'X-Application': my_app_key, 'Content-Type': 'application/x-www-form-urlencoded'}
     resp = requests.post('https://identitysso-cert.betfair.com/api/certlogin',data=payload,cert=('client-2048.crt','client-2048.key'),headers=headers)
@@ -269,6 +266,8 @@ def getMarketStatus(SSOID, market):
     return (layList,horseList,layValueList)
 
 # main starts here
+
+my_app_key,my_username,my_password,antsBetfairBot = readAccount.readAccount()
 
 pid = os.getpid()
 print (pid)

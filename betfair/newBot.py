@@ -13,7 +13,8 @@ import MySQLdb
 import re
 from typing import Iterable, Dict, Union, List
 
-my_app_key = ""
+import readAccount
+
 bet_url="https://api.betfair.com/exchange/betting/json-rpc/v1"
 acceptStr = "application/json"
 
@@ -32,9 +33,6 @@ def myprint(x):
     sys.stdout.flush()
 
 def getSSOID():
-    my_username = ""
-    my_password = ""
-
     payload = 'username=' + my_username + '&password=' + my_password
     headers = {'X-Application': my_app_key, 'Content-Type': 'application/x-www-form-urlencoded'}
     resp = requests.post('https://identitysso-cert.betfair.com/api/certlogin',data=payload,cert=('client-2048.crt','client-2048.key'),headers=headers)
@@ -63,9 +61,9 @@ def getBetSize(SSOID):
     available = float(result['availableToBetBalance'])
     exposure = float(result['exposure'])
     total = available - exposure
-    betsize = total * 0.005
-    if (betsize < 5.0):
-        betsize = 5.0
+    betsize = total * 0.003
+    if (betsize < 4.0):
+        betsize = 4.0
     if (betsize > 20.0):
         betsize = 20.0
     #myprint ("Betsize is {}".format(betsize))
@@ -365,6 +363,8 @@ def getMarketCatalogue(SSOID):
     return (Results,marketList,venueList,timeList)
 
 # main starts here
+
+my_app_key,my_username,my_password,antsBetfairBot = readAccount.readAccount()
 
 pid = os.getpid()
 print (pid)
