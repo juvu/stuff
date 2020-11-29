@@ -304,31 +304,37 @@ while (doit == 1):
             except:
                 origLayEquiv = 25.0
 
+            availableOdds = layValueList[trow]
+            availableOdds = float (input("EnterOdds "))
             # following 4 lines for testing
             #origLayEquiv = 25.0
             #originalLay = 5.0
             #liability = 120.0
             #original = 120.0
-            cashout = (origLayEquiv / layValueList[trow]) * originalLay
-            if (layValueList[trow] < 10.0 and originalLayEquiv > 0.0):
+            cashout = (origLayEquiv / availableOdds) * originalLay
+            if (availableOdds < 10.0 and origLayEquiv > 0.0):
                 # Yes. I know. We are working out a back bet based on lay odds
                 # This is because in play the odds jump around a lot. We want to
                 # be sure that stopping out is a reasonable thing to do and this
                 # can be done better from the lay odds
-                reqCOPercent = layValueList[trow] * 0.1
+                reqCOPercent = availableOdds * 0.1
                 curCOPercent = liability / original
                 myprint ("reqCOPercent {} curCOPercent {} original {}".format(reqCOPercent, curCOPercent, original))
                 betAmount = (curCOPercent - reqCOPercent) * cashout
                 ibetAmount = int (betAmount * 100.0)
                 betAmount = float(ibetAmount) * 0.01
-                myprint ("Horse {} lay {} layValue {} Liability {} originalLayEquiv {} cashout {} betAmount {}".format(horseList[trow], layList[trow], layValueList[trow], liability,origLayEquiv,cashout,betAmount))
+                myprint ("Horse {} lay {} layValue {} Liability {} origLayEquiv {} cashout {} betAmount {}".format(horseList[trow], layList[trow], availableOdds, liability,origLayEquiv,cashout,betAmount))
                 # Don't go overboard with stoploss betting - it can be counter productive
                 if (betAmount > (originalLay * 3.0)):
                     betAmount = originalLay * 3.0
+                # and just in case
+                if (betAmount > 25.0):
+                    betAmount = 25.0
                 if (betAmount > 2.0):
                     myprint ("Betting now")
                     # lowest odds worth taking are 2.0
                     PlaceBackBet(SSOID,str(marketList[hrow]['marketId']),str(horseList[trow]),"2.0",str(betAmount))
+                    time.sleep(3)
 
 
     if (numBets == 0):
