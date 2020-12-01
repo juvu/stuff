@@ -57,7 +57,7 @@ def status(SSOID):
 
 # main starts here
 
-my_app_key,my_username,my_password,antsBetfairBot = readAccount.readAccount()
+my_app_key,my_username,my_password,antsBetfairBot,live_key = readAccount.readAccount()
 
 pid = os.getpid()
 print (pid)

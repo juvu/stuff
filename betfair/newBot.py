@@ -57,13 +57,14 @@ def getBetSize(SSOID):
     user_req = '{"jsonrpc": "2.0", "method": "AccountAPING/v1.0/getAccountFunds", "params": {"wallet":"UK"}, "id": 1}'
     req = requests.post(account_url, data=user_req.encode('utf-8'), headers=headers)
     accountInfo = req.json()
+    myprint("app key is {}".format(my_app_key))
     result = accountInfo["result"]
     available = float(result['availableToBetBalance'])
     exposure = float(result['exposure'])
     total = available - exposure
-    betsize = total * 0.003
-    if (betsize < 4.0):
-        betsize = 4.0
+    betsize = total * 0.005
+    if (betsize < 5.0):
+        betsize = 5.0
     if (betsize > 20.0):
         betsize = 20.0
     #myprint ("Betsize is {}".format(betsize))
@@ -364,7 +365,8 @@ def getMarketCatalogue(SSOID):
 
 # main starts here
 
-my_app_key,my_username,my_password,antsBetfairBot = readAccount.readAccount()
+delay_key,my_username,my_password,antsBetfairBot,my_app_key = readAccount.readAccount()
+myprint ("delay_key {} username {} pwd {} bot{} live_key {}".format(delay_key,my_username,my_password,antsBetfairBot,my_app_key))
 
 pid = os.getpid()
 print (pid)
@@ -499,9 +501,7 @@ while (doit == 1):
                     iprice = int(price)
                     price = float(iprice) / 100.0
                     myprint ("Placing bet {} {} {} {} {}\n".format(str(hrow), str(markets[hrow]), str(horses[hrow]), str(price), str(fAmount)))
-                    #PlaceBet (SSOID, str(markets[hrow]), str(horses[hrow]), str(prices[hrow]), str(fAmount))
-                    PlaceBet (SSOID, str(markets[hrow]), str(horses[hrow]), "30.0", str(fAmount))
-                    #PlaceBackBet (SSOID, str(markets[hrow]), str(horses[hrow]), "8.8", str(fAmount))
+                    PlaceBet (SSOID, str(markets[hrow]), str(horses[hrow]), "28.0", str(fAmount))
             except:
                 pass
     
@@ -518,6 +518,9 @@ while (doit == 1):
     del venueList
     del timeList
 
-    time.sleep(60)
+    if (numMarkets == 0):
+        time.sleep(60)
+    else:
+        time.sleep(15)
 
 

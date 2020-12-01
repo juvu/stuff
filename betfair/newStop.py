@@ -267,7 +267,7 @@ def getMarketStatus(SSOID, market):
 
 # main starts here
 
-my_app_key,my_username,my_password,antsBetfairBot = readAccount.readAccount()
+delay_key,my_username,my_password,antsBetfairBot,my_app_key = readAccount.readAccount()
 
 pid = os.getpid()
 print (pid)
@@ -304,7 +304,7 @@ while (doit == 1):
                 origLayEquiv = 25.0
 
             availableOdds = layValueList[trow]
-            availableOdds = float (input("EnterOdds "))
+            #availableOdds = float (input("EnterOdds "))
             # following 4 lines for testing
             #origLayEquiv = 25.0
             #originalLay = 5.0

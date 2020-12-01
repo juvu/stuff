@@ -19,10 +19,11 @@ def myprint(x):
     sys.stdout.flush()
 
 def readAccount():
-    appKey = "asdf"
+    delayKey = "asdf"
     username = "asdf"
     pwd = "asdf"
     bot = "asdf"
+    liveKey = "fdsa"
 
     f = open ("accountDetails.txt","r")
 
@@ -30,8 +31,10 @@ def readAccount():
         data = line.split('::')
         tok  = data[0].strip()
         value = data[1].strip()
-        if (tok == "my_app_key"):
-            appKey = value
+        if (tok == "delay_key"):
+            delayKey = value
+        elif (tok == "live_key"):
+            liveKey = value
         elif (tok == "my_username"):
             username = value
         elif (tok == "my_password"):
@@ -41,5 +44,7 @@ def readAccount():
 
     f.close()
 
-    return (appKey, username, pwd, bot)
+    myprint(delayKey)
+    myprint(liveKey)
+    return (delayKey, username, pwd, bot, liveKey)
 
