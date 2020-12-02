@@ -225,6 +225,11 @@ def getMarketStatus(SSOID, market):
     horseBackList = []
     sortedList = []
 
+    # check to see if we have a bet in this market
+    betPlaced,horseid = CheckLayBet(SSOID,marketId,"AnyHorse")
+    if (betPlaced == "No"):
+        return (layList,horseList,layValueList)
+
     headers = {'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
 
     #myprint (marketId)
@@ -333,7 +338,7 @@ while (doit == 1):
                     myprint ("Betting now")
                     # lowest odds worth taking are 2.0
                     PlaceBackBet(SSOID,str(marketList[hrow]['marketId']),str(horseList[trow]),"2.0",str(betAmount))
-                    time.sleep(3)
+                    #time.sleep(3)
 
 
     if (numBets == 0):
