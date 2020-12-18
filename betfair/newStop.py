@@ -166,9 +166,10 @@ def PlaceBackBet(SSOID,market,horse,price,betsize):
     #betAmount = float(betsize) - amount
     #betStrAmount = str(betAmount)
     betAmount = float(betsize)
-    iAmount = int (betAmount * 100.0)
-    betAmount = iAmount * 0.01
-    betStrAmount = str(betAmount)
+    #iAmount = int (betAmount * 100.0)
+    #betAmount = iAmount * 0.01
+    #betStrAmount = str(betAmount)
+    betStrAmount = "{:.2f}".format(betAmount)
 
     user_req='{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/placeOrders", \
             "params": {"marketId":"'+market+'",\
@@ -182,7 +183,7 @@ def PlaceBackBet(SSOID,market,horse,price,betsize):
         jsonResponse = response.read()
         pkg = jsonResponse.decode('utf-8')
         result = json.loads(pkg)
-        myprint ("Placing bet size {} on {}".format(betAmount, horse))
+        myprint ("Placing bet size {} on {}".format(betStrAmount, horse))
         myprint (result)
 
 def getMarketCatalogue(SSOID):
@@ -325,16 +326,16 @@ while (doit == 1):
                 curCOPercent = liability / original
                 myprint ("reqCOPercent {} curCOPercent {} original {}".format(reqCOPercent, curCOPercent, original))
                 betAmount = (curCOPercent - reqCOPercent) * cashout
-                ibetAmount = int (betAmount * 100.0)
-                betAmount = float(ibetAmount) * 0.01
+                #ibetAmount = int (betAmount * 100.0)
+                #betAmount = float(ibetAmount) * 0.01
                 myprint ("Horse {} lay {} layValue {} Liability {} origLayEquiv {} cashout {} betAmount {}".format(horseList[trow], layList[trow], availableOdds, liability,origLayEquiv,cashout,betAmount))
                 # Don't go overboard with stoploss betting - it can be counter productive
                 if (betAmount > (originalLay * 3.0)):
                     betAmount = originalLay * 3.0
                 # and just in case
-                if (betAmount > 25.0):
-                    betAmount = 25.0
-                if (betAmount > 2.0):
+                if (betAmount > 15.0):
+                    betAmount = 15.0
+                if (betAmount >= 2.0):
                     myprint ("Betting now")
                     # lowest odds worth taking are 2.0
                     PlaceBackBet(SSOID,str(marketList[hrow]['marketId']),str(horseList[trow]),"2.0",str(betAmount))

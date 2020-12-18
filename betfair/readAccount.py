@@ -44,7 +44,7 @@ def readAccount():
 
     f.close()
 
-    myprint(delayKey)
-    myprint(liveKey)
+    #myprint(delayKey)
+    #myprint(liveKey)
     return (delayKey, username, pwd, bot, liveKey)
 

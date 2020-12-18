@@ -57,7 +57,7 @@ def getBetSize(SSOID):
     user_req = '{"jsonrpc": "2.0", "method": "AccountAPING/v1.0/getAccountFunds", "params": {"wallet":"UK"}, "id": 1}'
     req = requests.post(account_url, data=user_req.encode('utf-8'), headers=headers)
     accountInfo = req.json()
-    myprint("app key is {}".format(my_app_key))
+    #myprint("app key is {}".format(my_app_key))
     result = accountInfo["result"]
     available = float(result['availableToBetBalance'])
     exposure = float(result['exposure'])
@@ -366,7 +366,7 @@ def getMarketCatalogue(SSOID):
 # main starts here
 
 delay_key,my_username,my_password,antsBetfairBot,my_app_key = readAccount.readAccount()
-myprint ("delay_key {} username {} pwd {} bot{} live_key {}".format(delay_key,my_username,my_password,antsBetfairBot,my_app_key))
+#myprint ("delay_key {} username {} pwd {} bot{} live_key {}".format(delay_key,my_username,my_password,antsBetfairBot,my_app_key))
 
 pid = os.getpid()
 print (pid)
@@ -492,16 +492,18 @@ while (doit == 1):
                     #fAmount = (score * 2.0) 
                     #fAmount = (score - 1.0) * 10.0 
                     #fAmount = (forecast - prices[hrow]) + 2.0
-                    fAmount = TheBetSize
-                    fAmount = fAmount * 100.0
-                    iAmount = int(fAmount)
-                    fAmount = float(iAmount) / 100.0
-                    price = prices[hrow] + 0.2
-                    price = price * 100.0
-                    iprice = int(price)
-                    price = float(iprice) / 100.0
-                    myprint ("Placing bet {} {} {} {} {}\n".format(str(hrow), str(markets[hrow]), str(horses[hrow]), str(price), str(fAmount)))
-                    PlaceBet (SSOID, str(markets[hrow]), str(horses[hrow]), "28.0", str(fAmount))
+                    #fAmount = TheBetSize
+                    #fAmount = fAmount * 100.0
+                    #iAmount = int(fAmount)
+                    #fAmount = float(iAmount) / 100.0
+                    fAmountStr = "{:.2f}".format(TheBetSize)
+                    #price = prices[hrow] + 0.2
+                    #price = price * 100.0
+                    #iprice = int(price)
+                    #price = float(iprice) / 100.0
+                    priceStr = "{:.2f}".format(prices[hrow])
+                    myprint ("Placing bet {} {} {} {} {}\n".format(str(hrow), str(markets[hrow]), str(horses[hrow]), priceStr, fAmountStr))
+                    PlaceBet (SSOID, str(markets[hrow]), str(horses[hrow]), "28.0", fAmountStr)
             except:
                 pass
     
@@ -521,6 +523,6 @@ while (doit == 1):
     if (numMarkets == 0):
         time.sleep(60)
     else:
-        time.sleep(15)
+        time.sleep(5)
 
 
