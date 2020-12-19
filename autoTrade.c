@@ -326,6 +326,7 @@ int checkRecord (char *file, char *record)
 
 	while (fgets(buffer, 1024, fp))
 	{
+		strToUpper(buffer);
 		char *ptr = strstr (buffer, "\n");
 		if (ptr)
 			*ptr = '\0';
