@@ -198,38 +198,47 @@ int checkPositions()
 	int x = PositionX;
 	int y = PositionY;
 	int count = 0 ;
-	char posDirection[1024] = "" ;
-	int iDir = 0;
-	char posName[1024] = "" ;
-	char latest[1024] = "" ;
+	char *ptr = NULL;
 	char profit[1024] = "" ;
 	char position[1024] = "";
 
 	for (count = 0; count < NUMSLOTS; count++,y+=RowOffset)
 	{
 		getStringAtLocation ("PositionCheck", x, y, 740, RowOffset, 1, position) ;
-		//printf ("Position is *%s*\n", position);
-		posName[0] = '\0';
-		posDirection[0] = '\0';
-		profit[0] = '\0';
-		latest[0] = '\0';
-		sscanf(position,"%s %s %s %s", posName, posDirection, latest, profit);
-		//printf ("%s %s %s *%s*\n", posName, posDirection, latest, &profit[3]) ;
+		printf ("Position is *%s*\n", position);
+
+                ptr = strstr (position, "£");
+                if (ptr)
+		{
+			if (*(ptr-1) == '-')
+				ptr--;
+			strcpy (profit, ptr);
+
+                        for (;*ptr != '\0';ptr++)
+                        {
+                                if (*ptr == ' ')
+				{
+                                        *ptr = '\0';
+                                        break;
+				}
+                        }
+                }
+
 		if (profit[0] == '-')
 		{
 			double loss = atof (&profit[3]) ;
+			printf ("%s loss is %f\n", position, loss) ;
 			if (loss > 50.0)
 			{
-				printf ("%s loss is %f\n", posName, loss) ;
 				SetAndClick (PositionCloseX, y) ;
 			}
 		}
 		else
 		{
 			double gain = atof (&profit[2]) ;
+			printf ("%s profit is %f\n", position, gain) ;
 			if (gain > 100.0)
 			{
-				printf ("%s profit is %f\n", posName, gain) ;
 				SetAndClick (PositionCloseX, y) ;
 			}
 		}

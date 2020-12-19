@@ -179,11 +179,8 @@ int findPosition(char *name)
 	int x = PositionX;
 	int y = PositionY;
 	int count = 0 ;
-	char posDirection[1024] = "" ;
-	int iDir = 0;
+	char *ptr = NULL;
 	char posName[1024] = "" ;
-	char rest[1024] = "" ;
-
 	char position[1024] = "";
 
 	for (count = 0; count < NUMSLOTS; count++,y+=RowOffset)
@@ -191,53 +188,27 @@ int findPosition(char *name)
 		getStringAtLocation ("Position", x, y, 740, RowOffset, 1, position) ;
 		strToUpper(position);
 		printf ("Position is *%s*\n", position);
-		posName[0] = '\0';
-		posDirection[0] = '\0';
-		rest[0] = '\0';
-		sscanf(position,"%s %s %s", posName, posDirection, rest);
-		if (!strcmp(name, posName))
-			return y;
-	}
-	return 0;
-}
 
-int checkForPosition(char *name, int direction, int checkDirection)
-{
-	int x = PositionX;
-	int y = PositionY;
-	int count = 0 ;
-	char posDirection[1024] = "" ;
-	int iDir = 0;
-	char posName[1024] = "" ;
-	char rest[1024] = "" ;
-
-	char position[1024] = "";
-
-	for (count = 0; count < NUMSLOTS; count++,y+=RowOffset)
-	{
-		getStringAtLocation ("Position", x, y, 440, RowOffset, 1, position) ;
-		printf ("Position is *%s*\n", position);
-		posName[0] = '\0';
-		posDirection[0] = '\0';
-		rest[0] = '\0';
-		sscanf(position,"%s %s %s", posName, posDirection, rest);
-		iDir = atoi (posDirection);
-		if (iDir > 1)
-			iDir = 1;
-		if (iDir < 1)
-			iDir = -1;
-		printf ("Position Name is *%s* name is *%s* direction is %d iDir is %d\n", posName, name, direction, iDir);
-		if (checkDirection == OPPOSITE)
-		{
-			if (!strcmp(name, posName) && iDir != direction)
+                ptr = strstr (position, "+");
+                if (!ptr)
+                        ptr = strstr (position, "-");
+                if (ptr)
+                {
+                        *ptr = '\0';
+                        for (ptr--;ptr>position;ptr--)
+                        {
+                                if (*ptr == ' ')
+                                        *ptr = '\0';
+                                else
+                                        break;
+                        }
+                        strcpy (posName,position) ;
+                        printf ("Position is *%s*\n", posName);
+			if (!strcmp(name, posName))
 				return y;
-		}
-		else
-		{
-			if (!strcmp(name, posName) && iDir == direction)
-				return y;
-		}
-	}
+                }
+        }
+
 	return 0;
 }
 
@@ -387,19 +358,8 @@ void getNameAndDirection (char *buffer, char *name, char *direction)
 		strcpy (direction,"Buy") ;
 
 	ptr = strstr (buffer, "Autochartist");
-	if (ptr)
-	{
-		*ptr = '\0';
-		for (ptr--;ptr>buffer;ptr--)
-		{
-			if (*ptr == ' ')
-				*ptr = '\0';
-			else
-				break;
-		}
-		strcpy (name,buffer) ;
-	}
-	ptr = strstr (buffer, "PIA");
+	if (!ptr)
+		ptr = strstr (buffer, "PIA");
 	if (ptr)
 	{
 		*ptr = '\0';
