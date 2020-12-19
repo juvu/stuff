@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 #include <Windows.h>
+#include <ctype.h>
 
 #define NUMSLOTS 21 
 
@@ -57,6 +59,17 @@ int SignalPlaceOrderY = 0;
 
 int SignalCloseWinX = 0;
 int SignalCloseWinY = 0;
+
+void strToUpper(char *str) 
+{
+	// Convert to upper case
+	char *s = str;
+	while (*s) 
+	{
+		*s = toupper((unsigned char) *s);
+		s++;
+	}
+}
 
 char *getStringAtLocation(char *file, int x, int y, int width, int height, int getText, char *buffer)
 {
@@ -176,6 +189,7 @@ int findPosition(char *name)
 	for (count = 0; count < NUMSLOTS; count++,y+=RowOffset)
 	{
 		getStringAtLocation ("Position", x, y, 740, RowOffset, 1, position) ;
+		strToUpper(position);
 		printf ("Position is *%s*\n", position);
 		posName[0] = '\0';
 		posDirection[0] = '\0';
@@ -186,6 +200,7 @@ int findPosition(char *name)
 	}
 	return 0;
 }
+
 int checkForPosition(char *name, int direction, int checkDirection)
 {
 	int x = PositionX;
@@ -418,6 +433,7 @@ void processSignals()
 		getStringAtLocation ("Signal", x, y, 440, RowOffset, 1, buffer) ;
 		getNameAndDirection(buffer, name, direction);
 		printf ("Name is %s direction is %s\n", name, direction);
+		strToUpper(name);
 
 		if (!strcmp (name,"Unknown"))
 			continue;
