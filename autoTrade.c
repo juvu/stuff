@@ -358,6 +358,46 @@ int removeRecord (char *file, char *record)
         pclose (ppb) ;
 }
 
+void getNameAndDirection (char *buffer, char *name, char *direction)
+{
+	char *ptr = NULL ;
+
+	strcpy (name, "Unknown");
+	strcpy (direction, "Unknown");
+
+	if (strstr(buffer,"Sell"))
+		strcpy (direction,"Sell") ;
+	if (strstr(buffer,"Buy"))
+		strcpy (direction,"Buy") ;
+
+	ptr = strstr (buffer, "Autochartist");
+	if (ptr)
+	{
+		*ptr = '\0';
+		for (ptr--;ptr>buffer;ptr--)
+		{
+			if (*ptr == ' ')
+				*ptr = '\0';
+			else
+				break;
+		}
+		strcpy (name,buffer) ;
+	}
+	ptr = strstr (buffer, "PIA");
+	if (ptr)
+	{
+		*ptr = '\0';
+		for (ptr--;ptr>buffer;ptr--)
+		{
+			if (*ptr == ' ')
+				*ptr = '\0';
+			else
+				break;
+		}
+		strcpy (name,buffer) ;
+	}
+}
+
 void processSignals()
 {
 	int x = SignalX;
@@ -365,9 +405,7 @@ void processSignals()
 	int count = 0;
 	char buffer[1024] = "" ;
 	char name[1024] = "" ;
-	char tool[1024] = "" ;
 	char direction[1024] = "" ;
-	char dir2[1024] = "" ;
 	int dir = 1;
 	int numSignals = 0 ;
 	char signals[NUMSLOTS][1024] = {""};
@@ -376,16 +414,22 @@ void processSignals()
 
 	for (count = 0;count < NUMSLOTS;count++,y+=RowOffset)
 	{
-        	setCursorPos(x-20,y) ;
+        	//setCursorPos(x-20,y) ;
 		getStringAtLocation ("Signal", x, y, 440, RowOffset, 1, buffer) ;
-		//printf ("Signal is *%s*\n", buffer);
-		if (!strstr(buffer,"/"))
+		getNameAndDirection(buffer, name, direction);
+		printf ("Name is %s direction is %s\n", name, direction);
+
+		if (!strcmp (name,"Unknown"))
 			continue;
-		name[0] = '\0';
-		tool[0] = '\0';
-		direction[0] = '\0';
-		dir2[0] = '\0';
-		sscanf(buffer,"%s %s %s %s", name, tool, direction, dir2);
+		if (!strcmp (direction,"Unknown"))
+			continue;
+
+		// first check our list of allowed trades
+		int allowed = checkRecord("tradesAllowed.txt",name);
+		if (!allowed)
+			continue;
+
+		// check we haven't already processed it
 		int loop = 0;
 		int found = 0;
 		for (loop=0;loop<numSignals;loop++)
@@ -395,27 +439,19 @@ void processSignals()
 		}
 		if (found)
 		{
-			printf ("REPEAT - Name is %s tool is %s direction is %d\n", name, tool, dir);
+			printf ("REPEAT - Name is %s direction is %s\n", name, direction);
 			continue;
 		}
+
+		// add to list of processed signals
 		strcpy(signals[numSignals++], name);
 
-		dir = 1;
-		if (!strcmp(tool,"PIA"))
-		{
-			if (!strcmp(dir2,"Sell"))
-				dir = -1;
-		}
-		else if (!strcmp(direction,"Sell"))
-		{
+		// convert direction to integer
+		if (!strcmp (direction,"Buy"))
+			dir = 1;
+		if (!strcmp (direction,"Sell"))
 			dir = -1;
-		}
-		printf ("Name is %s tool is %s direction is %d\n", name, tool, dir);
 
-		// first check our list of allowed trades
-		int allowed = checkRecord("tradesAllowed.txt",name);
-		if (!allowed)
-			continue;
 
 		// now check for an opposite trade in force
 		// if so remove it
@@ -455,6 +491,13 @@ void processSignals()
 	}		
 }
 
+void keepalive()
+{
+	SetAndClick(SignalX+RowOffset, SignalY);
+	SetAndClick(SignalCloseWinX, SignalCloseWinY);
+}
+
+
 int main(int argc, char **argv)
 {
 	loadCoords("tradeCoords.txt");
@@ -462,6 +505,7 @@ int main(int argc, char **argv)
 	{
 		processSignals();
 		Sleep (15000);
+		keepalive();
 	}
 	return 0;
 }
