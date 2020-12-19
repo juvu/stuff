@@ -4,14 +4,14 @@
 
 #define NUMSLOTS 21 
 
-#define OFFSET 36
 #define INTERVAL 2000
 #define SHORT_INTERVAL 500
 
 #define OPPOSITE -1
 #define SAME 1
-
+/*
 int PositionCloseX = 945;
+int RowOffset = 36;
 
 int PositionX = 289;
 int PositionY = 232; 
@@ -33,9 +33,30 @@ int SignalPlaceOrderY = 858;
 
 int SignalCloseWinX = 1523;
 int SignalCloseWinY = 266;
+*/
+int PositionCloseX = 0;
+int RowOffset = 0;
 
-int DeleteX = 1000 ;
-int DeleteY = 200 ;
+int PositionX = 0;
+int PositionY = 0; 
+
+int SignalX = 0;
+int SignalY = 0;
+
+int SignalBuyX = 0;
+int SignalBuyY = 0;
+
+int SignalSellX = 0;
+int SignalSellY = 0;
+
+int SignalSetValX = 0;
+int SignalSetValY = 0;
+
+int SignalPlaceOrderX = 0;
+int SignalPlaceOrderY = 0;
+
+int SignalCloseWinX = 0;
+int SignalCloseWinY = 0;
 
 char *getStringAtLocation(char *file, int x, int y, int width, int height, int getText, char *buffer)
 {
@@ -152,9 +173,9 @@ int findPosition(char *name)
 
 	char position[1024] = "";
 
-	for (count = 0; count < NUMSLOTS; count++,y+=OFFSET)
+	for (count = 0; count < NUMSLOTS; count++,y+=RowOffset)
 	{
-		getStringAtLocation ("Position", x, y, 440, OFFSET, 1, position) ;
+		getStringAtLocation ("Position", x, y, 740, RowOffset, 1, position) ;
 		printf ("Position is *%s*\n", position);
 		posName[0] = '\0';
 		posDirection[0] = '\0';
@@ -177,9 +198,9 @@ int checkForPosition(char *name, int direction, int checkDirection)
 
 	char position[1024] = "";
 
-	for (count = 0; count < NUMSLOTS; count++,y+=OFFSET)
+	for (count = 0; count < NUMSLOTS; count++,y+=RowOffset)
 	{
-		getStringAtLocation ("Position", x, y, 440, OFFSET, 1, position) ;
+		getStringAtLocation ("Position", x, y, 440, RowOffset, 1, position) ;
 		printf ("Position is *%s*\n", position);
 		posName[0] = '\0';
 		posDirection[0] = '\0';
@@ -203,6 +224,59 @@ int checkForPosition(char *name, int direction, int checkDirection)
 		}
 	}
 	return 0;
+}
+
+int loadCoords (char *file)
+{
+	FILE *fp = fopen (file, "r");
+	char buffer[1024] = "";
+	char name[1024] = "";
+	char coord[1024] = "";
+	int iCoord = 0 ;
+
+	while (fgets(buffer, 1024, fp))
+	{
+		char *ptr = strstr (buffer, "\n");
+		if (ptr)
+			*ptr = '\0';
+
+		sscanf(buffer,"%s %s", name, coord);
+		if (!strcmp(name,"PositionCloseX"))
+			PositionCloseX = atoi (coord);
+		else if (!strcmp(name,"RowOffset"))
+			RowOffset = atoi (coord);
+		else if (!strcmp(name,"PositionX"))
+			PositionX = atoi (coord);
+		else if (!strcmp(name,"PositionY"))
+			PositionY = atoi (coord);
+		else if (!strcmp(name,"SignalX"))
+			SignalX = atoi (coord);
+		else if (!strcmp(name,"SignalY"))
+			SignalY = atoi (coord);
+		else if (!strcmp(name,"SignalBuyX"))
+			SignalBuyX = atoi (coord);
+		else if (!strcmp(name,"SignalBuyY"))
+			SignalBuyY = atoi (coord);
+		else if (!strcmp(name,"SignalSellX"))
+			SignalSellX = atoi (coord);
+		else if (!strcmp(name,"SignalSellY"))
+			SignalSellY = atoi (coord);
+		else if (!strcmp(name,"SignalSetValX"))
+			SignalSetValX = atoi (coord);
+		else if (!strcmp(name,"SignalSetValY"))
+			SignalSetValY = atoi (coord);
+		else if (!strcmp(name,"SignalPlaceOrderX"))
+			SignalPlaceOrderX = atoi (coord);
+		else if (!strcmp(name,"SignalPlaceOrderY"))
+			SignalPlaceOrderY = atoi (coord);
+		else if (!strcmp(name,"SignalCloseWinX"))
+			SignalCloseWinX = atoi (coord);
+		else if (!strcmp(name,"SignalCloseWinY"))
+			SignalCloseWinY = atoi (coord);
+
+	}
+	fclose (fp) ;
+	return (0);
 }
 
 int addRecord (char *file, char *record)
@@ -296,13 +370,14 @@ void processSignals()
 	char dir2[1024] = "" ;
 	int dir = 1;
 	int numSignals = 0 ;
-	//char signals[NUMSLOTS][1024] = {"","","","","","","","","","","","","","","","","","","",""};
 	char signals[NUMSLOTS][1024] = {""};
 
-	for (count = 0;count < NUMSLOTS;count++,y+=OFFSET)
+	numSignals = 0 ;
+
+	for (count = 0;count < NUMSLOTS;count++,y+=RowOffset)
 	{
         	setCursorPos(x-20,y) ;
-		getStringAtLocation ("Signal", x, y, 440, OFFSET, 1, buffer) ;
+		getStringAtLocation ("Signal", x, y, 440, RowOffset, 1, buffer) ;
 		//printf ("Signal is *%s*\n", buffer);
 		if (!strstr(buffer,"/"))
 			continue;
@@ -337,43 +412,52 @@ void processSignals()
 		}
 		printf ("Name is %s tool is %s direction is %d\n", name, tool, dir);
 
+		// first check our list of allowed trades
+		int allowed = checkRecord("tradesAllowed.txt",name);
+		if (!allowed)
+			continue;
+
+		// now check for an opposite trade in force
+		// if so remove it
 		char buff[1024] = "";
 		if (dir == 1)
 			sprintf (buff, "%s -1", name) ;
 		else
 			sprintf (buff, "%s 1", name) ;
 
-		if (checkRecord("testRecord.txt",buff))
+		if (checkRecord("tradesRecord.txt",buff))
 		{
 			int posY = findPosition(name) ;
 			if (posY)
 			{
 				// close the position
 				printf ("Closing position %s\n", name);
-				removeRecord ("testRecord.txt", buff) ;
 				SetAndClick(PositionCloseX, posY);
 			}
+			// note - we may not find the position because
+			// autostop has removed it. But now we need to
+			// remove it from the trading record
+			removeRecord ("tradesRecord.txt", buff) ;
 		}
 
+		// and now place the recommended trade if we do not
+		// already have it
 		sprintf (buff, "%s %d", name, dir) ;
-		if (checkRecord("testRecord.txt",buff))
+		if (checkRecord("tradesRecord.txt",buff))
 			continue;
 		else
 		{
-			int num = numRecords("testRecord.txt");
-			if (num < 20)
-			{
-				SetAndClick(x+OFFSET, y);
-				PlaceOrder(dir);
-				sprintf (buff, "%s %d", name, dir) ;
-				addRecord ("testRecord.txt", buff) ;
-			}
+			SetAndClick(x+RowOffset, y);
+			PlaceOrder(dir);
+			sprintf (buff, "%s %d", name, dir) ;
+			addRecord ("tradesRecord.txt", buff) ;
 		}
 	}		
 }
 
 int main(int argc, char **argv)
 {
+	loadCoords("tradeCoords.txt");
 	while(1)
 	{
 		processSignals();
