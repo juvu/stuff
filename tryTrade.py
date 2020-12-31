@@ -127,6 +127,8 @@ main_epic_ids = [
     'CS.D.sp_USDRUB.TODAY.IP']
 # ALL EPICS
 
+tradeCheck = 5
+
 b_REAL = False #Change this if you want to use your Live/Demo account
 
 if b_REAL:
@@ -194,9 +196,9 @@ auth_r = requests.put(
 ##########################################################################
 # PROGRAMMABLE VALUES
 orderType_value = "MARKET"
-size_value = "5"
+size_value = "1"
 expiry_value = "DFB"
-guaranteedStop_value = False
+guaranteedStop_value = True
 currencyCode_value = "GBP"
 forceOpen_value = True
 stopDistance_value = "5"  # Make this a global variable for ease!
@@ -555,6 +557,50 @@ def calculate_stop_loss(d):
 
     return str(int(float(max(TR_prices))))
 
+def getOpenPositions ():
+    try:
+        base_url = REAL_OR_NO_REAL + '/positions'
+        auth_r = requests.get(base_url, headers=authenticated_headers)
+        d = json.loads(auth_r.text)
+        for positions in d['positions']:
+            epic = positions['market']['epic']
+            deal = positions['position']['dealId']
+            direction = positions['position']['direction']
+            size = positions['position']['dealSize']
+            print ("Position {} {} {} {}\n".format(epic, deal, direction, size))
+        return (d['positions'])
+
+    except Exception as e:
+        print (e)
+        return False
+
+def closePosition(deal,direction,sized):
+    try:
+        base_url = REAL_OR_NO_REAL + '/positions/otc'
+        data = {"dealId":deal,"direction":direction,"size":sized,"orderType":'MARKET'}
+        #authenticated_headers_delete IS HACKY AF WORK AROUND!! AS PER .... https://labs.ig.com/node/36
+        authenticated_headers_delete = {'Content-Type':'application/json; charset=utf-8',
+                                    'Accept':'application/json; charset=utf-8',
+                                    'X-IG-API-KEY':API_KEY,
+                                    'CST':CST_token,
+                                    'X-SECURITY-TOKEN':x_sec_token,
+                                    '_method':"DELETE"}
+    
+        r = requests.post(base_url, data=json.dumps(data), headers=authenticated_headers_delete)
+        d = json.loads(r.text)
+        deal_ref = d['dealReference']
+        time.sleep(5)
+        #CONFIRM MARKET ORDER
+        base_url = REAL_OR_NO_REAL + '/confirms/'+ deal_ref
+        auth_r = requests.get(base_url, headers=authenticated_headers)
+        d = json.loads(auth_r.text)
+        DEAL_ID = d['dealId']
+        print("DEAL ID : " + str(d['dealId']))
+        print(d['dealStatus'])
+        print(d['reason'])
+        time.sleep(5)
+    except:
+        print ("Something went wrong with close position")
 
 if __name__ == '__main__':
 
@@ -589,22 +635,49 @@ if __name__ == '__main__':
             print("-----------------DEBUG-----------------")
             print("#################DEBUG#################")
 
-            if float(percent_used) > 70:
+            doTrade = 1
+            if float(percent_used) > 60:
                 print("!!DEBUG!!...Don't trade, Too much margin used up already")
-                time.sleep(60)
-                continue
+                if (tradeCheck < 5):
+                    print("!!DEBUG!!...Just sleeping tradeCheck is {}".format(tradeCheck))
+                    tradeCheck = tradeCheck + 1
+                    time.sleep(60)
+                    continue
+                else:
+                    print("!!DEBUG!!...Checking for trades gone bad tradeCheck is {}".format(tradeCheck))
+                    tradeCheck = 0
+                    time.sleep(5)
+                    doTrade = 0
             else:
                 print("!!DEBUG!!...OK to trade, Account balance OK!!")
 
-            tradeable_epic_ids = find_good_epics()
+            curPositions = getOpenPositions()
+            tradeable_epic_ids = []
+            if (doTrade == 1):
+                tradeable_epic_ids = find_good_epics()
+
+            if (doTrade == 0):
+                for positions in curPositions:
+                    tradeable_epic_ids.append (positions['market']['epic'])
+
             shuffle(tradeable_epic_ids)
 
         except Exception as e:
             print(e)
             print("!!DEBUG!!...No Suitable Epics...Yet!!, Try again!!")
+            time.sleep(5)
             continue
 
+
         for epic_id in tradeable_epic_ids:
+            numPositions = 0 
+            for positions in curPositions:
+                if (epic_id == positions['market']['epic']):
+                    numPositions = numPositions + 1
+
+            #if (numPositions >= 2):
+            #    print ("DEBUG - Already have {} open positions for epic {}".format(numPositions, epic_id))
+            #    continue ;
 
             base_url = REAL_OR_NO_REAL + "/prices/" + epic_id + "/MINUTE_15/16"
             auth_r = requests.get(base_url, headers=authenticated_headers)
@@ -670,7 +743,7 @@ if __name__ == '__main__':
                                     float(current_bid)) / SL_MULTIPLIER)
                 print("-----------------DEBUG-----------------")
                 print("#################DEBUG#################")
-                print("!!DEBUG!!...BUY!!")
+                print("!!DEBUG!!...SELL!!")
                 print(str(epic_id))
                 print(
                     "!!DEBUG!!...Take Profit@...." +
@@ -687,7 +760,7 @@ if __name__ == '__main__':
                                     float(current_bid)) / SL_MULTIPLIER)
                 print("-----------------DEBUG-----------------")
                 print("#################DEBUG#################")
-                print("!!DEBUG!!...SELL!!")
+                print("!!DEBUG!!...BUY!!")
                 print(str(epic_id))
                 print(
                     "!!DEBUG!!...Take Profit@...." +
@@ -715,9 +788,24 @@ if __name__ == '__main__':
                     stopDistance_value) >= HIGH_SL_WATERMARK:
                 TRADE_DIRECTION = "NONE"
 
-            try:
-                are_we_going_to_trade(epic_id, TRADE_DIRECTION, pip_limit)
-            except Exception as e:
-                print(e)
-                print("Something fucked up!!, Try again!!")
-                continue
+            #check for position gone bad
+            for positions in curPositions:
+                if (epic_id == positions['market']['epic']):
+                    posDir = positions['position']['direction']
+                    if (TRADE_DIRECTION != posDir and TRADE_DIRECTION != "NONE"):
+                        print ("TRADE_DIRECTION {} position direction {}".format(TRADE_DIRECTION, posDir))
+                        if (posDir == "BUY"):
+                            posDir = "SELL"
+                        else:
+                            posDir = "BUY"
+                        closePosition(positions['position']['dealId'], posDir, positions['position']['dealSize'])
+
+            if (doTrade):
+                try:
+                    are_we_going_to_trade(epic_id, TRADE_DIRECTION, pip_limit)
+                except Exception as e:
+                    print(e)
+                    print("Something messed up!!, Try again!!")
+                    continue
+            else:
+                time.sleep(5)
