@@ -108,7 +108,7 @@ if __name__ == '__main__':
     numFailureCandle = 0
     numSuccessCandle = 0
     db,cursor = connectDatabase()
-    for goes in range(3000):
+    for goes in range(48500):
         tradeable_epic_ids = []
         tradeable_epic_ids.append("EURUSD")
         for epic_id in tradeable_epic_ids:
@@ -154,19 +154,25 @@ if __name__ == '__main__':
             TRADE_DIRECTION = "NONE"
             if (midSlope < -1.0):
                 stopDist = int(midIntercept - cbid)
-                stopDist = int(midStopAt - cbid)
+                #stopDist = int(midStopAt - cbid)
                 pip_limit = int(midLatest - cbid)
-                #print ("midLatest {} stopDist {} pip_limit {}".format(midLatest, stopDist, pip_limit))
                 if (pip_limit >= 4 and stopDist >= 10):
+                    if (pip_limit > 12):
+                        pip_limit = 12 
+                    pip_limit = 3
+                    print ("midLatest {} stopDist {} pip_limit {}".format(midLatest, stopDist, pip_limit))
                     TRADE_DIRECTION = "SELL"
                     numTrades = numTrades + 1
 
             elif (midSlope > 1.0):
                 stopDist = int(cbid - midIntercept)
-                stopDist = int(cbid - midStopAt)
+                #stopDist = int(cbid - midStopAt)
                 pip_limit = int(cbid - midLatest)
-                #print ("midLatest {} stopDist {} pip_limit {}".format(midLatest, stopDist, pip_limit))
                 if (pip_limit >= 4 and stopDist >= 10):
+                    if (pip_limit > 12):
+                        pip_limit = 12 
+                    pip_limit = 3
+                    print ("midLatest {} stopDist {} pip_limit {}".format(midLatest, stopDist, pip_limit))
                     TRADE_DIRECTION = "BUY"
                     numTrades = numTrades + 1
 
@@ -192,35 +198,35 @@ if __name__ == '__main__':
                         numFailureCandle = numFailureCandle + i -16
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
-                        print ("Trade failure (GONE BAD) on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
+                        print ("Trade failure (GONE BAD) on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i-16,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
                         break
-                    elif (chigh_prices[i] >= (cbid + pip_limit) and clow_prices[i] > (cbid - stopDist)):
+                    elif (chigh_prices[i] >= (cbid + pip_limit + 1) and clow_prices[i] > (cbid - stopDist)):
                         runningTotal = runningTotal + pip_limit
                         numSuccess = numSuccess + 1
                         numSuccessCandle = numSuccessCandle + i -16
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
-                        print ("Trade success on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
+                        print ("Trade success on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i-16,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
                         break
-                    elif (chigh_prices[i] < (cbid + pip_limit) and clow_prices[i] < (cbid - stopDist)):
+                    elif (chigh_prices[i] < (cbid + pip_limit + 1) and clow_prices[i] < (cbid - stopDist)):
                         runningTotal = runningTotal - stopDist
                         numFailure = numFailure + 1
                         numFailureCandle = numFailureCandle + i -16
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
-                        print ("Trade failure on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
+                        print ("Trade failure on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i-16,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
                         break
-                    elif (chigh_prices[i] >= (cbid + pip_limit) and clow_prices[i] < (cbid - stopDist)):
+                    elif (chigh_prices[i] >= (cbid + pip_limit + 1) and clow_prices[i] < (cbid - stopDist)):
                         numUnknown = numUnknown + 1
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
-                        print ("Trade unknown on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
+                        print ("Trade unknown on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i-16,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
                         break
                     elif (i == len(copen_prices) - 1):
                         numOutstanding = numOutstanding + 1
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
-                        print ("Trade still open on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
+                        print ("Trade still open on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i-16,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
             elif (TRADE_DIRECTION == "SELL"):
                 for i in range (len(copen_prices)):
                     if (i < 16):
@@ -235,40 +241,40 @@ if __name__ == '__main__':
                     nmidSlope = float (nmid_prices_slope)
 
                     if (nmidSlope > 1.0):
-                        runningTotal = runningTotal - (cbid - nmidPrice)
+                        runningTotal = runningTotal - (nmidPrice - cbid)
                         numFailure = numFailure + 1
                         numFailureCandle = numFailureCandle + i - 16
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
-                        print ("Trade failure (GONE BAD) on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
+                        print ("Trade failure (GONE BAD) on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i-16,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
                         break
-                    elif (clow_prices[i] <= (cbid - pip_limit) and chigh_prices[i] < (cbid + stopDist)):
+                    elif (clow_prices[i] <= (cbid - pip_limit - 1) and chigh_prices[i] < (cbid + stopDist)):
                         runningTotal = runningTotal + pip_limit
                         numSuccess = numSuccess + 1
                         numSuccessCandle = numSuccessCandle + i - 16
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
-                        print ("Trade success on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
+                        print ("Trade success on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i-16,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
                         break
-                    elif (clow_prices[i] > (cbid - pip_limit) and chigh_prices[i] > (cbid + stopDist)):
+                    elif (clow_prices[i] > (cbid - pip_limit - 1) and chigh_prices[i] > (cbid + stopDist)):
                         runningTotal = runningTotal - stopDist
                         numFailure = numFailure + 1
                         numFailureCandle = numFailureCandle + i -16
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
-                        print ("Trade failure on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
+                        print ("Trade failure on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i-16,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
                         break
-                    elif (clow_prices[i] <= (cbid - pip_limit) and chigh_prices[i] > (cbid + stopDist)):
+                    elif (clow_prices[i] <= (cbid - pip_limit - 1) and chigh_prices[i] > (cbid + stopDist)):
                         numUnknown = numUnknown + 1
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
-                        print ("Trade unknown on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
+                        print ("Trade unknown on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i-16,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
                         break
                     elif (i == len(copen_prices) - 1):
                         numOutstanding = numOutstanding + 1
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
-                        print ("Trade still open on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
+                        print ("Trade still open on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i-16,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
 
     db.close()
     try:
