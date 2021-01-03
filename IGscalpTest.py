@@ -32,6 +32,23 @@ from json import dumps
 from requests import get
 from http import HTTPStatus
 
+SL_MULTIPLIER = 4
+LOW_SL_WATERMARK = 10
+HIGH_SL_WATERMARK = 90
+STR_CHECK = ""
+
+def distance(a, b):
+    if (a == b):
+        return 0
+    elif (a < 0) and (b < 0) or (a > 0) and (b > 0):
+        if (a < b):
+            return (abs(abs(a) - abs(b)))
+        else:
+            return -(abs(abs(a) - abs(b)))
+    else:
+        return math.copysign((abs(a) + abs(b)), b)
+
+
 def connectDatabase():
     print("Connecting to database using MySQLdb")
     db = MySQLdb.connect(host='localhost',
@@ -92,6 +109,49 @@ def getPrices (epic_id, row, period, num):
 
     return  open_prices, high_prices, low_prices, mid_prices, close_prices
 
+def Chandelier_Exit_formula(TRADE_DIR, ATR, Price):
+
+    if TRADE_DIR == "BUY":
+
+        return float(Price) - float(ATR) * 3
+
+    elif TRADE_DIR == "SELL":
+
+        return float(Price) + float(ATR) * 3
+
+def calculate_stop_loss(close_prices,high_prices,low_prices):
+
+    price_ranges = []
+    closing_prices = []
+    first_time_round_loop = True
+    TR_prices = []
+    price_compare = "bid"
+
+    for i in range (16):
+        if first_time_round_loop:
+            # First time round loop cannot get previous
+            closePrice = close_prices[i]
+            closing_prices.append(closePrice)
+            high_price = high_prices[i]
+            low_price = low_prices[i]
+            price_range = float(high_price - closePrice)
+            price_ranges.append(price_range)
+            first_time_round_loop = False
+        else:
+            prev_close = closing_prices[-1]
+            ###############################
+            closePrice = close_prices[i]
+            closing_prices.append(closePrice)
+            high_price = high_prices[i]
+            low_price = low_prices[i]
+            price_range = float(high_price - closePrice)
+            price_ranges.append(price_range)
+            TR = max(high_price - low_price,
+                     abs(high_price - prev_close),
+                     abs(low_price - prev_close))
+            TR_prices.append(TR)
+
+    return str(int(float(max(TR_prices))))
 
 def midpoint(p1, p2):
     return (p1 + p2) / 2
@@ -103,21 +163,35 @@ if __name__ == '__main__':
     numTrades = 0
     numSuccess = 0
     numFailure = 0
+    numBuySuccess = 0
+    numSellSuccess = 0
     numUnknown = 0
     numOutstanding = 0
     numFailureCandle = 0
     numSuccessCandle = 0
+    runningBuySuccess = 0.0
+    runningSellSuccess = 0.0
     db,cursor = connectDatabase()
-    for goes in range(48500):
+    for goes in range(300000):
         tradeable_epic_ids = []
-        tradeable_epic_ids.append("EURUSD")
+        tradeable_epic_ids.append("GBPUSD")
         for epic_id in tradeable_epic_ids:
 
-            #theRow = random.randint (0,49800)
             theRow = goes
+            theRow = random.randint (0,49800)
             open_prices, high_prices, low_prices, mid_prices, close_prices = getPrices(epic_id, theRow, 5, 16) ;
             copen_prices, chigh_prices, clow_prices, cmid_prices, cclose_prices = getPrices(epic_id, theRow, 5, 1000) ;
-            current_bid = cmid_prices[16]
+           
+            current_low = clow_prices[16]
+            clow = int(current_low)
+            current_high = chigh_prices[16]
+            chigh = int(current_high)
+            #current_bid = cmid_prices[16]
+            cmid = cmid_prices[16]
+            current_bid = random.randint (clow, chigh)
+            cbid = float(current_bid)
+            #cbid = cmid
+
             #print ("Current bid {}".format(current_bid))
             #print (mid_prices)
             #print (copen_prices)
@@ -144,37 +218,61 @@ if __name__ == '__main__':
             #    epic_id, high_prices_slope, high_prices_intercept, high_prices_r_value, high_prices_p_value, high_prices_std_err))
 
 
-            cbid = float(current_bid)
             midIntercept = float (mid_prices_intercept)
             midSlope = float (mid_prices_slope)
 
             midStopAt = midIntercept +  ((len(mid_prices) - 12) * midSlope)
             midLatest = midIntercept +  (len(mid_prices) * midSlope)
 
-            TRADE_DIRECTION = "NONE"
-            if (midSlope < -1.0):
-                stopDist = int(midIntercept - cbid)
-                #stopDist = int(midStopAt - cbid)
-                pip_limit = int(midLatest - cbid)
-                if (pip_limit >= 4 and stopDist >= 10):
-                    if (pip_limit > 12):
-                        pip_limit = 12 
-                    pip_limit = 3
-                    print ("midLatest {} stopDist {} pip_limit {}".format(midLatest, stopDist, pip_limit))
-                    TRADE_DIRECTION = "SELL"
-                    numTrades = numTrades + 1
+            ATR = calculate_stop_loss(cclose_prices, chigh_prices, clow_prices)
 
+
+            TRADE_DIRECTION = "NONE"
+
+            #if distance(current_bid, mid_prices_intercept) < -1:
+            if (midSlope < -1.0):
+                TRADE_DIRECTION = "SELL"
+                #pip_limit = int(midSlope * -4.0)
+                pip_limit1 = int(midLatest - cbid)
+                pip_limit = int(abs(float(max(high_prices)) - float(current_bid)) / SL_MULTIPLIER)
+                if (pip_limit1 > pip_limit):
+                    pip_limit = pip_limit1
+
+                stopDist = int(midIntercept - cbid)
+                ce_stop = Chandelier_Exit_formula(TRADE_DIRECTION, ATR, min(low_prices))
+                tmp_stop = int(abs(float(current_bid) - (ce_stop)))
+            #elif distance(current_bid, mid_prices_intercept) > 1:
             elif (midSlope > 1.0):
+                TRADE_DIRECTION = "BUY"
+                pip_limit1 = int(cbid - midLatest)
+                pip_limit = int(abs(float(min(low_prices)) - float(current_bid)) / SL_MULTIPLIER)
+                if (pip_limit1 > pip_limit):
+                    pip_limit = pip_limit1
+
                 stopDist = int(cbid - midIntercept)
-                #stopDist = int(cbid - midStopAt)
-                pip_limit = int(cbid - midLatest)
-                if (pip_limit >= 4 and stopDist >= 10):
-                    if (pip_limit > 12):
-                        pip_limit = 12 
-                    pip_limit = 3
-                    print ("midLatest {} stopDist {} pip_limit {}".format(midLatest, stopDist, pip_limit))
-                    TRADE_DIRECTION = "BUY"
-                    numTrades = numTrades + 1
+                ce_stop = Chandelier_Exit_formula(TRADE_DIRECTION, ATR, max(high_prices))
+                tmp_stop = int(abs(float(current_bid) - (ce_stop)))
+            else:
+                pip_limit = 9999999
+                tmp_stop = "999999"
+                TRADE_DIRECTION = "NONE"
+
+            if int(pip_limit) <= 10:
+                TRADE_DIRECTION = "NONE"
+
+            stopDistance_value = str(tmp_stop)
+            stopDist = float(stopDistance_value)
+
+            if int(stopDistance_value) <= LOW_SL_WATERMARK or int(stopDistance_value) >= HIGH_SL_WATERMARK:
+                TRADE_DIRECTION = "NONE"
+
+            if (TRADE_DIRECTION != "NONE"):
+                print ("Direction {} Stop {} Limit {} Limit1 {}".format(TRADE_DIRECTION,stopDist,pip_limit,pip_limit1))
+
+            potProfit = pip_limit  -1
+            potLoss = stopDist 
+            #pip_limit = pip_limit + 1
+            #stopDist = stopDist - 1
 
             if (TRADE_DIRECTION == "NONE"):
                 asdf = "asdf"
@@ -186,6 +284,7 @@ if __name__ == '__main__':
                     # this is the auto reverse stuff
                     nopen_prices, nhigh_prices, nlow_prices, nmid_prices, nclose_prices = getPrices(epic_id, i+theRow-16, 5, 16) ;
                     nmidPrice = int(cmid_prices[i])
+                    nmidPrice = random.randint (clow_prices[i], chigh_prices[i])
                     nmid_prices = numpy.asarray(nmid_prices)
                     xi = numpy.arange(0, len(nmid_prices))
                     nmid_prices_slope, nmid_prices_intercept, nmid_prices_r_value, nmid_prices_p_value, nmid_prices_std_err = stats.linregress(xi, nmid_prices)
@@ -200,23 +299,25 @@ if __name__ == '__main__':
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
                         print ("Trade failure (GONE BAD) on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i-16,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
                         break
-                    elif (chigh_prices[i] >= (cbid + pip_limit + 1) and clow_prices[i] > (cbid - stopDist)):
-                        runningTotal = runningTotal + pip_limit
+                    elif (chigh_prices[i] >= (cbid + pip_limit) and clow_prices[i] > (cbid - stopDist)):
+                        runningTotal = runningTotal + potProfit
                         numSuccess = numSuccess + 1
+                        numBuySuccess = numBuySuccess + 1
+                        runningBuySuccess = runningBuySuccess + midSlope
                         numSuccessCandle = numSuccessCandle + i -16
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
                         print ("Trade success on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i-16,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
                         break
-                    elif (chigh_prices[i] < (cbid + pip_limit + 1) and clow_prices[i] < (cbid - stopDist)):
-                        runningTotal = runningTotal - stopDist
+                    elif (chigh_prices[i] < (cbid + pip_limit) and clow_prices[i] < (cbid - stopDist)):
+                        runningTotal = runningTotal - potLoss 
                         numFailure = numFailure + 1
                         numFailureCandle = numFailureCandle + i -16
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
                         print ("Trade failure on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i-16,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
                         break
-                    elif (chigh_prices[i] >= (cbid + pip_limit + 1) and clow_prices[i] < (cbid - stopDist)):
+                    elif (chigh_prices[i] >= (cbid + pip_limit) and clow_prices[i] < (cbid - stopDist)):
                         numUnknown = numUnknown + 1
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
@@ -234,6 +335,7 @@ if __name__ == '__main__':
                     # this is the auto reverse stuff
                     nopen_prices, nhigh_prices, nlow_prices, nmid_prices, nclose_prices = getPrices(epic_id, i+theRow-16, 5, 16) ;
                     nmidPrice = int(cmid_prices[i])
+                    nmidPrice = random.randint (clow_prices[i], chigh_prices[i])
                     nmid_prices = numpy.asarray(nmid_prices)
                     xi = numpy.arange(0, len(nmid_prices))
                     nmid_prices_slope, nmid_prices_intercept, nmid_prices_r_value, nmid_prices_p_value, nmid_prices_std_err = stats.linregress(xi, nmid_prices)
@@ -248,23 +350,25 @@ if __name__ == '__main__':
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
                         print ("Trade failure (GONE BAD) on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i-16,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
                         break
-                    elif (clow_prices[i] <= (cbid - pip_limit - 1) and chigh_prices[i] < (cbid + stopDist)):
-                        runningTotal = runningTotal + pip_limit
+                    elif (clow_prices[i] <= (cbid - pip_limit) and chigh_prices[i] < (cbid + stopDist)):
+                        runningTotal = runningTotal + potProfit
                         numSuccess = numSuccess + 1
+                        numSellSuccess = numSellSuccess + 1
+                        runningSellSuccess = runningSellSuccess + midSlope
                         numSuccessCandle = numSuccessCandle + i - 16
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
                         print ("Trade success on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i-16,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
                         break
-                    elif (clow_prices[i] > (cbid - pip_limit - 1) and chigh_prices[i] > (cbid + stopDist)):
-                        runningTotal = runningTotal - stopDist
+                    elif (clow_prices[i] > (cbid - pip_limit) and chigh_prices[i] > (cbid + stopDist)):
+                        runningTotal = runningTotal - potLoss
                         numFailure = numFailure + 1
                         numFailureCandle = numFailureCandle + i -16
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
                         print ("Trade failure on candle {} total {} numTrades {} success {} fail {} unknown {} outstanding {}".format(i-16,runningTotal,numTrades,numSuccess,numFailure,numUnknown,numOutstanding))
                         break
-                    elif (clow_prices[i] <= (cbid - pip_limit - 1) and chigh_prices[i] > (cbid + stopDist)):
+                    elif (clow_prices[i] <= (cbid - pip_limit) and chigh_prices[i] > (cbid + stopDist)):
                         numUnknown = numUnknown + 1
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
                                 epic_id, mid_prices_slope, mid_prices_intercept, mid_prices_r_value, mid_prices_p_value, mid_prices_std_err))
@@ -278,7 +382,8 @@ if __name__ == '__main__':
 
     db.close()
     try:
-        print ("average success candle {} average failure candle {}".format(numSuccessCandle / numSuccess,numFailureCandle /numFailure))
+        print ("average success candle {} average failure candle {} averageBuySuccessSlope {} averageSellSuccessSlope {}".format(
+                    numSuccessCandle / numSuccess,numFailureCandle /numFailure, runningBuySuccess / numBuySuccess, runningSellSuccess / numSellSuccess))
     except:
         pass
 
