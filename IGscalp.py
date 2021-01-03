@@ -39,7 +39,6 @@ main_epic_ids = [
     'CS.D.USDCAD.TODAY.IP',
     'CS.D.USDCHF.TODAY.IP',
     'CS.D.USDJPY.TODAY.IP',
-    'CS.D.CADCHF.TODAY.IP',
     'CS.D.CADJPY.TODAY.IP',
     'CS.D.CHFJPY.TODAY.IP',
     'CS.D.EURCAD.TODAY.IP',
@@ -50,10 +49,7 @@ main_epic_ids = [
     'CS.D.GBPJPY.TODAY.IP',
     'CS.D.GBPSGD.TODAY.IP',
     'CS.D.GBPZAR.TODAY.IP',
-    'CS.D.MXNJPY.TODAY.IP',
-    'CS.D.NOKJPY.TODAY.IP',
     'CS.D.PLNJPY.TODAY.IP',
-    'CS.D.SEKJPY.TODAY.IP',
     'CS.D.SGDJPY.TODAY.IP',
     'CS.D.USDSGD.TODAY.IP',
     'CS.D.USDZAR.TODAY.IP',
@@ -69,47 +65,29 @@ main_epic_ids = [
     'CS.D.GBPAUD.TODAY.IP',
     'CS.D.GBPNZD.TODAY.IP',
     'CS.D.NZDAUD.TODAY.IP',
-    'CS.D.NZDCAD.TODAY.IP',
-    'CS.D.NZDCHF.TODAY.IP',
     'CS.D.NZDEUR.TODAY.IP',
     'CS.D.NZDGBP.TODAY.IP',
     'CS.D.NZDJPY.TODAY.IP',
     'CS.D.NZDUSD.TODAY.IP',
-    'CS.D.CHFHUF.TODAY.IP',
     'CS.D.EURCZK.TODAY.IP',
     'CS.D.EURHUF.TODAY.IP',
     'CS.D.EURILS.TODAY.IP',
-    'CS.D.EURMXN.TODAY.IP',
     'CS.D.EURPLN.TODAY.IP',
     'CS.D.EURTRY.TODAY.IP',
     'CS.D.GBPCZK.TODAY.IP',
     'CS.D.GBPHUF.TODAY.IP',
     'CS.D.GBPILS.TODAY.IP',
-    'CS.D.GBPMXN.TODAY.IP',
     'CS.D.GBPPLN.TODAY.IP',
     'CS.D.GBPTRY.TODAY.IP',
     'CS.D.TRYJPY.TODAY.IP',
     'CS.D.USDCZK.TODAY.IP',
     'CS.D.USDHUF.TODAY.IP',
     'CS.D.USDILS.TODAY.IP',
-    'CS.D.USDMXN.TODAY.IP',
     'CS.D.USDPLN.TODAY.IP',
     'CS.D.USDTRY.TODAY.IP',
-    'CS.D.CADNOK.TODAY.IP',
-    'CS.D.CHFNOK.TODAY.IP',
     'CS.D.EURDKK.TODAY.IP',
-    'CS.D.EURNOK.TODAY.IP',
-    'CS.D.EURSEK.TODAY.IP',
     'CS.D.GBPDKK.TODAY.IP',
-    'CS.D.GBPNOK.TODAY.IP',
-    'CS.D.GBPSEK.TODAY.IP',
-    'CS.D.NOKSEK.TODAY.IP',
     'CS.D.USDDKK.TODAY.IP',
-    'CS.D.USDNOK.TODAY.IP',
-    'CS.D.USDSEK.TODAY.IP',
-    'CS.D.AUDCNH.TODAY.IP',
-    'CS.D.CADCNH.TODAY.IP',
-    'CS.D.CNHJPY.TODAY.IP',
     'CS.D.BRLJPY.TODAY.IP',
     'CS.D.GBPINR.TODAY.IP',
     'CS.D.USDBRL.TODAY.IP',
@@ -118,13 +96,7 @@ main_epic_ids = [
     'CS.D.USDKRW.TODAY.IP',
     'CS.D.USDMYR.TODAY.IP',
     'CS.D.USDPHP.TODAY.IP',
-    'CS.D.USDTWD.TODAY.IP',
-    'CS.D.EURCNH.TODAY.IP',
-    'CS.D.sp_EURRUB.TODAY.IP',
-    'CS.D.GBPCNH.TODAY.IP',
-    'CS.D.NZDCNH.TODAY.IP',
-    'CS.D.USDCNH.TODAY.IP',
-    'CS.D.sp_USDRUB.TODAY.IP']
+    'CS.D.USDTWD.TODAY.IP']
 # ALL EPICS
 
 tradeCheck = 10
@@ -421,14 +393,12 @@ def find_good_epics():
                               str(i_count) + "/" + str(len(main_epic_ids)))
                         time.sleep(1)
                     else:
-                        print(
-                            "!!DEBUG!!...skipping, NO GOOD EPIC....Checking next epic spreads..." +
-                            str(i_count) +
-                            "/" +
-                            str(
-                                len(main_epic_ids)))
+                        print("!!DEBUG!!...skipping, NO GOOD EPIC {} spread {} ....Checking next epic spreads...{}/{}".format(epic_id,spread,i_count,len(main_epic_ids)))
                         time.sleep(1)
                         continue
+                else:
+                    print("!!DEBUG!!...skipping, NOT CURRENTLY TRADEABLE EPIC {} ....Checking next epic spreads...{}/{}".format(epic_id,i_count,len(main_epic_ids)))
+
 
         except Exception as e:
             print(e)
@@ -604,9 +574,19 @@ def closePosition(deal,direction,sized):
 
 if __name__ == '__main__':
 
+    lastTrades = -1 
     while True:
 
         try:
+
+            if (lastTrades == 0):
+                print ("DEBUG - no trade last time - waiting 10 mins")
+                time.sleep(600)
+            elif (lastTrades != -1):
+                print ("DEBUG - last time did {} trades -  waiting 10 mins".format(lastTrades))
+                time.sleep(600)
+
+            lastTrades = 0
 
             base_url = REAL_OR_NO_REAL + "/accounts"
             auth_r = requests.get(base_url, headers=authenticated_headers)
@@ -635,21 +615,13 @@ if __name__ == '__main__':
             print("-----------------DEBUG-----------------")
             print("#################DEBUG#################")
 
-            doTrade = 1
-            if float(percent_used) > 60:
+            if float(percent_used) > 80:
                 print("!!DEBUG!!...Don't trade, Too much margin used up already")
-                if (tradeCheck < 10):
-                    print("!!DEBUG!!...Just sleeping tradeCheck is {}".format(tradeCheck))
-                    tradeCheck = tradeCheck + 1
-                    time.sleep(60)
-                    continue
-                else:
-                    print("!!DEBUG!!...Checking for trades gone bad tradeCheck is {}".format(tradeCheck))
-                    tradeCheck = 0
-                    time.sleep(5)
-                    doTrade = 0
+                print("!!DEBUG!!...Checking for trades gone bad tradeCheck is {}".format(tradeCheck))
+                doTrade = 0
             else:
                 print("!!DEBUG!!...OK to trade, Account balance OK!!")
+                doTrade = 1
 
             curPositions = getOpenPositions()
             tradeable_epic_ids = []
@@ -757,6 +729,8 @@ if __name__ == '__main__':
             midLatest = midIntercept +  (len(mid_prices) * midSlope)
             stopDist = 999999
 
+            TRADE_DIRECTION = "NONE"
+
             if (midSlope < -1.0):
                 stopDist = int(midIntercept - cbid)
                 TRADE_DIRECTION = "SELL"
@@ -811,8 +785,8 @@ if __name__ == '__main__':
                             posDir = "BUY"
                         closePosition(positions['position']['dealId'], posDir, positions['position']['dealSize'])
 
-            if int(pip_limit) <= 1:
-                print("!!DEBUG!!...No Trade!!, Pip Limit Under 2")
+            if int(pip_limit) <= 10:
+                print("!!DEBUG!!...No Trade!!, Pip Limit Under 11")
                 TRADE_DIRECTION = "NONE"
 
             stopDistance_value = str(tmp_stop)
@@ -824,6 +798,9 @@ if __name__ == '__main__':
 
 
             if (doTrade):
+                if (TRADE_DIRECTION != "NONE"):
+                    lastTrades = lastTrades + 1
+
                 try:
                     are_we_going_to_trade(epic_id, TRADE_DIRECTION, pip_limit)
                 except Exception as e:

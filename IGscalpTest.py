@@ -171,14 +171,18 @@ if __name__ == '__main__':
     numSuccessCandle = 0
     runningBuySuccess = 0.0
     runningSellSuccess = 0.0
+
+    runningTotals = []
+    trades = []
+    midSlopes = []
+
     db,cursor = connectDatabase()
-    for goes in range(300000):
+    for goes in range(48500):
         tradeable_epic_ids = []
         tradeable_epic_ids.append("GBPUSD")
         for epic_id in tradeable_epic_ids:
 
             theRow = goes
-            theRow = random.randint (0,49800)
             open_prices, high_prices, low_prices, mid_prices, close_prices = getPrices(epic_id, theRow, 5, 16) ;
             copen_prices, chigh_prices, clow_prices, cmid_prices, cclose_prices = getPrices(epic_id, theRow, 5, 1000) ;
            
@@ -234,24 +238,32 @@ if __name__ == '__main__':
                 TRADE_DIRECTION = "SELL"
                 #pip_limit = int(midSlope * -4.0)
                 pip_limit1 = int(midLatest - cbid)
-                pip_limit = int(abs(float(max(high_prices)) - float(current_bid)) / SL_MULTIPLIER)
-                if (pip_limit1 > pip_limit):
+                pip_limit2 = int(abs(float(max(high_prices)) - float(current_bid)) / SL_MULTIPLIER)
+                if (pip_limit1 > pip_limit2):
                     pip_limit = pip_limit1
+                else:
+                    pip_limit = pip_limit2
 
                 stopDist = int(midIntercept - cbid)
                 ce_stop = Chandelier_Exit_formula(TRADE_DIRECTION, ATR, min(low_prices))
                 tmp_stop = int(abs(float(current_bid) - (ce_stop)))
+
+
             #elif distance(current_bid, mid_prices_intercept) > 1:
             elif (midSlope > 1.0):
                 TRADE_DIRECTION = "BUY"
                 pip_limit1 = int(cbid - midLatest)
-                pip_limit = int(abs(float(min(low_prices)) - float(current_bid)) / SL_MULTIPLIER)
-                if (pip_limit1 > pip_limit):
+                pip_limit2 = int(abs(float(min(low_prices)) - float(current_bid)) / SL_MULTIPLIER)
+                if (pip_limit1 > pip_limit2):
                     pip_limit = pip_limit1
+                else:
+                    pip_limit = pip_limit2
 
                 stopDist = int(cbid - midIntercept)
                 ce_stop = Chandelier_Exit_formula(TRADE_DIRECTION, ATR, max(high_prices))
                 tmp_stop = int(abs(float(current_bid) - (ce_stop)))
+
+
             else:
                 pip_limit = 9999999
                 tmp_stop = "999999"
@@ -266,11 +278,14 @@ if __name__ == '__main__':
             if int(stopDistance_value) <= LOW_SL_WATERMARK or int(stopDistance_value) >= HIGH_SL_WATERMARK:
                 TRADE_DIRECTION = "NONE"
 
-            if (TRADE_DIRECTION != "NONE"):
-                print ("Direction {} Stop {} Limit {} Limit1 {}".format(TRADE_DIRECTION,stopDist,pip_limit,pip_limit1))
+            betSize = int (pip_limit * 0.25)
+            betSize = 1
 
-            potProfit = pip_limit  -1
-            potLoss = stopDist 
+            if (TRADE_DIRECTION != "NONE"):
+                print ("theRow {} Direction {} Stop {} Limit {} Limit1 {} Limit2 {} betsize {}".format(theRow,TRADE_DIRECTION,stopDist,pip_limit,pip_limit1,pip_limit2,betSize))
+
+            potProfit = betSize * (pip_limit  -1)
+            potLoss = betSize * (stopDist + 1)
             #pip_limit = pip_limit + 1
             #stopDist = stopDist - 1
 
@@ -292,7 +307,11 @@ if __name__ == '__main__':
                     nmidSlope = float (nmid_prices_slope)
 
                     if (nmidSlope < -1.0):
-                        runningTotal = runningTotal - (cbid - nmidPrice)
+                        runningTotal = runningTotal - (betSize * (cbid - nmidPrice))
+                        runningTotals.append(runningTotal)
+                        numTrades = numTrades + 1
+                        trades.append(numTrades)
+                        midSlopes.append(mid_prices_slope)
                         numFailure = numFailure + 1
                         numFailureCandle = numFailureCandle + i -16
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
@@ -301,6 +320,10 @@ if __name__ == '__main__':
                         break
                     elif (chigh_prices[i] >= (cbid + pip_limit) and clow_prices[i] > (cbid - stopDist)):
                         runningTotal = runningTotal + potProfit
+                        runningTotals.append(runningTotal)
+                        numTrades = numTrades + 1
+                        trades.append(numTrades)
+                        midSlopes.append(mid_prices_slope)
                         numSuccess = numSuccess + 1
                         numBuySuccess = numBuySuccess + 1
                         runningBuySuccess = runningBuySuccess + midSlope
@@ -311,6 +334,10 @@ if __name__ == '__main__':
                         break
                     elif (chigh_prices[i] < (cbid + pip_limit) and clow_prices[i] < (cbid - stopDist)):
                         runningTotal = runningTotal - potLoss 
+                        runningTotals.append(runningTotal)
+                        numTrades = numTrades + 1
+                        trades.append(numTrades)
+                        midSlopes.append(mid_prices_slope)
                         numFailure = numFailure + 1
                         numFailureCandle = numFailureCandle + i -16
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
@@ -343,7 +370,11 @@ if __name__ == '__main__':
                     nmidSlope = float (nmid_prices_slope)
 
                     if (nmidSlope > 1.0):
-                        runningTotal = runningTotal - (nmidPrice - cbid)
+                        runningTotal = runningTotal - (betSize * (nmidPrice - cbid))
+                        runningTotals.append(runningTotal)
+                        numTrades = numTrades + 1
+                        trades.append(numTrades)
+                        midSlopes.append(mid_prices_slope)
                         numFailure = numFailure + 1
                         numFailureCandle = numFailureCandle + i - 16
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
@@ -352,6 +383,10 @@ if __name__ == '__main__':
                         break
                     elif (clow_prices[i] <= (cbid - pip_limit) and chigh_prices[i] < (cbid + stopDist)):
                         runningTotal = runningTotal + potProfit
+                        runningTotals.append(runningTotal)
+                        numTrades = numTrades + 1
+                        trades.append(numTrades)
+                        midSlopes.append(mid_prices_slope)
                         numSuccess = numSuccess + 1
                         numSellSuccess = numSellSuccess + 1
                         runningSellSuccess = runningSellSuccess + midSlope
@@ -362,6 +397,10 @@ if __name__ == '__main__':
                         break
                     elif (clow_prices[i] > (cbid - pip_limit) and chigh_prices[i] > (cbid + stopDist)):
                         runningTotal = runningTotal - potLoss
+                        runningTotals.append(runningTotal)
+                        numTrades = numTrades + 1
+                        trades.append(numTrades)
+                        midSlopes.append(mid_prices_slope)
                         numFailure = numFailure + 1
                         numFailureCandle = numFailureCandle + i -16
                         print ("epic {} mid_prices_slope {} mid_prices_intercept {} mid_prices_r_value {} mid_prices_p_value {} mid_prices_std_err {}".format(
@@ -386,4 +425,13 @@ if __name__ == '__main__':
                     numSuccessCandle / numSuccess,numFailureCandle /numFailure, runningBuySuccess / numBuySuccess, runningSellSuccess / numSellSuccess))
     except:
         pass
+
+    #plt.plot(trades, runningTotals)
+    #plt.show()
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15,5))
+    ax1.plot(trades, runningTotals)
+    ax2.plot(trades, midSlopes)
+    plt.show()
+
 
