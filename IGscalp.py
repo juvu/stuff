@@ -320,10 +320,9 @@ def find_good_epics():
                     now_time = datetime.datetime.now(tz=tz).strftime('%H:%M')
                     while True:
                         if is_between(str(now_time), ("22:00", "22:59")):
-                            time.sleep(1)  # Sleeping for the tally up hour
                             print("!!DEBUG!! Tally Up hour:" + str(now_time))
-                            now_time = datetime.datetime.now(
-                                tz=tz).strftime('%H:%M')
+                            time.sleep(60)  # Sleeping for the tally up hour
+                            now_time = datetime.datetime.now(tz=tz).strftime('%H:%M')
                         else:
                             break
                     #print ("!!DEBUG!! Europe/London:" + str(now_time))
@@ -628,12 +627,12 @@ if __name__ == '__main__':
             if (doTrade == 1):
                 tradeable_epic_ids = find_good_epics()
 
-            if (doTrade == 0):
-                for positions in curPositions:
-                    try:
-                        x = tradeable_epic_ids.index(positions['market']['epic'])
-                    except:
-                        tradeable_epic_ids.append (positions['market']['epic'])
+            # add in current positions for closure checking
+            for positions in curPositions:
+                try:
+                    x = tradeable_epic_ids.index(positions['market']['epic'])
+                except:
+                    tradeable_epic_ids.append (positions['market']['epic'])
 
             shuffle(tradeable_epic_ids)
 
@@ -721,6 +720,9 @@ if __name__ == '__main__':
             d = json.loads(auth_r.text)
 
             current_bid = d['snapshot']['bid']
+            ask_price = d['snapshot']['offer']
+            spread = float(current_bid) - float(ask_price)
+
             print ("Current bid {}".format(current_bid))
 
             cbid = float(current_bid)
@@ -787,6 +789,10 @@ if __name__ == '__main__':
 
             if int(pip_limit) <= 10:
                 print("!!DEBUG!!...No Trade!!, Pip Limit Under 11")
+                TRADE_DIRECTION = "NONE"
+
+            # double check the spread (current positions may not be tradeable currently)
+            if float(spread) >= -1:
                 TRADE_DIRECTION = "NONE"
 
             stopDistance_value = str(tmp_stop)
