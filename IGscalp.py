@@ -43,16 +43,12 @@ main_epic_ids = [
     'CS.D.CHFJPY.TODAY.IP',
     'CS.D.EURCAD.TODAY.IP',
     'CS.D.EURSGD.TODAY.IP',
-    'CS.D.EURZAR.TODAY.IP',
     'CS.D.GBPCAD.TODAY.IP',
     'CS.D.GBPCHF.TODAY.IP',
     'CS.D.GBPJPY.TODAY.IP',
     'CS.D.GBPSGD.TODAY.IP',
-    'CS.D.GBPZAR.TODAY.IP',
-    'CS.D.PLNJPY.TODAY.IP',
     'CS.D.SGDJPY.TODAY.IP',
     'CS.D.USDSGD.TODAY.IP',
-    'CS.D.USDZAR.TODAY.IP',
     'CS.D.AUDCAD.TODAY.IP',
     'CS.D.AUDCHF.TODAY.IP',
     'CS.D.AUDEUR.TODAY.IP',
@@ -68,35 +64,7 @@ main_epic_ids = [
     'CS.D.NZDEUR.TODAY.IP',
     'CS.D.NZDGBP.TODAY.IP',
     'CS.D.NZDJPY.TODAY.IP',
-    'CS.D.NZDUSD.TODAY.IP',
-    'CS.D.EURCZK.TODAY.IP',
-    'CS.D.EURHUF.TODAY.IP',
-    'CS.D.EURILS.TODAY.IP',
-    'CS.D.EURPLN.TODAY.IP',
-    'CS.D.EURTRY.TODAY.IP',
-    'CS.D.GBPCZK.TODAY.IP',
-    'CS.D.GBPHUF.TODAY.IP',
-    'CS.D.GBPILS.TODAY.IP',
-    'CS.D.GBPPLN.TODAY.IP',
-    'CS.D.GBPTRY.TODAY.IP',
-    'CS.D.TRYJPY.TODAY.IP',
-    'CS.D.USDCZK.TODAY.IP',
-    'CS.D.USDHUF.TODAY.IP',
-    'CS.D.USDILS.TODAY.IP',
-    'CS.D.USDPLN.TODAY.IP',
-    'CS.D.USDTRY.TODAY.IP',
-    'CS.D.EURDKK.TODAY.IP',
-    'CS.D.GBPDKK.TODAY.IP',
-    'CS.D.USDDKK.TODAY.IP',
-    'CS.D.BRLJPY.TODAY.IP',
-    'CS.D.GBPINR.TODAY.IP',
-    'CS.D.USDBRL.TODAY.IP',
-    'CS.D.USDIDR.TODAY.IP',
-    'CS.D.USDINR.TODAY.IP',
-    'CS.D.USDKRW.TODAY.IP',
-    'CS.D.USDMYR.TODAY.IP',
-    'CS.D.USDPHP.TODAY.IP',
-    'CS.D.USDTWD.TODAY.IP']
+    'CS.D.NZDUSD.TODAY.IP']
 # ALL EPICS
 
 tradeCheck = 10
@@ -297,89 +265,13 @@ def find_good_epics():
                 #print("!!DEBUG!!...skipping, FOUND CNH in..." + str(epic_id))
                 time.sleep(1)
             else:
-                b_TRADE_OK = False
-                while True:
-
-                    ###################EUROPE############################
-                    ###################EUROPE############################
-                    ###################EUROPE############################
-                    tz = pytz.timezone('Europe/Berlin')
-                    now_time = datetime.datetime.now(tz=tz).strftime('%H:%M')
-                    #print ("!!DEBUG!! Europe/Berlin:" + str(now_time))
-                    if is_between(str(now_time), ("08:00", "16:00")):
-                        #print("!!DEBUG!!...FRANKFURT MARKET OPEN!!")
-                        time.sleep(1)
-                        STR_CHECK = "EUR"
-                        if STR_CHECK in epic_id and b_ger_hol == False:
-                            b_TRADE_OK = True
-                            break
-                    ###################LONDON############################
-                    ###################LONDON############################
-                    ###################LONDON############################
-                    tz = pytz.timezone('Europe/London')
-                    now_time = datetime.datetime.now(tz=tz).strftime('%H:%M')
-                    while True:
-                        if is_between(str(now_time), ("22:00", "22:59")):
-                            print("!!DEBUG!! Tally Up hour:" + str(now_time))
-                            time.sleep(60)  # Sleeping for the tally up hour
-                            now_time = datetime.datetime.now(tz=tz).strftime('%H:%M')
-                        else:
-                            break
-                    #print ("!!DEBUG!! Europe/London:" + str(now_time))
-                    if is_between(str(now_time), ("08:00", "16:00")):
-                        #print("!!DEBUG!!...LONDON MARKET OPEN!!")
-                        time.sleep(1)
-                        STR_CHECK = "GBP"
-                        if STR_CHECK in epic_id and b_uk_hol == False:
-                            b_TRADE_OK = True
-                            break
-                    ###################NY############################
-                    ###################NY############################
-                    ###################NY############################
-                    tz = pytz.timezone('America/New_York')
-                    now_time = datetime.datetime.now(tz=tz).strftime('%H:%M')
-                    #print ("!!DEBUG!! America/New_York:" + str(now_time))
-                    if is_between(str(now_time), ("08:00", "16:00")):
-                        #print("!!DEBUG!!...NEW YORK MARKET OPEN!!")
-                        time.sleep(1)
-                        STR_CHECK = "USD"
-                        if STR_CHECK in epic_id and b_us_hol == False:
-                            b_TRADE_OK = True
-                            break
-                    ###################AUS############################
-                    ###################AUS############################
-                    ###################AUS############################
-                    tz = pytz.timezone('Australia/Sydney')
-                    now_time = datetime.datetime.now(tz=tz).strftime('%H:%M')
-                    #print ("!!DEBUG!! Australia/Sydney:" + str(now_time))
-                    if is_between(str(now_time), ("08:00", "16:00")):
-                        #print("!!DEBUG!!...SYDNEY MARKET OPEN!!")
-                        time.sleep(1)
-                        STR_CHECK = "AUD"
-                        if STR_CHECK in epic_id and b_aus_hol == False:
-                            b_TRADE_OK = True
-                            break
-                    ###################TOKYO############################
-                    ###################TOKYO############################
-                    ###################TOKYO############################
-                    tz = pytz.timezone('Asia/Tokyo')
-                    now_time = datetime.datetime.now(tz=tz).strftime('%H:%M')
-                    #print ("!!DEBUG!! Asia/Tokyo:" + str(now_time))
-                    if is_between(str(now_time), ("08:00", "16:00")):
-                        #print("!!DEBUG!!...TOKYO MARKET OPEN!!")
-                        time.sleep(1)
-                        STR_CHECK = "JPY"
-                        if STR_CHECK in epic_id and b_jp_hol == False:
-                            b_TRADE_OK = True
-                            break
-                    break
-
+                b_TRADE_OK = True
                 if b_TRADE_OK:
 
                     current_bid = d['snapshot']['bid']
                     ask_price = d['snapshot']['offer']
                     spread = float(current_bid) - float(ask_price)
-                    if float(spread) >= -1:
+                    if float(spread) >= -1.51:
                         # tmp_lst.append(epic_id)
                         # spreads_and_epics.append(tmp_lst)
                         pick_from_epics.append(epic_id)
@@ -388,8 +280,7 @@ def find_good_epics():
                         # print ("-------------------------")
                         # print ("spread : " + str(spread))
                         # print ("-------------------------")
-                        print("!!DEBUG!!...FOUND GOOD EPIC..." +
-                              str(i_count) + "/" + str(len(main_epic_ids)))
+                        print("!!DEBUG!!...FOUND GOOD EPIC {} spread {}...{}/{}".format(epic_id,spread,i_count,len(main_epic_ids)))
                         time.sleep(1)
                     else:
                         print("!!DEBUG!!...skipping, NO GOOD EPIC {} spread {} ....Checking next epic spreads...{}/{}".format(epic_id,spread,i_count,len(main_epic_ids)))
@@ -723,7 +614,7 @@ if __name__ == '__main__':
             ask_price = d['snapshot']['offer']
             spread = float(current_bid) - float(ask_price)
 
-            print ("Current bid {}".format(current_bid))
+            print ("Current bid {} Current offer {} spread {}".format(current_bid,ask_price,spread))
 
             cbid = float(current_bid)
             midIntercept = float (mid_prices_intercept)
@@ -733,7 +624,7 @@ if __name__ == '__main__':
 
             TRADE_DIRECTION = "NONE"
 
-            if (midSlope < -1.0):
+            if (midSlope < -1.0 and mid_prices_p_value < 0.05):
                 stopDist = int(midIntercept - cbid)
                 TRADE_DIRECTION = "SELL"
                 #pip_limit = int(midSlope * -4.0)
@@ -750,7 +641,7 @@ if __name__ == '__main__':
                 print( "!!DEBUG!!...Take Profit@.... {} with stop at {}".format(pip_limit, tmp_stop))
                 print("-----------------DEBUG-----------------")
                 print("#################DEBUG#################")
-            elif (midSlope > 1.0):
+            elif (midSlope > 1.0 and mid_prices_p_value < 0.05):
                 stopDist = int(cbid - midIntercept)
                 #pip_limit = int(midSlope * 4.0)
                 pip_limit1 = int(cbid - midLatest)
@@ -787,12 +678,22 @@ if __name__ == '__main__':
                             posDir = "BUY"
                         closePosition(positions['position']['dealId'], posDir, positions['position']['dealSize'])
 
-            if int(pip_limit) <= 10:
-                print("!!DEBUG!!...No Trade!!, Pip Limit Under 11")
+            if int(pip_limit) < 10:
+                print("!!DEBUG!!...No Trade!!, Pip Limit Under 10")
                 TRADE_DIRECTION = "NONE"
 
             # double check the spread (current positions may not be tradeable currently)
-            if float(spread) >= -1:
+            if float(spread) <= -1.51:
+                print ("No trade - spread has widened {} {}".format(epic_id, spread))
+                TRADE_DIRECTION = "NONE"
+
+            posCount = 0
+            for positions in curPositions:
+                if (epic_id == positions['market']['epic']):
+                    posCount= posCount+1
+
+            if (posCount >= 3):
+                print ("No trade - {} already have {} positions".format(epic_id,posCount))
                 TRADE_DIRECTION = "NONE"
 
             stopDistance_value = str(tmp_stop)
@@ -812,6 +713,5 @@ if __name__ == '__main__':
                 except Exception as e:
                     print(e)
                     print("Something messed up!!, Try again!!")
-                    continue
-            else:
-                time.sleep(5)
+
+            time.sleep(5)
