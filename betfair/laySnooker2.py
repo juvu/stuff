@@ -133,7 +133,7 @@ def PlaceLayBet(SSOID,market,horse,price,betsize):
 
     #myprint (user_req)
 
-    placed,thehorse = CheckLayBet(SSOID,market,horse)
+    placed,thehorse = CheckLayBet(SSOID,market,"AnyHorse")
     if (placed == "No"):
         req = urllib.request.Request(bet_url, data=user_req.encode('utf-8'), headers=headers)
         response= urllib.request.urlopen(req)
@@ -333,7 +333,7 @@ while (doit == 1):
         #myprint (layList)
         for item in layList:
             #myprint (item)
-            if (item['lay'] < MAXODDS and item['lay'] > MINODDS):
+            if (item['lay'] < 1000.0):
                 bet = getBetSize (SSOID)
                 betAmount = "{:.2f}".format(bet)
                 #myprint ("Market {} Player {} odds {} bet {}".format(marketList[hrow]['marketId'],str(item['selectionID']),str(item['lay']),betAmount))
