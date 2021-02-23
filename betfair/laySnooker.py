@@ -14,6 +14,9 @@ import MySQLdb
 import re
 from typing import Iterable, Dict, Union, List
 
+MINODDS = 1.25
+MAXODDS = 1.75
+
 bet_url="https://api.betfair.com/exchange/betting/json-rpc/v1"
 acceptStr = "application/json"
 
@@ -55,7 +58,7 @@ def getBetSize(SSOID):
         betsize = 2.0
     if (betsize > 20.0):
         betsize = 20.0
-    #myprint ("Betsize is {}".format(betsize))
+    myprint ("Betsize is {} available is {} exposure is {}".format(betsize,available,exposure*-1.0))
     return (betsize)
 
 def CheckLayBet(SSOID,market,selection):
@@ -95,7 +98,7 @@ def PlaceLayBet(SSOID,market,horse,price,betsize):
 
     user_req='{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/placeOrders", \
             "params": {"marketId":"'+market+'",\
-            "instructions":[{"selectionId":"'+horse+'","handicap":"0","side":"LAY","orderType":"LIMIT","limitOrder":{"size":"'+betsize+'","price":"'+price+'"}}]}, "id": 1}'
+            "instructions":[{"selectionId":"'+horse+'","handicap":"0","side":"LAY","orderType":"LIMIT","limitOrder":{"size":"'+betsize+'","timeInForce":"FILL_OR_KILL","minFillSize":"'+betsize+'","price":"'+price+'"}}]}, "id": 1}'
 
     #myprint (user_req)
 
@@ -118,9 +121,9 @@ def getMarketCatalogue(SSOID):
     countryCode= '["GB","IE","AU"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
     marketTypeCode='["WIN"]' #Market Type
 
-    MarketStartTime = (datetime.datetime.now() - datetime.timedelta(hours=12))
+    MarketStartTime = (datetime.datetime.now() - datetime.timedelta(hours=48))
     MarketStartTime = MarketStartTime.strftime('%Y-%m-%dT%H:%M:%SZ')
-    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(hours=4))
+    MarketEndTime = (datetime.datetime.now() + datetime.timedelta(hours=1))
     MarketEndTime = MarketEndTime.strftime('%Y-%m-%dT%H:%M:%SZ')
 
     maxResults = str(1000)
@@ -162,6 +165,8 @@ def getMarketStatus(SSOID, market):
         marketID = market['marketName']
         if (marketID == "Correct Score"):
             continue
+        if (marketID == "Winner"):
+            continue
         eventID = market['runners'][w]['runnerName']
         handicap = market['runners'][w]['handicap']
         if (handicap != 0.0):
@@ -179,15 +184,14 @@ def getMarketStatus(SSOID, market):
         price_jsonResponse = price_response.read()
         price_pkg = price_jsonResponse.decode('utf-8')
         price_result = json.loads(price_pkg)
-        #myprint (price_result)
         try:
-            lay = float(price_result['result'][0]['runners'][0]['ex']['availableToLay'][0]['price'])
-            size = float(price_result['result'][0]['runners'][0]['ex']['availableToLay'][0]['size'])
+            size = float(price_result['result'][0]['runners'][0]['ex']['availableToBack'][0]['size'])
             back = float(price_result['result'][0]['runners'][0]['ex']['availableToBack'][0]['price'])
-            myprint ("{} {} back is {} lay is {} size is {}".format(marketID,eventID,back,lay,size))
-            if (lay - back > 0.1):
+            myprint ("{} {} back is {} size is {}".format(marketID,eventID,back,size))
+            lay = back + 0.1
+            if (back > MAXODDS):
                 lay = 1000.0
-            if (back < 1.3):
+            if (back < MINODDS):
                 lay = 1000.0
         except:
             lay = 1000.0
@@ -225,24 +229,20 @@ while (doit == 1):
     myprint (timenow)
 
     marketList = getMarketCatalogue(SSOID)
-    numBets = 0
     for hrow in range(len(marketList)):
         layList = getMarketStatus(SSOID, marketList[hrow])
         #myprint (layList)
         for item in layList:
             #myprint (item)
-            if (item['lay'] < 2.0 and item['lay'] > 1.2):
-                numBets = 1
+            if (item['lay'] < MAXODDS and item['lay'] > MINODDS):
                 bet = getBetSize (SSOID)
                 betAmount = "{:.2f}".format(bet)
                 #myprint ("Market {} Player {} odds {} bet {}".format(marketList[hrow]['marketId'],str(item['selectionID']),str(item['lay']),betAmount))
                 myprint ("Placing lay bet")
-                PlaceLayBet(SSOID,str(marketList[hrow]['marketId']),str(item["selectionID"]),"2.0",str(betAmount))
+                odds = "{:.2f}".format(item['lay'])
+                PlaceLayBet(SSOID,str(marketList[hrow]['marketId']),str(item["selectionID"]),odds,str(betAmount))
 
-    if (numBets == 0):
-        keepAlive(SSOID)
-        time.sleep(20)
-    else:
-        time.sleep(20)
+    keepAlive(SSOID)
+    time.sleep(20)
 
 
