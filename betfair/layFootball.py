@@ -15,7 +15,7 @@ import re
 from typing import Iterable, Dict, Union, List
 
 MINODDS = 1.65
-MAXODDS = 1.95
+MAXODDS = 1.9
 BAILODDS = 1.15
 BAILMINODDS = 1.09
 BAILLAYODDS = 1.24
@@ -217,14 +217,14 @@ def PlaceBackBet(SSOID,market,horse,price,betsize):
 def getMarketCatalogue(SSOID):
     eventTypeID = '["1"]' #ID for Football
     countryCode= '["GB"]' #Country Codes. Betfair use Alpha-2 Codes under ISO 3166-1
-    marketTypeCode='["WIN"]' #Market Type
+    marketTypeCode='["MATCH_ODDS"]' #Market Type
 
     MarketStartTime = (datetime.datetime.now() - datetime.timedelta(hours=3))
     MarketStartTime = MarketStartTime.strftime('%Y-%m-%dT%H:%M:%SZ')
     MarketEndTime = (datetime.datetime.now() + datetime.timedelta(hours=1))
     MarketEndTime = MarketEndTime.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-    maxResults = str(200)
+    maxResults = str(1000)
     sortType = 'FIRST_TO_START' #Sorts the Output
     Metadata = 'RUNNER_METADATA' #Provides metadata
     priceProjection = '["EX_BEST_OFFERS"]'#Best odds
@@ -233,7 +233,7 @@ def getMarketCatalogue(SSOID):
     headers = {'X-Application': my_app_key, 'X-Authentication': SSOID, 'content-type': 'application/json'}
 
     user_req='{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/listMarketCatalogue",\
-           "params": {"filter":{"eventTypeIds":'+eventTypeID+',\
+            "params": {"filter":{"eventTypeIds":'+eventTypeID+',"marketTypeCodes":'+marketTypeCode+',\
            "marketStartTime":{"from":"'+MarketStartTime+'", "to":"'+MarketEndTime+'"}},\
            "sort":"'+sortType+'", "maxResults":"'+maxResults+'", "marketProjection":["'+Metadata+'","MARKET_START_TIME","EVENT"]}, "id": 1}'
 
