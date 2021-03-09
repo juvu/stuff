@@ -63,7 +63,7 @@ static double CashSD = 0.5 ;
 static double SpendDecrease = 0.0 ;
 static int realTerms = 1 ;
 
-calculateAnnuityInflation(Year *year)
+void calculateAnnuityInflation(Year *year)
 {
 	year->AnnuityIncrease = year->inflation - 1.0 ;
 	if (year->AnnuityIncrease < 2.5)
@@ -72,14 +72,17 @@ calculateAnnuityInflation(Year *year)
 		year->AnnuityIncrease = 5.0 ;
 }
 
-calculateNewIncomes(Year *year, Year *lastyear)
+void calculateNewIncomes(Year *year, Year *lastyear)
 {
 
 	year->FerrantiIncome = (1.0 + (lastyear->AnnuityIncrease * 0.01)) * lastyear->FerrantiIncome ;
 	year->SimonIncome = (1.0 + (lastyear->AnnuityIncrease * 0.01)) * lastyear->SimonIncome ;
 	year->stateIncome = (1.0 + (lastyear->inflation * 0.01)) * lastyear->stateIncome ;
 	year->rentIncome = (1.0 + (lastyear->inflation * 0.01)) * lastyear->rentIncome ;
-	year->TaxAllowance = (1.0 + (lastyear->inflation * 0.01)) * lastyear->TaxAllowance ;
+	if (year->year >2026)
+		year->TaxAllowance = (1.0 + (lastyear->inflation * 0.01)) * lastyear->TaxAllowance ;
+	else
+		year->TaxAllowance = lastyear->TaxAllowance ;
 	year->Spend = lastyear->Spend * ((100.0 - SpendDecrease)/100.0) ;
 	year->Spend = (1.0 + (lastyear->inflation * 0.01)) * year->Spend ;
 	year->SpendFactor = lastyear->SpendFactor;
@@ -105,7 +108,7 @@ calculateNewIncomes(Year *year, Year *lastyear)
 		lastyear->stateIncome = 0 ;
 }
 
-calculateNewTotals (Year *year, Year *lastyear)
+void calculateNewTotals (Year *year, Year *lastyear)
 {
 	if ((lastyear->FerrantiIncome < 1.0) && (lastyear->year == FerrantiYear))
 	{
@@ -200,15 +203,19 @@ int calculateIncome (Year *year)
 
 	// take the tax free amount from Zurich and pru (or from ZRP before ZurichYear)
 	year->ZRPIncome = 0.0 ;
-	if (year->year < ZurichYear)
+	if (year->year < ZurichYear && year->year < PruYear)
 	{
 		year->ZRPIncome = year->TaxAllowance ;
 	}
-	if (year->year >= ZurichYear && year->year < PruYear)
+	else if (year->year >= ZurichYear && year->year < PruYear)
 	{
 		year->ZurichIncome = taxFree ;
 	}
-	else if (year->year >= PruYear)
+	else if (year->year >= PruYear && year->year < ZurichYear)
+	{
+		year->PruIncome = taxFree ;
+	}
+	else 
 	{
 		year->ZurichIncome = taxFree / 2.0 ;
 		year->PruIncome = taxFree / 2.0 ;
@@ -224,11 +231,16 @@ int calculateIncome (Year *year)
 
 	if (required > 0)
 	{
-		required *= 1.25 ;
+		required *= 1.25 ; // tax!
 		if (year->year >= ZurichYear && year->year < PruYear)
 		{
 			year->ZurichIncome += (year->Zurich / (year->Zurich + year->ZRP + year->cash)) * required ;
 			year->ZRPIncome += (year->ZRP / (year->Zurich + year->ZRP + year->cash)) * required ;
+		}
+		else if (year->year >= PruYear && year->year < ZurichYear)
+		{
+			year->PruIncome += (year->Pru / (year->Pru + year->ZRP + year->cash)) * required ;
+			year->ZRPIncome += (year->ZRP / (year->Pru + year->ZRP + year->cash)) * required ;
 		}
 		else if (year->year >= PruYear && year->year >= ZurichYear)
 		{
@@ -283,15 +295,15 @@ int setupReturns(Year *year)
 	int sdkey = 0 ;
 	int interval = 0 ;
 
-	sdkey = random()%1000 ;
-	interval = random()%50 ;
+	sdkey = rand()%1000 ;
+	interval = rand()%50 ;
 	year->inflation = InflationMean + StandardDeviationsFromMean(sdkey, interval, InflationSD) ;
 
 	//int InvestDiff = (InvestMax - InvestMin) * 10 ;
 	//int invest = (InvestDiff > 0) ? random()%InvestDiff : 0;
 	//year->investmentReturn = (invest / 10.0) + InvestMin ;
-	sdkey = random()%1000 ;
-	interval = random()%50 ;
+	sdkey = rand()%1000 ;
+	interval = rand()%50 ;
 	year->investmentReturn = InvestMean + StandardDeviationsFromMean(sdkey, interval, InvestSD) ;
 
 	//int CashDiff = (CashMax - CashMin) * 10 ;
@@ -313,7 +325,7 @@ int processYear (Year *year, Year *lastyear)
 	return 0 ;
 }
 
-setupFerranti (Year *year)
+void setupFerranti (Year *year)
 {	
 	FILE *stream = fopen ("FerrantiData", "r") ;
 	int i=0;
@@ -349,7 +361,7 @@ setupFerranti (Year *year)
 	fclose (stream) ;
 }
 
-setupSimon (Year *year)
+void setupSimon (Year *year)
 {	
 	FILE *stream = fopen ("SimonData", "r") ;
 	int	i=0;
@@ -388,7 +400,7 @@ int sortItOut(int *a, int *b)
 }
 
 
-main(argc, argv)
+int main(argc, argv)
 int 	argc ;
 char	**argv ;
 {
@@ -409,7 +421,7 @@ char	**argv ;
     // init random seed
 
 	int seed = atoi (argv[1]) ;
-    srandom (seed) ;
+    srand (seed) ;
 
 	// store the inheritance year
 
@@ -714,5 +726,7 @@ char	**argv ;
 	/* close the input stream */
 
 	//fclose (stream) ;
+	//
+	return (0);
 }
 
