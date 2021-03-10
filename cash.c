@@ -231,22 +231,34 @@ int calculateIncome (Year *year)
 
 	if (required > 0)
 	{
-		required *= 1.25 ; // tax!
+		//required *= 1.25 ; // tax!
 		if (year->year >= ZurichYear && year->year < PruYear)
 		{
-			year->ZurichIncome += (year->Zurich / (year->Zurich + year->ZRP + year->cash)) * required ;
-			year->ZRPIncome += (year->ZRP / (year->Zurich + year->ZRP + year->cash)) * required ;
+			if (Zurich25)
+				year->ZurichIncome += (year->Zurich / (year->Zurich + year->ZRP + year->cash)) * required * 1.25;
+			else
+				year->ZurichIncome += (year->Zurich / (year->Zurich + year->ZRP + year->cash)) * required * 1.176;
+			year->ZRPIncome += (year->ZRP / (year->Zurich + year->ZRP + year->cash)) * required * 1.25;
 		}
 		else if (year->year >= PruYear && year->year < ZurichYear)
 		{
-			year->PruIncome += (year->Pru / (year->Pru + year->ZRP + year->cash)) * required ;
-			year->ZRPIncome += (year->ZRP / (year->Pru + year->ZRP + year->cash)) * required ;
+			if (Pru25)
+				year->PruIncome += (year->Pru / (year->Pru + year->ZRP + year->cash)) * required * 1.25 ;
+			else
+				year->PruIncome += (year->Pru / (year->Pru + year->ZRP + year->cash)) * required * 1.176 ;
+			year->ZRPIncome += (year->ZRP / (year->Pru + year->ZRP + year->cash)) * required * 1.25 ;
 		}
 		else if (year->year >= PruYear && year->year >= ZurichYear)
 		{
-			year->ZurichIncome += (year->Zurich / year->total) * required ;
-			year->PruIncome += (year->Pru / year->total) * required ;
-			year->ZRPIncome += (year->ZRP / year->total) * required ;
+			if (Zurich25)
+				year->ZurichIncome += (year->Zurich / year->total) * required * 1.25 ;
+			else
+				year->ZurichIncome += (year->Zurich / year->total) * required * 1.176 ;
+			if (Pru25)
+				year->PruIncome += (year->Pru / year->total) * required * 1.25;
+			else
+				year->PruIncome += (year->Pru / year->total) * required * 1.176;
+			year->ZRPIncome += (year->ZRP / year->total) * required * 1.25;
 		}
 	}
 
@@ -310,6 +322,8 @@ int setupReturns(Year *year)
 	//int cash = (CashDiff > 0) ? random()%CashDiff : 0;
 	//year->cashReturn = (cash / 10.0) + CashMin ;
 	year->cashReturn = CashMean + StandardDeviationsFromMean(sdkey, interval, CashSD) ;
+	if (year->cashReturn < 0.0)
+		year->cashReturn = 0.0;
 }
 
 int processYear (Year *year, Year *lastyear)
