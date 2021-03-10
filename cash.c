@@ -44,6 +44,7 @@ typedef struct
 	double inheritance ;
 	double income ;
 	double tax ;
+	double cashSpend ;
 } Year ;
 
 static Year	years[NUM_ITERATIONS][100] ;
@@ -135,9 +136,9 @@ void calculateNewTotals (Year *year, Year *lastyear)
 		lastyear->tax = taxable * 0.2 ;
 
 	// note - this may well be negative
-	double cashSpend = lastyear->Spend + lastyear->tax - lastyear->income ;
+	lastyear->cashSpend = lastyear->Spend + lastyear->tax - lastyear->income ;
 
-	year->cash = lastyear->cash - cashSpend ;
+	year->cash = lastyear->cash - lastyear->cashSpend ;
 	if (year->year == InheritYear + 1)
 		year->cash += lastyear->inheritance ;
 	year->cashIncome = (year->cashReturn * 0.01) * year->cash;
@@ -682,7 +683,8 @@ char	**argv ;
 		printf ("<TD><center>inheritance<center>\n") ;
 		printf ("<TD><center>income<center>\n") ;
 		printf ("<TD><center>Ratio<center>\n") ;
-		printf ("<TD><center>Running Total<center>\n") ;
+		//printf ("<TD><center>Running Total<center>\n") ;
+		printf ("<TD><center>CashSpend<center>\n") ;
 		printf ("<TR>\n") ;
 
 		int runningTotal = 0 ;
@@ -705,6 +707,7 @@ char	**argv ;
 			//inflationFactor = years[rs][0].Spend / years[rs][loop].Spend ;
 			inflationFactor = 1.0 / years[rs][loop].inflationFactor ;
 
+
 			if (!realTerms)
 				inflationFactor = 1.0 ;
 
@@ -712,7 +715,7 @@ char	**argv ;
 			printf ("<TD><center>%d<center>\n", (int) (years[rs][loop].ZRP * inflationFactor)) ;
 			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].Zurich * inflationFactor)) ;
 			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].Pru * inflationFactor)) ;
-			printf ("<TD><center>%.2f<center>\n", (years[rs][loop].investmentReturn * inflationFactor)) ;
+			printf ("<TD><center>%.2f<center>\n", (years[rs][loop].investmentReturn)) ;
 			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].cash * inflationFactor)) ;
 			printf ("<TD><center>%.2f<center>\n", (years[rs][loop].cashReturn * inflationFactor)) ;
 			printf ("<TD><center>%.2f<center>\n", years[rs][loop].inflation) ;
@@ -731,8 +734,10 @@ char	**argv ;
 			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].inheritance * inflationFactor)) ;
 			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].income * inflationFactor)) ;
 			printf ("<TD><center>%.1f<center>\n", (years[rs][loop].total / years[rs][loop].Spend)) ;
-			runningTotal +=  (int)(years[rs][loop].Spend * inflationFactor) ;
-			printf ("<TD><center>%d<center>\n", runningTotal) ;
+			//printf ("<TD><center>%d<center>\n", (int)((years[rs][loop].cash - years[rs][loop+1].cash) * inflationFactor)) ;
+			printf ("<TD><center>%d<center>\n", (int)((years[rs][loop].cashSpend) * inflationFactor)) ;
+			//runningTotal +=  (int)(years[rs][loop].Spend * inflationFactor) ;
+			//printf ("<TD><center>%d<center>\n", runningTotal) ;
 			printf ("</TR>\n") ;
 		}
 		printf ("</TABLE>\n") ;
