@@ -110,18 +110,6 @@ void calculateNewIncomes(Year *year, Year *lastyear)
 
 void calculateNewTotals (Year *year, Year *lastyear)
 {
-	if ((lastyear->FerrantiIncome < 1.0) && (lastyear->year == FerrantiYear))
-	{
-		int yearsEarly = 2029 - lastyear->year ;
-		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
-		lastyear->FerrantiIncome = reductionFactor * (lastyear->F1 + lastyear->F2 + lastyear->F3 + lastyear->F4 + lastyear->F5 + lastyear->F6) ;
-	}
-	if ((lastyear->SimonIncome < 1.0) && (lastyear->year == SimonYear))
-	{
-		int yearsEarly = 2029 - lastyear->year ;
-		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
-		lastyear->SimonIncome = reductionFactor * (lastyear->S1 + lastyear->S2) ;
-	}
 
 	lastyear->income = lastyear->FerrantiIncome + lastyear->SimonIncome + lastyear->cashIncome 
 						+ lastyear->ZurichIncome + +lastyear->ZRPIncome + lastyear->PruIncome;
@@ -180,11 +168,24 @@ void calculateNewTotals (Year *year, Year *lastyear)
 
 int calculateIncome (Year *year)
 {
+	if ((year->FerrantiIncome < 1.0) && (year->year == FerrantiYear))
+	{
+		int yearsEarly = 2029 - year->year ;
+		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
+		year->FerrantiIncome = reductionFactor * (year->F1 + year->F2 + year->F3 + year->F4 + year->F5 + year->F6) ;
+	}
+	if ((year->SimonIncome < 1.0) && (year->year == SimonYear))
+	{
+		int yearsEarly = 2029 - year->year ;
+		double reductionFactor = (100 - (yearsEarly * 1.5)) * 0.01 ;
+		year->SimonIncome = reductionFactor * (year->S1 + year->S2) ;
+	}
+
 	// note - assume only half the cashIncome is taxable (ISAs, allowances etc)
 	double income = year->FerrantiIncome + year->SimonIncome + (year->cashIncome * 0.5) ;
 	if (year->year >= InheritYear)
 		income += year->rentIncome ;
-	if (year->year > 2031)
+	if (year->year >= 2031)
 		income += year->stateIncome ;
 
 	double taxable = income - year->TaxAllowance ;
