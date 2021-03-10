@@ -717,7 +717,7 @@ char	**argv ;
 			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].Pru * inflationFactor)) ;
 			printf ("<TD><center>%.2f<center>\n", (years[rs][loop].investmentReturn)) ;
 			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].cash * inflationFactor)) ;
-			printf ("<TD><center>%.2f<center>\n", (years[rs][loop].cashReturn * inflationFactor)) ;
+			printf ("<TD><center>%.2f<center>\n", (years[rs][loop].cashReturn)) ;
 			printf ("<TD><center>%.2f<center>\n", years[rs][loop].inflation) ;
 			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].ZRPIncome * inflationFactor)) ;
 			printf ("<TD><center>%d<center>\n", (int)(years[rs][loop].ZurichIncome * inflationFactor)) ;
