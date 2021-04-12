@@ -151,23 +151,29 @@ def PlaceBackBet(SSOID,market,horse,price,betsize):
     # and if we don't already have a back bet
     layplaced,thehorse = CheckLayBet(SSOID,market,horse)
     backplaced,thehorse = CheckBackBet(SSOID,market,horse)
+    myprint ("layplace {} backplaced {}".format(layplaced, backplaced))
 
     # cash out calculation
     if (layplaced != "No" and layplaced != "Unmatched" and backplaced == "No"):
-        betsize = betsize * (layplaced / price)
-        betsizestr = str(betsize)
-        pricestr = str(price)
-        user_req='{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/placeOrders", \
-            "params": {"marketId":"'+market+'",\
-            "instructions":[{"selectionId":"'+horse+'","handicap":"0","side":"LAY","orderType":"LIMIT","limitOrder":{"size":"'+betsizestr+'","price":"'+pricestr+'"}}]}, "id": 1}'
-
-        req = urllib.request.Request(bet_url, data=user_req.encode('utf-8'), headers=headers)
-        response= urllib.request.urlopen(req)
-        jsonResponse = response.read()
-        pkg = jsonResponse.decode('utf-8')
-        result = json.loads(pkg)
-        myprint ("Placing bet on {}".format(horse))
-        myprint (result)
+        layplacedfl = float(layplaced)
+        if (layplacedfl <= 1.3):
+            myprint ("betsize {} layplaced {} price {}".format(betsize, layplaced, price))
+            betsize = betsize * (layplacedfl / price)
+            betsizestr = "{:.2f}".format(betsize)
+            pricestr = str(price)
+            user_req='{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/placeOrders", \
+                "params": {"marketId":"'+market+'",\
+                "instructions":[{"selectionId":"'+horse+'","handicap":"0","side":"LAY","orderType":"LIMIT","limitOrder":{"size":"'+betsizestr+'","price":"'+pricestr+'"}}]}, "id": 1}'
+    
+            req = urllib.request.Request(bet_url, data=user_req.encode('utf-8'), headers=headers)
+            response= urllib.request.urlopen(req)
+            jsonResponse = response.read()
+            pkg = jsonResponse.decode('utf-8')
+            result = json.loads(pkg)
+            myprint ("Placing bet on {}".format(horse))
+            myprint (result)
+        else:
+            myprint ("I think you have been cashing out")
     else:
         if (layplaced == "No"):
             myprint ("You don't have a lay bet on that player\n")
@@ -289,8 +295,8 @@ while (doit == 1):
     timenow = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
     myprint (timenow)
 
-    # lay bet only placed if the odds are matched 10 minutes from start to 20 mins into match
-    marketList = getMarketCatalogue(SSOID,-20,10)
+    # lay bet only placed if the odds are matched in first 20 mins into match
+    marketList = getMarketCatalogue(SSOID,-20,0)
     #myprint (marketList)
     numBets = 0
     for hrow in range(len(marketList)):
@@ -304,12 +310,12 @@ while (doit == 1):
             betAmount = "{:.2f}".format(bet)
             if (item['lay'] <= 1.3 and item['lay'] >= 1.2):
                 myprint ("LAY Market {} Player {} odds {}".format(marketList[hrow]['marketId'],str(item['selectionID']),str(item['lay'])))
-                #PlaceLayBet(SSOID,str(marketList[hrow]['marketId']),str(item["selectionID"]),"2.0",str(betAmount))
+                PlaceLayBet(SSOID,str(marketList[hrow]['marketId']),str(item["selectionID"]),"2.0",str(betAmount))
         except:
             pass
 
     # all inplay games
-    marketList = getMarketCatalogue(SSOID,-60,0)
+    marketList = getMarketCatalogue(SSOID,-300,0)
     #myprint (marketList)
     numBets = 0
     for hrow in range(len(marketList)):
@@ -319,7 +325,7 @@ while (doit == 1):
             myprint (item)
             numBets = 1
             bet = getBetSize (SSOID)
-            if (item['back'] > 1.9 and item['back'] < 1000.0):
+            if (item['back'] >= 1.55 and item['back'] < 1000.0):
                 myprint ("BACK Market {} Player {} odds {}".format(marketList[hrow]['marketId'],str(item['selectionID']),str(item['back'])))
                 PlaceBackBet(SSOID,str(marketList[hrow]['marketId']),str(item["selectionID"]),item['back'],bet)
 
