@@ -163,8 +163,7 @@ def PlaceBackBet(SSOID,market,horse,price,betsize):
             pricestr = str(price)
             user_req='{"jsonrpc": "2.0", "method": "SportsAPING/v1.0/placeOrders", \
                 "params": {"marketId":"'+market+'",\
-                "instructions":[{"selectionId":"'+horse+'","handicap":"0","side":"LAY","orderType":"LIMIT","limitOrder":{"size":"'+betsizestr+'","price":"'+pricestr+'"}}]}, "id": 1}'
-    
+                "instructions":[{"selectionId":"'+horse+'","handicap":"0","side":"BACK","orderType":"LIMIT","limitOrder":{"size":"'+betsizestr+'","timeInForce":"FILL_OR_KILL","minFillSize":"'+betsizestr+'","price":"'+pricestr+'"}}]}, "id": 1}'
             req = urllib.request.Request(bet_url, data=user_req.encode('utf-8'), headers=headers)
             response= urllib.request.urlopen(req)
             jsonResponse = response.read()
@@ -295,8 +294,8 @@ while (doit == 1):
     timenow = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
     myprint (timenow)
 
-    # lay bet only placed if the odds are matched in first 20 mins into match
-    marketList = getMarketCatalogue(SSOID,-20,0)
+    # lay bet only placed if the odds are matched in first 30 mins into match
+    marketList = getMarketCatalogue(SSOID,-30,0)
     #myprint (marketList)
     numBets = 0
     for hrow in range(len(marketList)):
@@ -331,8 +330,8 @@ while (doit == 1):
 
     if (numBets == 0):
         keepAlive(SSOID)
-        time.sleep(60)
+        time.sleep(30)
     else:
-        time.sleep(60)
+        time.sleep(30)
 
 
