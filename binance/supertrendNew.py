@@ -7,9 +7,6 @@ import sys
 from binance.enums import *
 from binance.client import Client
 
-TRADE_QUANTITY = 0.01
-TRADE_SYMBOL = 'ETHUSDT'
-
 
 def myprint(x):
     print(x)
@@ -52,7 +49,11 @@ def readTradeSettings():
     return tradeSettings
 
 
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_colwidth', None)
+pd.set_option('expand_frame_repr', False)
 pd.set_option('display.max_rows', None)
+
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -129,23 +130,22 @@ def supertrend(df, period=7, atr_multiplier=2.5):
 in_position = False
 
 def check_buy_sell_signals(df, x):
-    global in_position
 
-    myprint("checking for buy and sell signals")
+    myprint("checking for buy and sell signals {} {}".format(x['name'], x['interval']))
     myprint(df.tail(5))
     last_row_index = len(df.index) - 1
     previous_row_index = last_row_index - 1
 
     if not df['in_uptrend'][previous_row_index] and df['in_uptrend'][last_row_index]:
         myprint("changed to uptrend, buy")
-        if not in_position:
+        if not x['in_position']:
             order_succeeded = order(x['amount'], x['tradeName'], SIDE_BUY, ORDER_TYPE_MARKET)
             x['in_position'] = True
         else:
             myprint("already in position, nothing to do")
     
     if df['in_uptrend'][previous_row_index] and not df['in_uptrend'][last_row_index]:
-        if in_position:
+        if x['in_position']:
             myprint("changed to downtrend, sell")
             order_succeeded = order(x['amount'], x['tradeName'], SIDE_SELL, ORDER_TYPE_MARKET)
             x['in_position'] = False
