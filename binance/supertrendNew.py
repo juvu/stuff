@@ -127,28 +127,49 @@ def supertrend(df, period=7, atr_multiplier=2.5):
     return df
 
 
+in_position = False
+
 def check_buy_sell_signals(df, x):
 
-    myprint("checking for buy and sell signals {} {}".format(x['name'], x['interval']))
-    myprint(df.tail(5))
+    aprice = client.get_avg_price(symbol=x['tradeName'])
+    #myprint(aprice)
+    avg_price = float(aprice['price'])
+    myprint("checking for buy and sell signals {} {} {}".format(x['name'], x['interval'], avg_price))
+    myprint(df.tail(1))
     last_row_index = len(df.index) - 1
     previous_row_index = last_row_index - 1
 
-    if not df['in_uptrend'][previous_row_index] and df['in_uptrend'][last_row_index]:
-        myprint("changed to uptrend, buy")
+    if df['in_uptrend'][last_row_index]:
+        myprint("in uptrend, buy")
         if not x['in_position']:
             order_succeeded = order(x['amount'], x['tradeName'], SIDE_BUY, ORDER_TYPE_MARKET)
             x['in_position'] = True
         else:
             myprint("already in position, nothing to do")
     
-    if df['in_uptrend'][previous_row_index] and not df['in_uptrend'][last_row_index]:
+    if not df['in_uptrend'][last_row_index]:
         if x['in_position']:
-            myprint("changed to downtrend, sell")
+            myprint("in downtrend, sell")
             order_succeeded = order(x['amount'], x['tradeName'], SIDE_SELL, ORDER_TYPE_MARKET)
             x['in_position'] = False
         else:
             myprint("You aren't in position, nothing to sell")
+    
+    if x['in_position']:
+        lowerband = float(df['lowerband'][last_row_index])
+        #myprint ("lowerband is {}".format(lowerband))
+        if avg_price < lowerband:
+            myprint("changed to downtrend, sell")
+            order_succeeded = order(x['amount'], x['tradeName'], SIDE_SELL, ORDER_TYPE_MARKET)
+            x['in_position'] = False
+
+    if not x['in_position']:
+        upperband = float(df['upperband'][last_row_index])
+        #myprint ("upperband is {}".format(upperband))
+        if avg_price > upperband:
+            myprint("changed to uptrend, buy")
+            order_succeeded = order(x['amount'], x['tradeName'], SIDE_BUY, ORDER_TYPE_MARKET)
+            x['in_position'] = True
 
 def run_bot():
     myprint(f"Fetching new bars for {datetime.now().isoformat()}")
@@ -170,5 +191,5 @@ def run_bot():
 
 while True:
     run_bot()
-    time.sleep(30)
+    time.sleep(10)
 
