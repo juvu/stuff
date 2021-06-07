@@ -127,8 +127,6 @@ def supertrend(df, period=7, atr_multiplier=2.5):
     return df
 
 
-in_position = False
-
 def check_buy_sell_signals(df, x):
 
     myprint("checking for buy and sell signals {} {}".format(x['name'], x['interval']))
