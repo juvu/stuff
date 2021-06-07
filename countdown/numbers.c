@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 
 #define NUMNUMS	6
@@ -27,7 +29,7 @@ shuffleSort(int level)
 
 	for (i=0;i<level; i++)
 	{
-		pos = random() % level ;
+		pos = rand() % level ;
 		tmp = sort[i] ;
 		sort[i] = sort[pos] ;
 		sort[pos] = tmp ;
@@ -49,73 +51,6 @@ setupCopy (int aloop, int pos1, int pos2, int val)
 	copy[curpos] = val ;
 }
 
-int main (int argc, char **argv)
-{
-	int i, aloop, val ;
-	int	total, totsav, oldTotal;
-	int	diff ;
-	int nearest;
-	int numtries;
-	struct timeval	tv ;
-	struct timezone	tz ;
-	char descsav[MAXSTRING+1] ;
-
-	if (argc < 8)
-	{
-		printf ("Usage: numbers <num1> <num2> <num3> <num4> <num5> <num6> <target>\n") ;
-		exit (0) ;
-	}
-
-	gettimeofday (&tv, &tz) ;
-	srandom(tv.tv_usec) ;
-
-	for (i=0;i<NUMNUMS;i++)
-	{
-		num[i] = atoi (argv[i+1]) ;
-	}
-	target = atoi (argv[NUMNUMS + 1]);
-
-	nearest = 10000 ;
-	numtries = 0 ;
-
-	while (1)
-	{
-		for (i=0;i<NUMNUMS;i++)
-		{
-			copy[i] = num[i] ;
-		}
-
-		desc[0] = '\0' ;
-		for (aloop=NUMNUMS; aloop > 1; aloop--)
-		{
-			shuffleSort (aloop) ;
-			val = operation (sort[0], sort[1]) ;
-			diff = abs (val - target) ;	
-			if ((val > 0) && diff < nearest)
-			{
-				nearest = diff ;
-				strcpy (descsav, desc) ;
-				totsav = val ;
-				if (!diff)
-				{
-					printf ("GOT IT!!(%d tries)		%s \n", numtries, desc) ;
-					exit(0)  ;
-				}
-
-			}
-			setupCopy (aloop, sort[0], sort[1], val) ;
-		}
-
-		numtries++ ;
-
-		if (numtries > 1000000)
-		{
-			printf ("NEAREST %d - %d away		%s 	\n", totsav, abs(totsav - target), descsav) ;
-			exit(0) ;
-		}
-	}
-}
-
 int operation (int pos1, int pos2)
 {
 	int	icalc ;
@@ -123,7 +58,7 @@ int operation (int pos1, int pos2)
 
 	while (1)
 	{
-		op = random() % 31;
+		op = rand() % 31;
 		if (op < 10)
 		{
 			icalc = copy[pos1] + copy[pos2] ;
@@ -179,5 +114,72 @@ int operation (int pos1, int pos2)
 }
 	
 	
+
+int main (int argc, char **argv)
+{
+	int i, aloop, val ;
+	int	total, totsav, oldTotal;
+	int	diff ;
+	int nearest;
+	int numtries;
+	struct timeval	tv ;
+	struct timezone	tz ;
+	char descsav[MAXSTRING+1] ;
+
+	if (argc < 8)
+	{
+		printf ("Usage: numbers <num1> <num2> <num3> <num4> <num5> <num6> <target>\n") ;
+		exit (0) ;
+	}
+
+	gettimeofday (&tv, &tz) ;
+	srand(tv.tv_usec) ;
+
+	for (i=0;i<NUMNUMS;i++)
+	{
+		num[i] = atoi (argv[i+1]) ;
+	}
+	target = atoi (argv[NUMNUMS + 1]);
+
+	nearest = 10000 ;
+	numtries = 0 ;
+
+	while (1)
+	{
+		for (i=0;i<NUMNUMS;i++)
+		{
+			copy[i] = num[i] ;
+		}
+
+		desc[0] = '\0' ;
+		for (aloop=NUMNUMS; aloop > 1; aloop--)
+		{
+			shuffleSort (aloop) ;
+			val = operation (sort[0], sort[1]) ;
+			diff = abs (val - target) ;	
+			if ((val > 0) && diff < nearest)
+			{
+				nearest = diff ;
+				strcpy (descsav, desc) ;
+				totsav = val ;
+				if (!diff)
+				{
+					printf ("GOT IT!!(%d tries)		%s \n", numtries, desc) ;
+					exit(0)  ;
+				}
+
+			}
+			setupCopy (aloop, sort[0], sort[1], val) ;
+		}
+
+		numtries++ ;
+
+		if (numtries > 1000000)
+		{
+			printf ("NEAREST %d - %d away		%s 	\n", totsav, abs(totsav - target), descsav) ;
+			exit(0) ;
+		}
+	}
+}
 
 	
