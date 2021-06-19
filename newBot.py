@@ -12,7 +12,7 @@ import pandas as pd
 import MySQLdb
 import re
 from typing import Iterable, Dict, Union, List
-
+#asdf
 my_app_key = ""
 bet_url="https://api.betfair.com/exchange/betting/json-rpc/v1"
 acceptStr = "application/json"
