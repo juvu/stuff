@@ -20,7 +20,6 @@ date = asdf
 #data = pd.read_csv('./binance-tutorials/coinview/BTCUSDT_15minutes.csv',sep=',', index_col='Date', parse_dates=['Date'], date_parser=dateparse).fillna(0)
 #data = pd.read_csv('./binance-tutorials/coinview/BTCUSDT_15minutes.csv',sep=',')
 lay = pd.read_csv('./PlaceLayMulti.csv',sep=',')
-myprint(lay)
 back = pd.read_csv('./PlaceBackMulti.csv',sep=',')
 #myprint(back)
 
