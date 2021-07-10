@@ -2,7 +2,6 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-#plt.style.use('fivethirtyeight')
 import math
 import sys
 from dateutil.parser import parse
@@ -12,16 +11,8 @@ def myprint(x):
     sys.stdout.flush()
 
 
-asdftime = parse("1st Jul 2021 20:30")
-asdf = asdftime.date()
-myprint(asdf)
-date = asdf
-#dateparse = lambda dates: pd.datetime.strptime(dates, '%Y-%m-%d')
-#data = pd.read_csv('./binance-tutorials/coinview/BTCUSDT_15minutes.csv',sep=',', index_col='Date', parse_dates=['Date'], date_parser=dateparse).fillna(0)
-#data = pd.read_csv('./binance-tutorials/coinview/BTCUSDT_15minutes.csv',sep=',')
 lay = pd.read_csv('./PlaceLayMulti.csv',sep=',')
 back = pd.read_csv('./PlaceBackMulti.csv',sep=',')
-#myprint(back)
 
 results = []
 layresults = []
@@ -37,8 +28,6 @@ for z in x:
     datetime = parse(x[count])
     date = datetime.date()
     if date > asdf:
-        myprint (date)
-        myprint (lasttotal)
         dictitem = {"Date":asdf,"Total":lasttotal}
         layresults.append(dictitem)
         results.append(dictitem)
@@ -62,8 +51,6 @@ for z in x:
     datetime = parse(x[count])
     date = datetime.date()
     if date > asdf:
-        myprint (date)
-        myprint (lasttotal)
         dictitem = {"Date":asdf,"Total":lasttotal}
         backresults.append(dictitem)
         results.append(dictitem)
@@ -77,10 +64,7 @@ dictitem = {"Date":date,"Total":lasttotal}
 backresults.append(dictitem)
 results.append(dictitem)
 
-myprint(results)
-
 sresults = sorted(results, key=lambda k: k['Date'])
-myprint(sresults)
 
 fresults = []
 
@@ -100,7 +84,6 @@ for x in sresults:
 
 dictitem = {"Date":date,"Total":total}
 fresults.append(dictitem)
-myprint (fresults)
 
 dates = []
 totals = []
@@ -124,10 +107,11 @@ plt.figure(figsize=(10,6))
 plt.grid(True)
 plt.xlabel('Date')
 plt.ylabel('Total')
-plt.plot(dates,totals)
-plt.plot(ldates,ltotals)
-plt.plot(bdates,btotals)
-plt.title('Place Lay Multi')
+plt.plot(dates,totals,label="Total")
+plt.plot(ldates,ltotals,label="MultiLay")
+plt.plot(bdates,btotals,label="MultiBack")
+plt.title('Exponential Bet Progress')
+plt.legend()
 plt.show()
 
 
