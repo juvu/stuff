@@ -22,7 +22,7 @@ backresults = []
 singleresults = []
 focusresults = []
 
-asdftime = parse("4th Jul 2021 10:30")
+asdftime = parse("1st Jul 2021 10:30")
 asdf = asdftime.date()
 x = lay.loc[:,"Date Time"]
 y = lay.loc[:,"Total"]
@@ -32,7 +32,10 @@ lasttotal = 0
 for z in x:
     datetime = parse(x[count])
     date = datetime.date()
-    allitem = {"Date":asdf,"Prof":p[count]}
+    if date < asdf:
+        count = count + 1
+        continue
+    allitem = {"Date":date,"Prof":p[count]}
     allresults.append(allitem)
     if count == 0:
         asdf = date
@@ -41,7 +44,7 @@ for z in x:
         layresults.append(dictitem)
         asdf = date
     else:
-        lasttotal = y[count]
+        lasttotal += p[count]
 
     count = count+1
 
@@ -57,7 +60,10 @@ lasttotal = 0
 for z in x:
     datetime = parse(x[count])
     date = datetime.date()
-    allitem = {"Date":asdf,"Prof":p[count]}
+    if date < asdf:
+        count = count + 1
+        continue
+    allitem = {"Date":date,"Prof":p[count]}
     allresults.append(allitem)
     if count == 0:
         asdf = date
@@ -66,7 +72,7 @@ for z in x:
         backresults.append(dictitem)
         asdf = date
     else:
-        lasttotal = y[count]
+        lasttotal += p[count]
 
     count = count+1
 
@@ -82,7 +88,10 @@ lasttotal = 0
 for z in x:
     datetime = parse(x[count])
     date = datetime.date()
-    allitem = {"Date":asdf,"Prof":p[count]}
+    if date < asdf:
+        count = count + 1
+        continue
+    allitem = {"Date":date,"Prof":p[count]}
     allresults.append(allitem)
     if count == 0:
         asdf = date
@@ -91,7 +100,7 @@ for z in x:
         singleresults.append(dictitem)
         asdf = date
     else:
-        lasttotal = y[count]
+        lasttotal += p[count]
 
     count = count+1
 
@@ -107,7 +116,10 @@ lasttotal = 0
 for z in x:
     datetime = parse(x[count])
     date = datetime.date()
-    allitem = {"Date":asdf,"Prof":p[count]}
+    if date < asdf:
+        count = count + 1
+        continue
+    allitem = {"Date":date,"Prof":p[count]}
     allresults.append(allitem)
     if count == 0:
         asdf = date
@@ -116,12 +128,13 @@ for z in x:
         focusresults.append(dictitem)
         asdf = date
     else:
-        lasttotal = y[count]
+        lasttotal += p[count]
 
     count = count+1
 
 dictitem = {"Date":date,"Total":lasttotal}
 focusresults.append(dictitem)
+
 sresults = sorted(allresults, key=lambda k: k['Date'])
 
 fresults = []
@@ -133,13 +146,12 @@ for x in sresults:
     date = x['Date']
     if count == 0:
         asdf = date
-    if date == asdf:
-        total += x['Prof']
-    else:
+    if date > asdf:
         dictitem = {"Date":asdf,"Total":total}
         fresults.append(dictitem)
-        total += x['Prof']
         asdf = date
+    else:
+        total += x['Prof']
 
     count = count+1
 
@@ -176,7 +188,7 @@ for x in focusresults:
     fdates.append(x['Date'])
     ftotals.append(x['Total'])
 
-plt.figure(figsize=(10,6))
+plt.figure(figsize=(15,6))
 plt.grid(True)
 plt.xlabel('Date')
 plt.ylabel('Total')
