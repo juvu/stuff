@@ -1,0 +1,119 @@
+
+<FORM NAME=INFO ACTION=cash.py METHOD=POST>
+	<div>
+		<label for="RandomSeed">Random Seed:</label>
+		<input type="text" id="RandomSeed" name="RandomSeed">
+	</div>
+	<div>
+		<label for="FirstYear">First Year:</label>
+		<input type="text" id="name" name="FirstYear">
+	</div>
+	<div>
+		<label for="ZRP">ZRP Amount (K):</label>
+		<input type="text" id="name" name="ZRP">
+	</div>
+	<div>
+		<label for="Zurich">Zurich Amount (K):</label>
+		<input type="text" id="name" name="Zurich">
+	</div>
+	<div>
+		<label for="Pru">Pru Amount (K):</label>
+		<input type="text" id="name" name="Pru">
+	</div>
+	<div>
+		<label for="Cash">Cash Amount (K):</label>
+		<input type="text" id="name" name="Cash">
+	</div>
+	<div>
+		<label for="Inheritance">Inheritance (K):</label>
+		<input type="text" id="name" name="Inheritance">
+		<label for="InheritYear">Inheritance Year:</label>
+		<input type="text" id="name" name="InheritYear">
+	</div>
+	<div>
+		<label for="Rent">Rent:</label>
+		<input type="text" id="Rent" name="Rent">
+	</div>
+	<div>
+		<label for="YearSpend">Yearly Spend:</label>
+		<input type="text" id="YearSpend" name="YearSpend"> or percentage
+		<input type="text" id="YearSpendFactor" name="YearSpendFactor"> after base spending of
+		<input type="text" id="BaseSpending" name="BaseSpending">
+	</div>
+	<div>
+		<label for="ZurichYear">Zurich Year:</label>
+		<input type="text" id="name" name="ZurichYear">
+		<label for="Zurich25">Zurich 25%?</label>
+		<input type="checkbox" id="name" name="Zurich25">
+	</div>
+	<div>
+		<label for="PruYear">Pru Year:</label>
+		<input type="text" id="name" name="PruYear">
+		<label for="Pru25">Pru 25%?</label>
+		<input type="checkbox" id="name" name="Pru25">
+	</div>
+	<div>
+		<label for="FerrantiYear">Ferranti Year:</label>
+		<input type="text" id="FerrantiYear" name="FerrantiYear">
+		<label for="FerrantiAmount">Ferranti Amount: (0 if not yet in receipt)</label>
+		<input type="text" id="FerrantiAmount" name="FerrantiAmount">
+	</div>
+	<div>
+		<label for="SimonYear">Simon Year:</label>
+		<input type="text" id="SimonYear" name="SimonYear">
+		<label for="SimonAmount">Simon Amount: (0 if not yet in receipt)</label>
+		<input type="text" id="SimonAmount" name="SimonAmount">
+	</div>
+	<div>
+		<label for="StatePension">State Pension:</label>
+		<input type="text" id="StatePension" name="StatePension">
+	</div>
+	<div>
+		<label for="TaxAllowance">Tax Allowance:</label>
+		<input type="text" id="TaxAllowance" name="TaxAllowance">
+	</div>
+	<div>
+		<label for="InflationMean">Inflation Mean:</label>
+		<input type="text" id="name" name="InflationMean">
+		<label for="InflationSD">Standard Deviation:</label>
+		<input type="text" id="name" name="InflationSD">
+	</div>
+	<div>
+		<label for="InvestMean">Investment returns Mean:</label>
+		<input type="text" id="name" name="InvestMean">
+		<label for="InvestSD">Standard Deviation:</label>
+		<input type="text" id="name" name="InvestSD">
+	</div>
+	<div>
+		<label for="CashMean">Cash returns Mean:</label>
+		<input type="text" id="name" name="CashMean">
+		<label for="CashSD">Standard Deviation:</label>
+		<input type="text" id="name" name="CashSD">
+	</div>
+	<div>
+		<label for="SpendDecrease">Annual Spending Decrease (Percent):</label>
+		<input type="text" id="SpendDecrease" name="SpendDecrease">
+	</div>
+	<div>
+		<label for="RealTerms">Show results in real terms</label>
+		<input type="checkbox" id="name" name="RealTerms">
+	</div>
+	<div>
+		<label for="Perf"> Results to show </label>
+		<input type="radio" name="Perf" value="worst"> Worst
+		<input type="radio" name="Perf" value="year10"> 10% Quartile
+		<input type="radio" name="Perf" value="year25"> 25% Quartile
+		<input type="radio" name="Perf" value="average"> Average
+		<input type="radio" name="Perf" value="year75"> 75% Quartile
+		<input type="radio" name="Perf" value="year90"> 90% Quartile
+		<input type="radio" name="Perf" value="best"> Best
+	</div>
+	<div>
+		<label for="Index">Specific Index:</label>
+		<input type="text" id="Index" name="Index">
+	</div>
+	<div class="button">
+		<button type="submit">Calculate</button>
+	</div>
+</form>
+
